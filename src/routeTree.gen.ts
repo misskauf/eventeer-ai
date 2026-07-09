@@ -13,6 +13,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/deals'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals.$id'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDealsRoute = AuthenticatedDealsRouteImport.update({
   id: '/deals',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/_authenticated/catalog/rules': typeof AuthenticatedCatalogRulesRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/deals'
+    | '/settings'
     | '/catalog/extras'
     | '/catalog/packages'
     | '/catalog/rules'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/deals'
+    | '/settings'
     | '/catalog/extras'
     | '/catalog/packages'
     | '/catalog/rules'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/_authenticated/catalog'
     | '/_authenticated/deals'
+    | '/_authenticated/settings'
     | '/_authenticated/catalog/extras'
     | '/_authenticated/catalog/packages'
     | '/_authenticated/catalog/rules'
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/deals': {
       id: '/_authenticated/deals'
@@ -278,11 +297,13 @@ const AuthenticatedDealsRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRouteWithChildren
   AuthenticatedDealsRoute: typeof AuthenticatedDealsRouteWithChildren
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCatalogRoute: AuthenticatedCatalogRouteWithChildren,
   AuthenticatedDealsRoute: AuthenticatedDealsRouteWithChildren,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
