@@ -18,6 +18,7 @@ import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals.$id'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
 import { Route as AuthenticatedCatalogPackagesRouteImport } from './routes/_authenticated/catalog.packages'
+import { Route as AuthenticatedCatalogExtrasRouteImport } from './routes/_authenticated/catalog.extras'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -65,6 +66,12 @@ const AuthenticatedCatalogPackagesRoute =
     path: '/packages',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
+const AuthenticatedCatalogExtrasRoute =
+  AuthenticatedCatalogExtrasRouteImport.update({
+    id: '/extras',
+    path: '/extras',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -94,6 +103,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/_authenticated/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/deals'
+    | '/catalog/extras'
     | '/catalog/packages'
     | '/catalog/spaces'
     | '/deals/$id'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/deals'
+    | '/catalog/extras'
     | '/catalog/packages'
     | '/catalog/spaces'
     | '/deals/$id'
@@ -127,6 +139,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/_authenticated/catalog'
     | '/_authenticated/deals'
+    | '/_authenticated/catalog/extras'
     | '/_authenticated/catalog/packages'
     | '/_authenticated/catalog/spaces'
     | '/_authenticated/deals/$id'
@@ -204,15 +217,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogPackagesRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
+    '/_authenticated/catalog/extras': {
+      id: '/_authenticated/catalog/extras'
+      path: '/extras'
+      fullPath: '/catalog/extras'
+      preLoaderRoute: typeof AuthenticatedCatalogExtrasRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
   }
 }
 
 interface AuthenticatedCatalogRouteChildren {
+  AuthenticatedCatalogExtrasRoute: typeof AuthenticatedCatalogExtrasRoute
   AuthenticatedCatalogPackagesRoute: typeof AuthenticatedCatalogPackagesRoute
   AuthenticatedCatalogSpacesRoute: typeof AuthenticatedCatalogSpacesRoute
 }
 
 const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
+  AuthenticatedCatalogExtrasRoute: AuthenticatedCatalogExtrasRoute,
   AuthenticatedCatalogPackagesRoute: AuthenticatedCatalogPackagesRoute,
   AuthenticatedCatalogSpacesRoute: AuthenticatedCatalogSpacesRoute,
 }
