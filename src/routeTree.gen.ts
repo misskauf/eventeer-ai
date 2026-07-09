@@ -9,38 +9,223 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as DTokenRouteImport } from './routes/d.$token'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/deals'
+import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
+import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals.$id'
+import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
+import { Route as AuthenticatedCatalogRulesRouteImport } from './routes/_authenticated/catalog.rules'
+import { Route as AuthenticatedCatalogPackagesRouteImport } from './routes/_authenticated/catalog.packages'
+import { Route as AuthenticatedCatalogExtrasRouteImport } from './routes/_authenticated/catalog.extras'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PTokenRoute = PTokenRouteImport.update({
+  id: '/p/$token',
+  path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DTokenRoute = DTokenRouteImport.update({
+  id: '/d/$token',
+  path: '/d/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDealsRoute = AuthenticatedDealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDealsIdRoute = AuthenticatedDealsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedDealsRoute,
+} as any)
+const AuthenticatedCatalogSpacesRoute =
+  AuthenticatedCatalogSpacesRouteImport.update({
+    id: '/spaces',
+    path: '/spaces',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
+const AuthenticatedCatalogRulesRoute =
+  AuthenticatedCatalogRulesRouteImport.update({
+    id: '/rules',
+    path: '/rules',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
+const AuthenticatedCatalogPackagesRoute =
+  AuthenticatedCatalogPackagesRouteImport.update({
+    id: '/packages',
+    path: '/packages',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
+const AuthenticatedCatalogExtrasRoute =
+  AuthenticatedCatalogExtrasRouteImport.update({
+    id: '/extras',
+    path: '/extras',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRoute
+  '/catalog': typeof AuthenticatedCatalogRouteWithChildren
+  '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/d/$token': typeof DTokenRoute
+  '/p/$token': typeof PTokenRoute
+  '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
+  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
+  '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
+  '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/deals/$id': typeof AuthenticatedDealsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRoute
+  '/catalog': typeof AuthenticatedCatalogRouteWithChildren
+  '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/d/$token': typeof DTokenRoute
+  '/p/$token': typeof PTokenRoute
+  '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
+  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
+  '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
+  '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/deals/$id': typeof AuthenticatedDealsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/onboarding': typeof OnboardingRoute
+  '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
+  '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/d/$token': typeof DTokenRoute
+  '/p/$token': typeof PTokenRoute
+  '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
+  '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
+  '/_authenticated/catalog/rules': typeof AuthenticatedCatalogRulesRoute
+  '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/_authenticated/deals/$id': typeof AuthenticatedDealsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/onboarding'
+    | '/catalog'
+    | '/deals'
+    | '/settings'
+    | '/d/$token'
+    | '/p/$token'
+    | '/catalog/extras'
+    | '/catalog/packages'
+    | '/catalog/rules'
+    | '/catalog/spaces'
+    | '/deals/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/onboarding'
+    | '/catalog'
+    | '/deals'
+    | '/settings'
+    | '/d/$token'
+    | '/p/$token'
+    | '/catalog/extras'
+    | '/catalog/packages'
+    | '/catalog/rules'
+    | '/catalog/spaces'
+    | '/deals/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/onboarding'
+    | '/_authenticated/catalog'
+    | '/_authenticated/deals'
+    | '/_authenticated/settings'
+    | '/d/$token'
+    | '/p/$token'
+    | '/_authenticated/catalog/extras'
+    | '/_authenticated/catalog/packages'
+    | '/_authenticated/catalog/rules'
+    | '/_authenticated/catalog/spaces'
+    | '/_authenticated/deals/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  OnboardingRoute: typeof OnboardingRoute
+  DTokenRoute: typeof DTokenRoute
+  PTokenRoute: typeof PTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +233,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$token': {
+      id: '/p/$token'
+      path: '/p/$token'
+      fullPath: '/p/$token'
+      preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/d/$token': {
+      id: '/d/$token'
+      path: '/d/$token'
+      fullPath: '/d/$token'
+      preLoaderRoute: typeof DTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/deals': {
+      id: '/_authenticated/deals'
+      path: '/deals'
+      fullPath: '/deals'
+      preLoaderRoute: typeof AuthenticatedDealsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/catalog': {
+      id: '/_authenticated/catalog'
+      path: '/catalog'
+      fullPath: '/catalog'
+      preLoaderRoute: typeof AuthenticatedCatalogRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/deals/$id': {
+      id: '/_authenticated/deals/$id'
+      path: '/$id'
+      fullPath: '/deals/$id'
+      preLoaderRoute: typeof AuthenticatedDealsIdRouteImport
+      parentRoute: typeof AuthenticatedDealsRoute
+    }
+    '/_authenticated/catalog/spaces': {
+      id: '/_authenticated/catalog/spaces'
+      path: '/spaces'
+      fullPath: '/catalog/spaces'
+      preLoaderRoute: typeof AuthenticatedCatalogSpacesRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
+    '/_authenticated/catalog/rules': {
+      id: '/_authenticated/catalog/rules'
+      path: '/rules'
+      fullPath: '/catalog/rules'
+      preLoaderRoute: typeof AuthenticatedCatalogRulesRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
+    '/_authenticated/catalog/packages': {
+      id: '/_authenticated/catalog/packages'
+      path: '/packages'
+      fullPath: '/catalog/packages'
+      preLoaderRoute: typeof AuthenticatedCatalogPackagesRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
+    '/_authenticated/catalog/extras': {
+      id: '/_authenticated/catalog/extras'
+      path: '/extras'
+      fullPath: '/catalog/extras'
+      preLoaderRoute: typeof AuthenticatedCatalogExtrasRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
   }
 }
 
+interface AuthenticatedCatalogRouteChildren {
+  AuthenticatedCatalogExtrasRoute: typeof AuthenticatedCatalogExtrasRoute
+  AuthenticatedCatalogPackagesRoute: typeof AuthenticatedCatalogPackagesRoute
+  AuthenticatedCatalogRulesRoute: typeof AuthenticatedCatalogRulesRoute
+  AuthenticatedCatalogSpacesRoute: typeof AuthenticatedCatalogSpacesRoute
+}
+
+const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
+  AuthenticatedCatalogExtrasRoute: AuthenticatedCatalogExtrasRoute,
+  AuthenticatedCatalogPackagesRoute: AuthenticatedCatalogPackagesRoute,
+  AuthenticatedCatalogRulesRoute: AuthenticatedCatalogRulesRoute,
+  AuthenticatedCatalogSpacesRoute: AuthenticatedCatalogSpacesRoute,
+}
+
+const AuthenticatedCatalogRouteWithChildren =
+  AuthenticatedCatalogRoute._addFileChildren(AuthenticatedCatalogRouteChildren)
+
+interface AuthenticatedDealsRouteChildren {
+  AuthenticatedDealsIdRoute: typeof AuthenticatedDealsIdRoute
+}
+
+const AuthenticatedDealsRouteChildren: AuthenticatedDealsRouteChildren = {
+  AuthenticatedDealsIdRoute: AuthenticatedDealsIdRoute,
+}
+
+const AuthenticatedDealsRouteWithChildren =
+  AuthenticatedDealsRoute._addFileChildren(AuthenticatedDealsRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRouteWithChildren
+  AuthenticatedDealsRoute: typeof AuthenticatedDealsRouteWithChildren
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCatalogRoute: AuthenticatedCatalogRouteWithChildren,
+  AuthenticatedDealsRoute: AuthenticatedDealsRouteWithChildren,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  OnboardingRoute: OnboardingRoute,
+  DTokenRoute: DTokenRoute,
+  PTokenRoute: PTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
