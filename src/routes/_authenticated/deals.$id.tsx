@@ -97,14 +97,15 @@ function DealDetail() {
     setActivities(ac.data ?? []);
     if (pr.data) {
       setExistingProposal(pr.data);
-      const cfg = pr.data.config as any;
-      setSelectedSpaces(cfg?.space_ids ?? []);
-      setSelectedPackages(cfg?.package_ids ?? []);
-      setSelectedExtras(cfg?.extra_ids ?? []);
-      setSeasonId(cfg?.season_id ?? "none");
-      setDiscount(cfg?.discount ?? 0);
-      setMinRevenue(cfg?.min_revenue_required ?? 0);
-      setClientMessage(pr.data.client_message ?? "");
+      const cfg = (pr.data.offer as any) ?? {};
+      const cons = (pr.data.constraints as any) ?? {};
+      setSelectedSpaces(cfg.space_ids ?? []);
+      setSelectedPackages(cfg.package_ids ?? []);
+      setSelectedExtras(cfg.extra_ids ?? []);
+      setSeasonId(cfg.season_id ?? "none");
+      setDiscount(cfg.discount ?? 0);
+      setMinRevenue(cfg.min_revenue_required ?? 0);
+      setClientMessage(cons.client_message ?? "");
     }
   }
 
