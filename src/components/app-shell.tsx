@@ -35,11 +35,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     await navigate({ to: "/auth", replace: true });
   }
 
-  const nav = [
+  const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; match?: string }> = [
     { to: "/deals", label: "Deals", icon: LayoutDashboard },
     { to: "/catalog/spaces", label: "Catalog", icon: BookOpen, match: "/catalog" },
     { to: "/settings", label: "Settings", icon: Settings },
-  ] as const;
+  ];
 
   return (
     <div className="min-h-screen bg-muted/20">
