@@ -17,6 +17,7 @@ import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals.$id'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
+import { Route as AuthenticatedCatalogPackagesRouteImport } from './routes/_authenticated/catalog.packages'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -58,6 +59,12 @@ const AuthenticatedCatalogSpacesRoute =
     path: '/spaces',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
+const AuthenticatedCatalogPackagesRoute =
+  AuthenticatedCatalogPackagesRouteImport.update({
+    id: '/packages',
+    path: '/packages',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
 }
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
 }
@@ -85,6 +94,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
+  '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/_authenticated/deals/$id': typeof AuthenticatedDealsIdRoute
 }
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/deals'
+    | '/catalog/packages'
     | '/catalog/spaces'
     | '/deals/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/deals'
+    | '/catalog/packages'
     | '/catalog/spaces'
     | '/deals/$id'
   id:
@@ -115,6 +127,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/_authenticated/catalog'
     | '/_authenticated/deals'
+    | '/_authenticated/catalog/packages'
     | '/_authenticated/catalog/spaces'
     | '/_authenticated/deals/$id'
   fileRoutesById: FileRoutesById
@@ -184,14 +197,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogSpacesRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
+    '/_authenticated/catalog/packages': {
+      id: '/_authenticated/catalog/packages'
+      path: '/packages'
+      fullPath: '/catalog/packages'
+      preLoaderRoute: typeof AuthenticatedCatalogPackagesRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
   }
 }
 
 interface AuthenticatedCatalogRouteChildren {
+  AuthenticatedCatalogPackagesRoute: typeof AuthenticatedCatalogPackagesRoute
   AuthenticatedCatalogSpacesRoute: typeof AuthenticatedCatalogSpacesRoute
 }
 
 const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
+  AuthenticatedCatalogPackagesRoute: AuthenticatedCatalogPackagesRoute,
   AuthenticatedCatalogSpacesRoute: AuthenticatedCatalogSpacesRoute,
 }
 
