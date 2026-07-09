@@ -40,13 +40,13 @@ function RulesPage() {
           table="pricing_rules"
           companyId={companyId}
           fields={[
-            { name: "name", label: "Name" },
+            { name: "notes", label: "Label / notes" },
             { name: "day_of_week", label: "Day of week (0=Sun … 6=Sat, blank = any)", type: "number" },
             { name: "min_revenue", label: "Minimum revenue required", type: "number", step: "0.01" },
           ]}
           render={(r: any) => (
             <div>
-              <div className="font-medium">{r.name}</div>
+              <div className="font-medium">{r.notes ?? "Rule"}</div>
               <div className="text-xs text-muted-foreground">
                 {r.day_of_week === null || r.day_of_week === undefined ? "Any day" : `Day ${r.day_of_week}`} · min ${Number(r.min_revenue).toLocaleString()}
               </div>
