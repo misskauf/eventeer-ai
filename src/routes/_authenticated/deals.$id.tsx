@@ -159,10 +159,12 @@ function DealDetail() {
         company_id: deal.company_id,
         version,
         status,
-        config,
-        client_message: clientMessage,
-        computed_subtotal: totals.subtotal,
-        computed_total: totals.grand_total,
+        offer: config,
+        constraints: {
+          client_message: clientMessage,
+          computed_subtotal: totals.subtotal,
+          computed_total: totals.grand_total,
+        },
         sent_at: send ? new Date().toISOString() : null,
       })
       .select("*")
