@@ -48,7 +48,7 @@ function AuthPage() {
   async function onGoogle() {
     setBusy(true);
     const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/auth/callback",
+      redirect_uri: window.location.origin,
     });
     if (res.error) {
       setBusy(false);

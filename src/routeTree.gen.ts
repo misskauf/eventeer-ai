@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as DTokenRouteImport } from './routes/d.$token'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/deals'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const PTokenRoute = PTokenRouteImport.update({
   id: '/p/$token',
   path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DTokenRoute = DTokenRouteImport.update({
+  id: '/d/$token',
+  path: '/d/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/deals'
     | '/settings'
+    | '/d/$token'
     | '/p/$token'
     | '/catalog/extras'
     | '/catalog/packages'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/deals'
     | '/settings'
+    | '/d/$token'
     | '/p/$token'
     | '/catalog/extras'
     | '/catalog/packages'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog'
     | '/_authenticated/deals'
     | '/_authenticated/settings'
+    | '/d/$token'
     | '/p/$token'
     | '/_authenticated/catalog/extras'
     | '/_authenticated/catalog/packages'
@@ -187,6 +199,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
+  DTokenRoute: typeof DTokenRoute
   PTokenRoute: typeof PTokenRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       path: '/p/$token'
       fullPath: '/p/$token'
       preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/d/$token': {
+      id: '/d/$token'
+      path: '/d/$token'
+      fullPath: '/d/$token'
+      preLoaderRoute: typeof DTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
@@ -334,6 +354,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
+  DTokenRoute: DTokenRoute,
   PTokenRoute: PTokenRoute,
 }
 export const routeTree = rootRouteImport
