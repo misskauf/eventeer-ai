@@ -625,6 +625,7 @@ export type Database = {
           company_id: string
           created_at: string
           description: string | null
+          details_url: string | null
           features: string[]
           id: string
           long_description: string | null
@@ -645,6 +646,7 @@ export type Database = {
           company_id: string
           created_at?: string
           description?: string | null
+          details_url?: string | null
           features?: string[]
           id?: string
           long_description?: string | null
@@ -665,6 +667,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           description?: string | null
+          details_url?: string | null
           features?: string[]
           id?: string
           long_description?: string | null
