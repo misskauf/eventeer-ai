@@ -43,6 +43,7 @@ function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const currency = useCompanyCurrency();
 
   async function refresh() {
     const { data } = await supabase
