@@ -78,6 +78,32 @@ function formatDays(days: number[] | null | undefined) {
   return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
 }
 
+function BasisToggle({
+  value,
+  onChange,
+}: {
+  value: Basis;
+  onChange: (v: Basis) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-md border p-0.5">
+      {(["gross", "net"] as Basis[]).map((b) => (
+        <button
+          key={b}
+          type="button"
+          onClick={() => onChange(b)}
+          className={`rounded-sm px-3 py-1 text-xs capitalize ${
+            value === b
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {b}
+        </button>
+      ))}
+    </div>
+  );
+
 function SeasonsSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Season[]>([]);
   const [open, setOpen] = useState(false);
