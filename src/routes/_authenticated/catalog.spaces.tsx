@@ -157,6 +157,18 @@ function SpacesPage() {
                   · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
                   {money(Number(r.min_rental_fee), currency)} · {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
                 </div>
+                {r.details_url && (
+                  <div className="mt-1 text-xs">
+                    <a
+                      href={r.details_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      View space details ↗
+                    </a>
+                  </div>
+                )}
                 {Array.isArray(r.features) && r.features.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {r.features.map((f: string) => (
