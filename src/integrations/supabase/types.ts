@@ -718,7 +718,7 @@ export type Database = {
         | "paid_in_full"
         | "payment_delayed"
       extra_pricing_type: "per_person" | "flat" | "per_hour"
-      share_token_kind: "client_proposal" | "dashboard"
+      share_token_kind: "client_proposal" | "dashboard" | "preview"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -866,7 +866,7 @@ export const Constants = {
         "payment_delayed",
       ],
       extra_pricing_type: ["per_person", "flat", "per_hour"],
-      share_token_kind: ["client_proposal", "dashboard"],
+      share_token_kind: ["client_proposal", "dashboard", "preview"],
     },
   },
 } as const
