@@ -7,6 +7,7 @@ import { money } from "@/lib/pricing";
 import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
+import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
 
 export const Route = createFileRoute("/_authenticated/catalog/extras")({
   component: ExtrasPage,
@@ -28,19 +29,25 @@ function ExtrasPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-md border bg-muted/30 px-4 py-2 text-sm">
-        <div>Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b></div>
-        <div className="flex items-center gap-2">
-          <label className="text-muted-foreground">Preview guests</label>
-          <input
-            type="number"
-            min={1}
-            value={sampleGuests}
-            onChange={(e) => setSampleGuests(Math.max(1, Number(e.target.value) || 1))}
-            className="w-20 rounded-md border bg-background px-2 py-1 text-sm"
-          />
-        </div>
-      </div>
+      <CategoryDefaultsBar
+        companyId={companyId}
+        category="extra"
+        defaults={defaults}
+        onSaved={setDefaults}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <label className="text-muted-foreground">Preview guests</label>
+            <input
+              type="number"
+              min={1}
+              value={sampleGuests}
+              onChange={(e) => setSampleGuests(Math.max(1, Number(e.target.value) || 1))}
+              className="w-20 rounded-md border bg-background px-2 py-1 text-sm"
+            />
+          </div>
+        }
+      />
+
       <CrudList
         title="extra"
         table="extras"
