@@ -371,6 +371,7 @@ type Rule = {
   days_of_week: number[] | null;
   months: number[] | null;
   min_revenue: number;
+  basis: Basis;
 };
 
 function formatMonths(months: number[] | null | undefined) {
