@@ -708,6 +708,15 @@ export type Database = {
         | "manager_review"
         | "accepted"
         | "lost"
+        | "new"
+        | "contacted"
+        | "meeting_scheduled"
+        | "signed"
+        | "waiting_payment"
+        | "invoice_sent"
+        | "downpayment_received"
+        | "paid_in_full"
+        | "payment_delayed"
       extra_pricing_type: "per_person" | "flat" | "per_hour"
       share_token_kind: "client_proposal" | "dashboard"
     }
@@ -846,6 +855,15 @@ export const Constants = {
         "manager_review",
         "accepted",
         "lost",
+        "new",
+        "contacted",
+        "meeting_scheduled",
+        "signed",
+        "waiting_payment",
+        "invoice_sent",
+        "downpayment_received",
+        "paid_in_full",
+        "payment_delayed",
       ],
       extra_pricing_type: ["per_person", "flat", "per_hour"],
       share_token_kind: ["client_proposal", "dashboard"],
