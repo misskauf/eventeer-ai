@@ -63,7 +63,10 @@ function SettingsPage() {
         tax_rate_extra: num("tax_rate_extra"),
         default_basis_rental: str("default_basis_rental"),
         tax_rate_rental: num("tax_rate_rental"),
+        default_hours_food: num("default_hours_food"),
+        default_hours_beverage: num("default_hours_beverage"),
       })
+
       .eq("company_id", company.id);
     if (error) return toast.error(error.message);
     toast.success("Fees saved");
