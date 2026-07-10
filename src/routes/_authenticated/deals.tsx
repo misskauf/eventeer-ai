@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/deals")({
   component: DealsPage,
@@ -41,6 +43,7 @@ function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const currency = useCompanyCurrency();
 
   async function refresh() {
     const { data } = await supabase
@@ -89,7 +92,7 @@ function DealsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right text-sm tabular-nums">
-                      ${Number(d.estimated_value).toLocaleString()}
+                      {money(Number(d.estimated_value), currency)}
                     </div>
                     <Badge variant="secondary">{STAGE_LABELS[d.stage] ?? d.stage}</Badge>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />

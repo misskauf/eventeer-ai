@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { createFileRoute as _ } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentCompany } from "@/lib/auth-hooks";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -391,6 +393,7 @@ function RulesSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Rule[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
+  const currency = useCompanyCurrency();
 
   async function load() {
     const { data } = await supabase
@@ -462,8 +465,8 @@ function RulesSection({ companyId }: { companyId: string | null }) {
                     <div className="font-medium">{r.notes ?? "Rule"}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatRuleDays(r.days_of_week)} ·{" "}
-                      {formatMonths(r.months)} · min $
-                      {Number(r.min_revenue).toLocaleString()} ({r.basis})
+                      {formatMonths(r.months)} · min{" "}
+                      {money(Number(r.min_revenue), currency)} ({r.basis})
                     </div>
                   </div>
                   <div className="flex gap-1">
