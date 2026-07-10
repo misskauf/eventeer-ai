@@ -42,6 +42,7 @@ function ClientProposal() {
   const [seasonMult, setSeasonMult] = useState(1);
   const [minRev, setMinRev] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [servicePct, setServicePct] = useState<number | null>(null);
   const [feesCfg, setFeesCfg] = useState<any>(null);
   const [coverTitle, setCoverTitle] = useState<string>("");
   const [introMarkdown, setIntroMarkdown] = useState<string>("");
