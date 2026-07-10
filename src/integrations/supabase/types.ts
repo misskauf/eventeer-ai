@@ -291,9 +291,11 @@ export type Database = {
           company_id: string
           created_at: string
           day_of_week: number | null
+          days_of_week: number[]
           id: string
           min_revenue: number
           month: number | null
+          months: number[]
           notes: string | null
           space_id: string | null
         }
@@ -301,9 +303,11 @@ export type Database = {
           company_id: string
           created_at?: string
           day_of_week?: number | null
+          days_of_week?: number[]
           id?: string
           min_revenue?: number
           month?: number | null
+          months?: number[]
           notes?: string | null
           space_id?: string | null
         }
@@ -311,9 +315,11 @@ export type Database = {
           company_id?: string
           created_at?: string
           day_of_week?: number | null
+          days_of_week?: number[]
           id?: string
           min_revenue?: number
           month?: number | null
+          months?: number[]
           notes?: string | null
           space_id?: string | null
         }
