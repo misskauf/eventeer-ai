@@ -20,7 +20,8 @@ import {
   type PackageSel,
   type ExtraSel,
 } from "@/lib/pricing";
-import type { CategoryDefaults } from "@/lib/tax";
+import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
+
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, Send, AlertTriangle } from "lucide-react";
