@@ -41,7 +41,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare } from "lucide-react";
 import { stageLabel } from "@/lib/deal-stages";
 
-export const Route = createFileRoute("/_authenticated/deals/$id")({
+export const Route = createFileRoute("/_authenticated/deals_/$id")({
   component: DealDetail,
 });
 
