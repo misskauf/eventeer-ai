@@ -391,6 +391,7 @@ function RulesSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Rule[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
+  const currency = useCompanyCurrency();
 
   async function load() {
     const { data } = await supabase
