@@ -58,7 +58,8 @@ function SpacesPage() {
         fields={[
           { name: "name", label: "Name" },
           { name: "description", label: "Short description", type: "textarea", rows: 2 },
-          { name: "capacity", label: "Capacity", type: "number", nullable: true },
+          { name: "capacity_standing", label: "Capacity (standing)", type: "number", nullable: true },
+          { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true },
           { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01" },
           { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
           {
@@ -86,6 +87,33 @@ function SpacesPage() {
             type: "textarea",
             rows: 6,
             hint: "Shown to the client on the proposal. Markdown supported.",
+          },
+          {
+            name: "features",
+            label: "Features",
+            type: "tags",
+            suggestions: [
+              "Stage",
+              "Lighting",
+              "WiFi",
+              "Furniture",
+              "DJ Equipment",
+              "PA / Sound system",
+              "Microphones",
+              "Projector",
+              "Screen",
+              "Dance floor",
+              "Bar",
+              "Kitchen access",
+              "Outdoor area",
+              "Air conditioning",
+              "Heating",
+              "Wheelchair accessible",
+              "Parking",
+              "Coat check",
+              "Green room",
+            ],
+            hint: "Pick from suggestions or add your own.",
           },
         ]}
         render={(r: any) => {
