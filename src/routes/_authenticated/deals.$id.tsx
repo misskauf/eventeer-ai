@@ -20,6 +20,7 @@ import {
   type PackageSel,
   type ExtraSel,
 } from "@/lib/pricing";
+import type { CategoryDefaults } from "@/lib/tax";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, Send, AlertTriangle } from "lucide-react";
@@ -42,13 +43,6 @@ type Deal = {
   notes: string | null;
 };
 
-type FeeConfig = {
-  service_charge_pct: number;
-  tax_pct: number;
-  cleaning_fee: number;
-  overtime_fee_per_hour: number;
-};
-
 type Season = { id: string; name: string; multiplier: number };
 
 function DealDetail() {
@@ -57,14 +51,14 @@ function DealDetail() {
   const [spaces, setSpaces] = useState<SpaceSel[]>([]);
   const [packages, setPackages] = useState<PackageSel[]>([]);
   const [extras, setExtras] = useState<ExtraSel[]>([]);
-  const [fees, setFees] = useState<FeeConfig | null>(null);
+  const [fees, setFees] = useState<any>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [currency, setCurrency] = useState("USD");
 
-  // proposal draft
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
   const [minRevenue, setMinRevenue] = useState(0);
@@ -77,9 +71,9 @@ function DealDetail() {
     if (!d) return;
     setDeal(d as Deal);
     const [sp, pk, ex, fc, ss, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee").eq("active", true),
-      supabase.from("fb_packages").select("id, name, price_per_person").eq("active", true),
-      supabase.from("extras").select("id, name, pricing_type, price").eq("active", true),
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").eq("active", true),
+      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description").eq("active", true),
+      supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("companies").select("currency").eq("id", d.company_id).maybeSingle(),
@@ -89,7 +83,7 @@ function DealDetail() {
     setSpaces((sp.data as SpaceSel[]) ?? []);
     setPackages((pk.data as PackageSel[]) ?? []);
     setExtras((ex.data as ExtraSel[]) ?? []);
-    setFees((fc.data as FeeConfig) ?? {
+    setFees(fc.data ?? {
       service_charge_pct: 0, tax_pct: 0, cleaning_fee: 0, overtime_fee_per_hour: 0,
     });
     setSeasons((ss.data as Season[]) ?? []);
@@ -102,6 +96,7 @@ function DealDetail() {
       setSelectedSpaces(cfg.space_ids ?? []);
       setSelectedPackages(cfg.package_ids ?? []);
       setSelectedExtras(cfg.extra_ids ?? []);
+      setPackageGuests(cfg.package_guests ?? {});
       setSeasonId(cfg.season_id ?? "none");
       setDiscount(cfg.discount ?? 0);
       setMinRevenue(cfg.min_revenue_required ?? 0);
@@ -124,6 +119,7 @@ function DealDetail() {
     return {
       spaces, packages, extras,
       fees: { ...fees, overtime_hours: 0 },
+      category_defaults: fees as CategoryDefaults,
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
       discount,
@@ -135,9 +131,13 @@ function DealDetail() {
     space_ids: selectedSpaces,
     package_ids: selectedPackages,
     extra_ids: selectedExtras,
+    package_guests: packageGuests,
   };
 
   const totals = offer ? computeTotals(offer, selection) : null;
+
+  const foodPackages = packages.filter((p) => (p.kind ?? "food") === "food");
+  const beveragePackages = packages.filter((p) => p.kind === "beverage");
 
   async function saveProposal(send: boolean) {
     if (!deal || !totals) return;
@@ -145,6 +145,7 @@ function DealDetail() {
       space_ids: selectedSpaces,
       package_ids: selectedPackages,
       extra_ids: selectedExtras,
+      package_guests: packageGuests,
       season_id: seasonId,
       discount,
       min_revenue_required: minRevenue,
@@ -162,7 +163,8 @@ function DealDetail() {
         offer: config,
         constraints: {
           client_message: clientMessage,
-          computed_subtotal: totals.subtotal,
+          computed_net: totals.net_subtotal,
+          computed_tax: totals.tax_subtotal,
           computed_total: totals.grand_total,
         },
         sent_at: send ? new Date().toISOString() : null,
@@ -210,6 +212,9 @@ function DealDetail() {
 
   if (!deal || !offer || !totals) return <AppShell><div>Loading…</div></AppShell>;
 
+  const setGuestOverride = (pid: string, v: number) =>
+    setPackageGuests((cur) => ({ ...cur, [pid]: v }));
+
   return (
     <AppShell>
       <div className="mb-4">
@@ -250,21 +255,28 @@ function DealDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Food & Beverage packages</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {packages.length === 0 && <EmptyHint to="/catalog/packages" label="Add packages in catalog" />}
-              {packages.map((p) => (
-                <PickRow
-                  key={p.id}
-                  checked={selectedPackages.includes(p.id)}
-                  onChange={(v) => toggle(setSelectedPackages, p.id, v)}
-                  title={p.name}
-                  subtitle={`${money(p.price_per_person, currency)} per guest`}
-                />
-              ))}
-            </CardContent>
-          </Card>
+          <PackageCard
+            title="Food packages"
+            emptyTo="/catalog/food"
+            items={foodPackages}
+            currency={currency}
+            selected={selectedPackages}
+            onToggle={(id, v) => toggle(setSelectedPackages, id, v)}
+            dealGuests={deal.guest_count}
+            packageGuests={packageGuests}
+            onGuestChange={setGuestOverride}
+          />
+          <PackageCard
+            title="Beverage packages"
+            emptyTo="/catalog/beverages"
+            items={beveragePackages}
+            currency={currency}
+            selected={selectedPackages}
+            onToggle={(id, v) => toggle(setSelectedPackages, id, v)}
+            dealGuests={deal.guest_count}
+            packageGuests={packageGuests}
+            onGuestChange={setGuestOverride}
+          />
 
           <Card>
             <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
@@ -314,7 +326,7 @@ function DealDetail() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Minimum revenue required</Label>
+                <Label>Minimum revenue required (net)</Label>
                 <Input
                   type="number"
                   value={minRevenue}
@@ -322,7 +334,7 @@ function DealDetail() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Discount</Label>
+                <Label>Discount (gross)</Label>
                 <Input
                   type="number"
                   value={discount}
@@ -336,23 +348,32 @@ function DealDetail() {
             <CardHeader><CardTitle>Totals</CardTitle></CardHeader>
             <CardContent className="space-y-1 text-sm">
               {totals.lines.map((l, i) => (
-                <div key={i} className="flex justify-between">
-                  <span className="text-muted-foreground">{l.label}</span>
-                  <span className="tabular-nums">{money(l.amount, currency)}</span>
+                <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{l.label}</span>
+                    <span className="tabular-nums">{money(l.gross, currency)}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>{l.qty} · {l.basis} · tax {l.tax_rate_pct}%</span>
+                    <span className="tabular-nums">
+                      net {money(l.net, currency)} · tax {money(l.tax, currency)}
+                    </span>
+                  </div>
                 </div>
               ))}
               <Separator className="my-2" />
-              <Row label="Subtotal" value={money(totals.subtotal, currency)} />
+              <Row label="Net subtotal" value={money(totals.net_subtotal, currency)} />
+              <Row label="Total tax" value={money(totals.tax_subtotal, currency)} />
+              <Row label="Gross subtotal" value={money(totals.gross_subtotal, currency)} />
               {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
               <Row label="Service" value={money(totals.service_charge, currency)} />
-              <Row label="Tax" value={money(totals.tax, currency)} />
               <Separator className="my-2" />
               <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
               {totals.min_shortfall > 0 && (
                 <div className="mt-3 flex items-start gap-2 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <div>
-                    Minimum revenue not met. Shortfall of {money(totals.min_shortfall, currency)}. Consider adding extras or adjusting the discount.
+                    Net minimum not met. Shortfall of {money(totals.min_shortfall, currency)}. Consider adding extras or adjusting the discount.
                   </div>
                 </div>
               )}
@@ -383,6 +404,65 @@ function DealDetail() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function PackageCard({
+  title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
+}: {
+  title: string;
+  emptyTo: string;
+  items: PackageSel[];
+  currency: string;
+  selected: string[];
+  onToggle: (id: string, v: boolean | "indeterminate") => void;
+  dealGuests: number;
+  packageGuests: Record<string, number>;
+  onGuestChange: (id: string, v: number) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent className="space-y-2">
+        {items.length === 0 && <EmptyHint to={emptyTo} label={`Add ${title.toLowerCase()} in catalog`} />}
+        {items.map((p) => {
+          const checked = selected.includes(p.id);
+          const guests = packageGuests[p.id] ?? dealGuests;
+          return (
+            <div key={p.id} className="rounded-md border p-3">
+              <label className="flex cursor-pointer items-start gap-3">
+                <Checkbox checked={checked} onCheckedChange={(v) => onToggle(p.id, v)} className="mt-1" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">{money(p.price_per_person, currency)} per guest</div>
+                </div>
+              </label>
+              {checked && (
+                <div className="mt-2 flex items-center gap-2 border-t pt-2 text-xs">
+                  <span className="text-muted-foreground">Guests for this package</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={guests}
+                    onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
+                    className="h-7 w-20"
+                  />
+                  {guests !== dealGuests && (
+                    <button
+                      type="button"
+                      className="text-primary underline"
+                      onClick={() => onGuestChange(p.id, dealGuests)}
+                    >
+                      reset to {dealGuests}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
 

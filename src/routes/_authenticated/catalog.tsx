@@ -9,7 +9,8 @@ function CatalogLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tabs = [
     { to: "/catalog/spaces", label: "Spaces" },
-    { to: "/catalog/packages", label: "F&B packages" },
+    { to: "/catalog/food", label: "Food" },
+    { to: "/catalog/beverages", label: "Beverages" },
     { to: "/catalog/extras", label: "Extras" },
     { to: "/catalog/rules", label: "Pricing rules" },
   ];

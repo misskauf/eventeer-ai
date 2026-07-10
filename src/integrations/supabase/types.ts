@@ -157,38 +157,47 @@ export type Database = {
       extras: {
         Row: {
           active: boolean
+          basis: string | null
           category: string
           company_id: string
           created_at: string
           description: string | null
           id: string
+          long_description: string | null
           name: string
           price: number
           pricing_type: Database["public"]["Enums"]["extra_pricing_type"]
+          tax_rate_pct: number | null
           updated_at: string
         }
         Insert: {
           active?: boolean
+          basis?: string | null
           category?: string
           company_id: string
           created_at?: string
           description?: string | null
           id?: string
+          long_description?: string | null
           name: string
           price?: number
           pricing_type?: Database["public"]["Enums"]["extra_pricing_type"]
+          tax_rate_pct?: number | null
           updated_at?: string
         }
         Update: {
           active?: boolean
+          basis?: string | null
           category?: string
           company_id?: string
           created_at?: string
           description?: string | null
           id?: string
+          long_description?: string | null
           name?: string
           price?: number
           pricing_type?: Database["public"]["Enums"]["extra_pricing_type"]
+          tax_rate_pct?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -205,40 +214,52 @@ export type Database = {
         Row: {
           active: boolean
           allergen_notes: string | null
+          basis: string | null
           category: string
           company_id: string
           created_at: string
           description: string | null
           id: string
+          kind: string
+          long_description: string | null
           min_guests: number
           name: string
           price_per_person: number
+          tax_rate_pct: number | null
           updated_at: string
         }
         Insert: {
           active?: boolean
           allergen_notes?: string | null
+          basis?: string | null
           category?: string
           company_id: string
           created_at?: string
           description?: string | null
           id?: string
+          kind?: string
+          long_description?: string | null
           min_guests?: number
           name: string
           price_per_person?: number
+          tax_rate_pct?: number | null
           updated_at?: string
         }
         Update: {
           active?: boolean
           allergen_notes?: string | null
+          basis?: string | null
           category?: string
           company_id?: string
           created_at?: string
           description?: string | null
           id?: string
+          kind?: string
+          long_description?: string | null
           min_guests?: number
           name?: string
           price_per_person?: number
+          tax_rate_pct?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -255,25 +276,49 @@ export type Database = {
         Row: {
           cleaning_fee: number
           company_id: string
+          default_basis_beverage: string
+          default_basis_extra: string
+          default_basis_food: string
+          default_basis_rental: string
           overtime_fee_per_hour: number
           service_charge_pct: number
           tax_pct: number
+          tax_rate_beverage: number
+          tax_rate_extra: number
+          tax_rate_food: number
+          tax_rate_rental: number
           updated_at: string
         }
         Insert: {
           cleaning_fee?: number
           company_id: string
+          default_basis_beverage?: string
+          default_basis_extra?: string
+          default_basis_food?: string
+          default_basis_rental?: string
           overtime_fee_per_hour?: number
           service_charge_pct?: number
           tax_pct?: number
+          tax_rate_beverage?: number
+          tax_rate_extra?: number
+          tax_rate_food?: number
+          tax_rate_rental?: number
           updated_at?: string
         }
         Update: {
           cleaning_fee?: number
           company_id?: string
+          default_basis_beverage?: string
+          default_basis_extra?: string
+          default_basis_food?: string
+          default_basis_rental?: string
           overtime_fee_per_hour?: number
           service_charge_pct?: number
           tax_pct?: number
+          tax_rate_beverage?: number
+          tax_rate_extra?: number
+          tax_rate_food?: number
+          tax_rate_rental?: number
           updated_at?: string
         }
         Relationships: [
@@ -539,40 +584,49 @@ export type Database = {
         Row: {
           active: boolean
           base_rental_fee: number
+          basis: string | null
           capacity: number
           company_id: string
           created_at: string
           description: string | null
           id: string
+          long_description: string | null
           min_rental_fee: number
           name: string
           photo_url: string | null
+          tax_rate_pct: number | null
           updated_at: string
         }
         Insert: {
           active?: boolean
           base_rental_fee?: number
+          basis?: string | null
           capacity?: number
           company_id: string
           created_at?: string
           description?: string | null
           id?: string
+          long_description?: string | null
           min_rental_fee?: number
           name: string
           photo_url?: string | null
+          tax_rate_pct?: number | null
           updated_at?: string
         }
         Update: {
           active?: boolean
           base_rental_fee?: number
+          basis?: string | null
           capacity?: number
           company_id?: string
           created_at?: string
           description?: string | null
           id?: string
+          long_description?: string | null
           min_rental_fee?: number
           name?: string
           photo_url?: string | null
+          tax_rate_pct?: number | null
           updated_at?: string
         }
         Relationships: [

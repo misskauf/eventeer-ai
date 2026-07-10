@@ -21,8 +21,9 @@ import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals.$id'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
 import { Route as AuthenticatedCatalogRulesRouteImport } from './routes/_authenticated/catalog.rules'
-import { Route as AuthenticatedCatalogPackagesRouteImport } from './routes/_authenticated/catalog.packages'
+import { Route as AuthenticatedCatalogFoodRouteImport } from './routes/_authenticated/catalog.food'
 import { Route as AuthenticatedCatalogExtrasRouteImport } from './routes/_authenticated/catalog.extras'
+import { Route as AuthenticatedCatalogBeveragesRouteImport } from './routes/_authenticated/catalog.beverages'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -85,16 +86,22 @@ const AuthenticatedCatalogRulesRoute =
     path: '/rules',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
-const AuthenticatedCatalogPackagesRoute =
-  AuthenticatedCatalogPackagesRouteImport.update({
-    id: '/packages',
-    path: '/packages',
+const AuthenticatedCatalogFoodRoute =
+  AuthenticatedCatalogFoodRouteImport.update({
+    id: '/food',
+    path: '/food',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
 const AuthenticatedCatalogExtrasRoute =
   AuthenticatedCatalogExtrasRouteImport.update({
     id: '/extras',
     path: '/extras',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
+const AuthenticatedCatalogBeveragesRoute =
+  AuthenticatedCatalogBeveragesRouteImport.update({
+    id: '/beverages',
+    path: '/beverages',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
 
@@ -107,8 +114,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
-  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
+  '/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -122,8 +130,9 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
-  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
+  '/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -139,8 +148,9 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/_authenticated/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
   '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
-  '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
+  '/_authenticated/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/_authenticated/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/_authenticated/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -156,8 +166,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/d/$token'
     | '/p/$token'
+    | '/catalog/beverages'
     | '/catalog/extras'
-    | '/catalog/packages'
+    | '/catalog/food'
     | '/catalog/rules'
     | '/catalog/spaces'
     | '/deals/$id'
@@ -171,8 +182,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/d/$token'
     | '/p/$token'
+    | '/catalog/beverages'
     | '/catalog/extras'
-    | '/catalog/packages'
+    | '/catalog/food'
     | '/catalog/rules'
     | '/catalog/spaces'
     | '/deals/$id'
@@ -187,8 +199,9 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/d/$token'
     | '/p/$token'
+    | '/_authenticated/catalog/beverages'
     | '/_authenticated/catalog/extras'
-    | '/_authenticated/catalog/packages'
+    | '/_authenticated/catalog/food'
     | '/_authenticated/catalog/rules'
     | '/_authenticated/catalog/spaces'
     | '/_authenticated/deals/$id'
@@ -289,11 +302,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogRulesRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
-    '/_authenticated/catalog/packages': {
-      id: '/_authenticated/catalog/packages'
-      path: '/packages'
-      fullPath: '/catalog/packages'
-      preLoaderRoute: typeof AuthenticatedCatalogPackagesRouteImport
+    '/_authenticated/catalog/food': {
+      id: '/_authenticated/catalog/food'
+      path: '/food'
+      fullPath: '/catalog/food'
+      preLoaderRoute: typeof AuthenticatedCatalogFoodRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
     '/_authenticated/catalog/extras': {
@@ -303,19 +316,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogExtrasRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
+    '/_authenticated/catalog/beverages': {
+      id: '/_authenticated/catalog/beverages'
+      path: '/beverages'
+      fullPath: '/catalog/beverages'
+      preLoaderRoute: typeof AuthenticatedCatalogBeveragesRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
   }
 }
 
 interface AuthenticatedCatalogRouteChildren {
+  AuthenticatedCatalogBeveragesRoute: typeof AuthenticatedCatalogBeveragesRoute
   AuthenticatedCatalogExtrasRoute: typeof AuthenticatedCatalogExtrasRoute
-  AuthenticatedCatalogPackagesRoute: typeof AuthenticatedCatalogPackagesRoute
+  AuthenticatedCatalogFoodRoute: typeof AuthenticatedCatalogFoodRoute
   AuthenticatedCatalogRulesRoute: typeof AuthenticatedCatalogRulesRoute
   AuthenticatedCatalogSpacesRoute: typeof AuthenticatedCatalogSpacesRoute
 }
 
 const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
+  AuthenticatedCatalogBeveragesRoute: AuthenticatedCatalogBeveragesRoute,
   AuthenticatedCatalogExtrasRoute: AuthenticatedCatalogExtrasRoute,
-  AuthenticatedCatalogPackagesRoute: AuthenticatedCatalogPackagesRoute,
+  AuthenticatedCatalogFoodRoute: AuthenticatedCatalogFoodRoute,
   AuthenticatedCatalogRulesRoute: AuthenticatedCatalogRulesRoute,
   AuthenticatedCatalogSpacesRoute: AuthenticatedCatalogSpacesRoute,
 }
