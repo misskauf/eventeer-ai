@@ -153,6 +153,8 @@ function DealDetail() {
       package_ids: selectedPackages,
       extra_ids: selectedExtras,
       package_guests: packageGuests,
+      package_hours: packageHours,
+
       season_id: seasonId,
       discount,
       min_revenue_required: minRevenue,
