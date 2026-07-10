@@ -261,12 +261,38 @@ function DealDetail() {
       package_guests: packageGuests,
       package_hours: packageHours,
       season_id: seasonId,
-      discount,
+      discount: effectiveDiscount,
       min_revenue_required: minRevenue,
+      service_charge_pct_override: servicePct,
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
     };
+  }
+
+  function suggestIntroText() {
+    if (!deal) return;
+    const lines: string[] = [];
+    const who = deal.client_name || "there";
+    const occasion = deal.event_type ? deal.event_type.toLowerCase() : "event";
+    const date = deal.event_date ? formatEventDate(deal.event_date) : "your chosen date";
+    lines.push(`Hi ${who},`);
+    lines.push("");
+    lines.push(`Thank you for considering us for your ${occasion} on **${date}**. Here is a tailored proposal for ${deal.guest_count} guests.`);
+    lines.push("");
+    const spaceNames = availableSpaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => s.name);
+    if (spaceNames.length) lines.push(`**Venue:** ${spaceNames.join(", ")}.`);
+    const foodNames = foodPackages.filter((p) => selectedPackages.includes(p.id)).map((p) => p.name);
+    if (foodNames.length) lines.push(`**Food:** ${foodNames.join(", ")}.`);
+    const bevNames = beveragePackages.filter((p) => selectedPackages.includes(p.id)).map((p) => p.name);
+    if (bevNames.length) lines.push(`**Beverage:** ${bevNames.join(", ")}.`);
+    const extraNames = extras.filter((e) => selectedExtras.includes(e.id)).map((e) => e.name);
+    if (extraNames.length) lines.push(`**Extras:** ${extraNames.join(", ")}.`);
+    if (altGroups.length) lines.push(`We've included a few **choices** below so you can shape the experience yourself.`);
+    lines.push("");
+    lines.push("Let me know what you think, or reply directly with any tweaks.");
+    setIntroMarkdown(lines.join("\n"));
+    toast.success("Suggested text inserted");
   }
 
   async function saveProposal(send: boolean): Promise<{ id: string; version: number } | null> {
