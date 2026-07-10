@@ -465,8 +465,8 @@ function RulesSection({ companyId }: { companyId: string | null }) {
                     <div className="font-medium">{r.notes ?? "Rule"}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatRuleDays(r.days_of_week)} ·{" "}
-                      {formatMonths(r.months)} · min $
-                      {Number(r.min_revenue).toLocaleString()} ({r.basis})
+                      {formatMonths(r.months)} · min{" "}
+                      {money(Number(r.min_revenue), currency)} ({r.basis})
                     </div>
                   </div>
                   <div className="flex gap-1">
