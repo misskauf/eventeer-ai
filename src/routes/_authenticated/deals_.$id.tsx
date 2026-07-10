@@ -541,9 +541,12 @@ function DealDetail() {
                 <Label>Cover title</Label>
                 <Input
                   value={coverTitle}
-                  onChange={(e) => setCoverTitle(e.target.value)}
+                  onChange={(e) => { setCoverTitle(e.target.value); setCoverTouched(true); }}
                   placeholder="e.g. Your winter wedding at Villa Rosa"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Auto-generated from event type + date. Edit to override.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Intro message (Markdown supported)</Label>
