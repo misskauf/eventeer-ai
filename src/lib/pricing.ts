@@ -134,7 +134,7 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
         defaults,
         cat,
         `${p.name}`,
-        `${guests} guests × ${money(p.price_per_person)} · ${standardHours}h included`,
+        `${guests} guests × ${money(p.price_per_person, cur)} · ${standardHours}h included`,
       ),
     );
     const overageRate = Number(p.overage_price_per_person_per_hour ?? 0);
