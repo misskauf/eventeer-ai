@@ -251,8 +251,9 @@ function DealDetail() {
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
+      currency,
     };
-  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct]);
+  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct, currency]);
 
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;

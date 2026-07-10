@@ -51,6 +51,7 @@ export type Offer = {
   season_multiplier?: number;
   min_revenue_required?: number;
   discount?: number;
+  currency?: string;
 };
 
 
@@ -112,6 +113,7 @@ function lineFor(
 export function computeTotals(offer: Offer, selection: Selection): Totals {
   const mult = offer.season_multiplier ?? 1;
   const defaults = offer.category_defaults ?? null;
+  const cur = offer.currency ?? "USD";
   const lines: LineItem[] = [];
 
   for (const s of offer.spaces.filter((x) => selection.space_ids.includes(x.id))) {
@@ -132,7 +134,7 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
         defaults,
         cat,
         `${p.name}`,
-        `${guests} guests × ${money(p.price_per_person)} · ${standardHours}h included`,
+        `${guests} guests × ${money(p.price_per_person, cur)} · ${standardHours}h included`,
       ),
     );
     const overageRate = Number(p.overage_price_per_person_per_hour ?? 0);
@@ -146,7 +148,7 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
           defaults,
           cat,
           `${p.name} — overtime`,
-          `${extraHours}h × ${guests} guests × ${money(overageRate)}`,
+          `${extraHours}h × ${guests} guests × ${money(overageRate, cur)}`,
         ),
       );
     }
@@ -158,11 +160,11 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
     let qty = "";
     if (e.pricing_type === "per_person") {
       amount = e.price * selection.guest_count;
-      qty = `${selection.guest_count} × ${money(e.price)}`;
+      qty = `${selection.guest_count} × ${money(e.price, cur)}`;
     } else if (e.pricing_type === "per_hour") {
       const h = e.hours ?? 1;
       amount = e.price * h;
-      qty = `${h}h × ${money(e.price)}`;
+      qty = `${h}h × ${money(e.price, cur)}`;
     } else {
       amount = e.price;
       qty = "flat";
