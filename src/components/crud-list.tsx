@@ -141,12 +141,18 @@ export function CrudList<T extends { id: string }>({
                         suggestions={f.suggestions ?? []}
                         defaultValue={Array.isArray(cur) ? cur : []}
                       />
+                    ) : f.type === "weekdays" ? (
+                      <WeekdaysInput
+                        name={f.name}
+                        defaultValue={Array.isArray(cur) ? cur : []}
+                      />
                     ) : (
                       <Input
                         id={f.name}
                         name={f.name}
-                        type={f.type ?? "text"}
+                        type={f.type === "url" ? "url" : (f.type ?? "text")}
                         step={f.step}
+                        placeholder={f.placeholder}
                         defaultValue={cur ?? ""}
                       />
                     )}
