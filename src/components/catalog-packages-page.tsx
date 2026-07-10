@@ -30,8 +30,9 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-md border bg-muted/30 px-4 py-2 text-sm">
         <div>
-          Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b>
+          Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b> · Standard <b>{defHours}h</b>
         </div>
+
         <div className="flex items-center gap-2">
           <label className="text-muted-foreground">Preview guests</label>
           <input
