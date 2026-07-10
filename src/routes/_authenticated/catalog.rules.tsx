@@ -207,6 +207,7 @@ function SeasonForm({
     initial ? String(initial.multiplier) : "1",
   );
   const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
+  const [basis, setBasis] = useState<Basis>(initial?.basis ?? "gross");
 
   function toggleDay(i: number) {
     setDays((prev) =>
@@ -227,6 +228,7 @@ function SeasonForm({
       end_date,
       multiplier: Number(multiplier),
       days_of_week: days,
+      basis,
     };
     const res = initial
       ? await supabase.from("pricing_seasons").update(payload).eq("id", initial.id)
