@@ -21,7 +21,6 @@ import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals.$id'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
 import { Route as AuthenticatedCatalogRulesRouteImport } from './routes/_authenticated/catalog.rules'
-import { Route as AuthenticatedCatalogPackagesRouteImport } from './routes/_authenticated/catalog.packages'
 import { Route as AuthenticatedCatalogExtrasRouteImport } from './routes/_authenticated/catalog.extras'
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -85,12 +84,6 @@ const AuthenticatedCatalogRulesRoute =
     path: '/rules',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
-const AuthenticatedCatalogPackagesRoute =
-  AuthenticatedCatalogPackagesRouteImport.update({
-    id: '/packages',
-    path: '/packages',
-    getParentRoute: () => AuthenticatedCatalogRoute,
-  } as any)
 const AuthenticatedCatalogExtrasRoute =
   AuthenticatedCatalogExtrasRouteImport.update({
     id: '/extras',
@@ -108,7 +101,6 @@ export interface FileRoutesByFullPath {
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
-  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -123,7 +115,6 @@ export interface FileRoutesByTo {
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
-  '/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -140,7 +131,6 @@ export interface FileRoutesById {
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
-  '/_authenticated/catalog/packages': typeof AuthenticatedCatalogPackagesRoute
   '/_authenticated/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/_authenticated/deals/$id': typeof AuthenticatedDealsIdRoute
@@ -157,7 +147,6 @@ export interface FileRouteTypes {
     | '/d/$token'
     | '/p/$token'
     | '/catalog/extras'
-    | '/catalog/packages'
     | '/catalog/rules'
     | '/catalog/spaces'
     | '/deals/$id'
@@ -172,7 +161,6 @@ export interface FileRouteTypes {
     | '/d/$token'
     | '/p/$token'
     | '/catalog/extras'
-    | '/catalog/packages'
     | '/catalog/rules'
     | '/catalog/spaces'
     | '/deals/$id'
@@ -188,7 +176,6 @@ export interface FileRouteTypes {
     | '/d/$token'
     | '/p/$token'
     | '/_authenticated/catalog/extras'
-    | '/_authenticated/catalog/packages'
     | '/_authenticated/catalog/rules'
     | '/_authenticated/catalog/spaces'
     | '/_authenticated/deals/$id'
@@ -289,13 +276,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogRulesRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
-    '/_authenticated/catalog/packages': {
-      id: '/_authenticated/catalog/packages'
-      path: '/packages'
-      fullPath: '/catalog/packages'
-      preLoaderRoute: typeof AuthenticatedCatalogPackagesRouteImport
-      parentRoute: typeof AuthenticatedCatalogRoute
-    }
     '/_authenticated/catalog/extras': {
       id: '/_authenticated/catalog/extras'
       path: '/extras'
@@ -308,14 +288,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedCatalogRouteChildren {
   AuthenticatedCatalogExtrasRoute: typeof AuthenticatedCatalogExtrasRoute
-  AuthenticatedCatalogPackagesRoute: typeof AuthenticatedCatalogPackagesRoute
   AuthenticatedCatalogRulesRoute: typeof AuthenticatedCatalogRulesRoute
   AuthenticatedCatalogSpacesRoute: typeof AuthenticatedCatalogSpacesRoute
 }
 
 const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
   AuthenticatedCatalogExtrasRoute: AuthenticatedCatalogExtrasRoute,
-  AuthenticatedCatalogPackagesRoute: AuthenticatedCatalogPackagesRoute,
   AuthenticatedCatalogRulesRoute: AuthenticatedCatalogRulesRoute,
   AuthenticatedCatalogSpacesRoute: AuthenticatedCatalogSpacesRoute,
 }

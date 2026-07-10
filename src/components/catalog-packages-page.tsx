@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
@@ -8,11 +7,7 @@ import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_authenticated/catalog/extras")({
-  component: ExtrasPage,
-});
-
-function ExtrasPage() {
+export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
   const { companyId } = useCurrentCompany();
   const currency = useCompanyCurrency();
   const [defaults, setDefaults] = useState<CategoryDefaults | null>(null);
@@ -24,12 +19,16 @@ function ExtrasPage() {
       .then(({ data }) => setDefaults(data as any));
   }, [companyId]);
 
-  const def = categoryDefault(defaults, "extra");
+  const cat = kind;
+  const def = categoryDefault(defaults, cat);
+  const label = kind === "food" ? "food package" : "beverage package";
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-md border bg-muted/30 px-4 py-2 text-sm">
-        <div>Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b></div>
+        <div>
+          Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b>
+        </div>
         <div className="flex items-center gap-2">
           <label className="text-muted-foreground">Preview guests</label>
           <input
@@ -42,23 +41,16 @@ function ExtrasPage() {
         </div>
       </div>
       <CrudList
-        title="extra"
-        table="extras"
+        title={label}
+        table="fb_packages"
         companyId={companyId}
+        filter={{ kind }}
+        staticValues={{ kind }}
         fields={[
           { name: "name", label: "Name" },
           { name: "description", label: "Short description", type: "textarea", rows: 2 },
-          {
-            name: "pricing_type",
-            label: "Pricing type",
-            type: "select",
-            options: [
-              { value: "flat", label: "Flat" },
-              { value: "per_person", label: "Per person" },
-              { value: "per_hour", label: "Per hour" },
-            ],
-          },
-          { name: "price", label: "Price", type: "number", step: "0.01" },
+          { name: "price_per_person", label: "Price per person", type: "number", step: "0.01" },
+          { name: "min_guests", label: "Minimum guests", type: "number", nullable: true },
           {
             name: "basis",
             label: "Price basis",
@@ -69,6 +61,7 @@ function ExtrasPage() {
               { value: "net", label: "Net (tax added on top)" },
               { value: "gross", label: "Gross (tax included)" },
             ],
+            hint: "Choose whether the price above is entered net or gross.",
           },
           {
             name: "tax_rate_pct",
@@ -76,7 +69,7 @@ function ExtrasPage() {
             type: "number",
             step: "0.01",
             nullable: true,
-            hint: `Leave blank to use the extras default (${def.rate}%).`,
+            hint: `Leave blank to use the ${cat} default (${def.rate}%).`,
           },
           {
             name: "long_description",
@@ -87,23 +80,20 @@ function ExtrasPage() {
           },
         ]}
         render={(r: any) => {
-          const amount =
-            r.pricing_type === "per_person" ? Number(r.price) * sampleGuests : Number(r.price);
-          const basis = resolveBasis(r, defaults, "extra");
-          const rate = resolveTaxRate(r, defaults, "extra");
+          const amount = Number(r.price_per_person) * sampleGuests;
+          const basis = resolveBasis(r, defaults, cat);
+          const rate = resolveTaxRate(r, defaults, cat);
           return (
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-3">
                 <div>
                   <div className="font-medium">{r.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {money(Number(r.price), currency)} · {r.pricing_type?.replace("_", " ")} ·{" "}
+                    {money(Number(r.price_per_person), currency)} / guest · min {r.min_guests ?? 0} ·{" "}
                     {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {r.pricing_type === "per_person" ? `for ${sampleGuests} guests` : ""}
-                </div>
+                <div className="text-xs text-muted-foreground">for {sampleGuests} guests</div>
               </div>
               <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
             </div>
