@@ -334,7 +334,7 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
         event_date: (fd.get("event_date") as string) || null,
         guest_count: Number(fd.get("guest_count") || 0),
         notes: (fd.get("notes") as string) || null,
-        stage: "new",
+        stage: "new" as any,
       })
       .select("id")
       .single();
