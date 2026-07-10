@@ -151,17 +151,31 @@ function ClientProposal() {
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
+    const fcAny = feesCfg as any;
+    const gMode = fcAny?.gratuity_mode ?? "slider";
+    const gFixed = Number(fcAny?.gratuity_fixed_pct ?? 0);
     const effectiveService =
-      servicePct != null ? servicePct : Number(feesCfg.service_charge_pct ?? 0);
+      gMode === "fixed"
+        ? gFixed
+        : servicePct != null
+        ? servicePct
+        : Number(fcAny?.gratuity_default_pct ?? feesCfg.service_charge_pct ?? 0);
     return {
       spaces, packages, extras,
-      fees: { ...feesCfg, service_charge_pct: effectiveService, overtime_hours: 0 },
+      fees: {
+        ...feesCfg,
+        service_charge_pct: effectiveService,
+        overtime_hours: 0,
+        gratuity_type: fcAny?.gratuity_type ?? "service_charge",
+        gratuity_tax_rate_pct: Number(fcAny?.gratuity_tax_rate_pct ?? 0),
+      },
       category_defaults: feesCfg,
       season_multiplier: seasonMult,
       min_revenue_required: minRev,
       discount,
     };
   }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev, servicePct]);
+
 
   const totals = useMemo(() => {
     if (!offer || !resolvedSelection) return null;
