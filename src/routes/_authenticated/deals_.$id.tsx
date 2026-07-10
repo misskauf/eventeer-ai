@@ -781,36 +781,89 @@ function DealDetail() {
         <div className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Pricing rules</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label>Season</Label>
-                <Select value={seasonId} onValueChange={setSeasonId}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No season adjustment</SelectItem>
-                    {seasons.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} (×{s.multiplier})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <CardContent className="space-y-4">
+              <div className="rounded-md border bg-muted/30 p-3 text-xs">
+                <div className="font-medium text-foreground">
+                  Minimum revenue {matchedRule ? "(auto-matched)" : "(no rule matched)"}
+                </div>
+                {matchedRule ? (
+                  <div className="mt-1 space-y-1 text-muted-foreground">
+                    <div>
+                      {matchedRule.notes || "Rule"} · {money(Number(matchedRule.min_revenue), currency)} {matchedRule.basis}
+                    </div>
+                    {deal.event_date && (
+                      <div>Applied for {formatEventDate(deal.event_date)}.</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-muted-foreground">
+                    No minimum revenue rule matches this weekday/month. Set one in Catalog → Rules.
+                  </div>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <Label className="text-[11px] text-muted-foreground">Override</Label>
+                  <Input
+                    type="number"
+                    className="h-7 w-32"
+                    value={minRevenue}
+                    onChange={(e) => setMinRevenue(Number(e.target.value))}
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Minimum revenue required (net)</Label>
-                <Input
-                  type="number"
-                  value={minRevenue}
-                  onChange={(e) => setMinRevenue(Number(e.target.value))}
+
+              {seasons.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>Season multiplier</Label>
+                  <Select value={seasonId} onValueChange={setSeasonId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No season adjustment</SelectItem>
+                      {seasons.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} (×{s.multiplier})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Service charge</Label>
+                  <span className="text-sm font-medium tabular-nums">{servicePct.toFixed(1)}%</span>
+                </div>
+                <Slider
+                  value={[servicePct]}
+                  min={0}
+                  max={20}
+                  step={0.5}
+                  onValueChange={(v) => setServicePct(v[0] ?? 0)}
                 />
+                <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
+                  Calculated service: <span className="tabular-nums font-medium text-foreground">{money(totals.service_charge, currency)}</span>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Discount (gross)</Label>
-                <Input
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                />
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showDiscount}
+                    onChange={(e) => setShowDiscount(e.target.checked)}
+                  />
+                  Apply a discount (optional)
+                </label>
+                {showDiscount && (
+                  <div className="space-y-1.5">
+                    <Label>Discount (gross)</Label>
+                    <Input
+                      type="number"
+                      value={discount}
+                      onChange={(e) => setDiscount(Number(e.target.value))}
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
