@@ -889,7 +889,7 @@ function DealDetail() {
               <Row label="Net subtotal" value={money(totals.net_subtotal, currency)} />
               <Row label="Total tax" value={money(totals.tax_subtotal, currency)} />
               <Row label="Gross subtotal" value={money(totals.gross_subtotal, currency)} />
-              {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
+              {effectiveDiscount > 0 && <Row label="Discount" value={"-" + money(effectiveDiscount, currency)} />}
               <Row label="Service" value={money(totals.service_charge, currency)} />
               <Separator className="my-2" />
               <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
