@@ -57,7 +57,9 @@ export type Selection = {
   package_ids: string[];
   extra_ids: string[];
   package_guests?: Record<string, number>; // override per package
+  package_hours?: Record<string, number>; // override event hours per package
 };
+
 
 export type LineItem = {
   label: string;
