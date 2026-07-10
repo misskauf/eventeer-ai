@@ -91,8 +91,13 @@ function ClientProposal() {
       setExtras((ex.data as ExtraSel[]) ?? []);
       setFeesCfg(fc.data);
       setSeasonMult((ss as any).data?.multiplier ?? 1);
-      setDiscount(offerCfg.discount ?? 0);
-      setMinRev(offerCfg.min_revenue_required ?? 0);
+      setDiscount(Number(offerCfg.discount ?? 0));
+      setMinRev(Number(offerCfg.min_revenue_required ?? 0));
+      setServicePct(
+        typeof offerCfg.service_charge_pct_override === "number"
+          ? offerCfg.service_charge_pct_override
+          : null,
+      );
       setCoverTitle(offerCfg.cover_title ?? "");
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
