@@ -160,11 +160,11 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
     let qty = "";
     if (e.pricing_type === "per_person") {
       amount = e.price * selection.guest_count;
-      qty = `${selection.guest_count} × ${money(e.price)}`;
+      qty = `${selection.guest_count} × ${money(e.price, cur)}`;
     } else if (e.pricing_type === "per_hour") {
       const h = e.hours ?? 1;
       amount = e.price * h;
-      qty = `${h}h × ${money(e.price)}`;
+      qty = `${h}h × ${money(e.price, cur)}`;
     } else {
       amount = e.price;
       qty = "flat";
