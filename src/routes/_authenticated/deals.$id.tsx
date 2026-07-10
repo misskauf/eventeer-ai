@@ -277,6 +277,9 @@ function DealDetail() {
             dealGuests={deal.guest_count}
             packageGuests={packageGuests}
             onGuestChange={setGuestOverride}
+            packageHours={packageHours}
+            onHoursChange={setHoursOverride}
+            defaultHours={categoryDefaultHours(fees as CategoryDefaults, "food")}
           />
           <PackageCard
             title="Beverage packages"
@@ -288,7 +291,11 @@ function DealDetail() {
             dealGuests={deal.guest_count}
             packageGuests={packageGuests}
             onGuestChange={setGuestOverride}
+            packageHours={packageHours}
+            onHoursChange={setHoursOverride}
+            defaultHours={categoryDefaultHours(fees as CategoryDefaults, "beverage")}
           />
+
 
           <Card>
             <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
