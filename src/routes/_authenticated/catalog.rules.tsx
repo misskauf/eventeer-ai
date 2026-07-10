@@ -157,7 +157,8 @@ function SeasonsSection({ companyId }: { companyId: string | null }) {
                       <div className="text-xs text-muted-foreground">
                         {sm !== null ? MONTHS[sm] : r.start_date} →{" "}
                         {em !== null ? MONTHS[em] : r.end_date} ·{" "}
-                        {formatDays(r.days_of_week)} · ×{r.multiplier}
+                        {formatDays(r.days_of_week)} · ×{r.multiplier} ·{" "}
+                        {r.basis === "net" ? "Net" : "Gross"}
                       </div>
                     </div>
                     <div className="flex gap-1">
