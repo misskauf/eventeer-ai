@@ -288,6 +288,13 @@ export type Database = {
           default_basis_rental: string
           default_hours_beverage: number
           default_hours_food: number
+          gratuity_default_pct: number
+          gratuity_fixed_pct: number
+          gratuity_max_pct: number
+          gratuity_min_pct: number
+          gratuity_mode: string
+          gratuity_tax_rate_pct: number
+          gratuity_type: string
           overtime_fee_per_hour: number
           service_charge_pct: number
           tax_pct: number
@@ -306,6 +313,13 @@ export type Database = {
           default_basis_rental?: string
           default_hours_beverage?: number
           default_hours_food?: number
+          gratuity_default_pct?: number
+          gratuity_fixed_pct?: number
+          gratuity_max_pct?: number
+          gratuity_min_pct?: number
+          gratuity_mode?: string
+          gratuity_tax_rate_pct?: number
+          gratuity_type?: string
           overtime_fee_per_hour?: number
           service_charge_pct?: number
           tax_pct?: number
@@ -324,6 +338,13 @@ export type Database = {
           default_basis_rental?: string
           default_hours_beverage?: number
           default_hours_food?: number
+          gratuity_default_pct?: number
+          gratuity_fixed_pct?: number
+          gratuity_max_pct?: number
+          gratuity_min_pct?: number
+          gratuity_mode?: string
+          gratuity_tax_rate_pct?: number
+          gratuity_type?: string
           overtime_fee_per_hour?: number
           service_charge_pct?: number
           tax_pct?: number
