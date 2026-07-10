@@ -144,15 +144,17 @@ function ClientProposal() {
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
+    const effectiveService =
+      servicePct != null ? servicePct : Number(feesCfg.service_charge_pct ?? 0);
     return {
       spaces, packages, extras,
-      fees: { ...feesCfg, overtime_hours: 0 },
+      fees: { ...feesCfg, service_charge_pct: effectiveService, overtime_hours: 0 },
       category_defaults: feesCfg,
       season_multiplier: seasonMult,
       min_revenue_required: minRev,
       discount,
     };
-  }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev]);
+  }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev, servicePct]);
 
   const totals = useMemo(() => {
     if (!offer || !resolvedSelection) return null;
