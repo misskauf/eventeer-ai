@@ -7,6 +7,7 @@ import { money } from "@/lib/pricing";
 import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
+import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
   component: SpacesPage,
@@ -27,9 +28,8 @@ function SpacesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border bg-muted/30 px-4 py-2 text-sm">
-        Rental default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b>
-      </div>
+      <CategoryDefaultsBar companyId={companyId} category="rental" defaults={defaults} onSaved={setDefaults} />
+
       <CrudList
         title="space"
         table="spaces"
