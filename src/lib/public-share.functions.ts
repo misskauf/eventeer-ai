@@ -45,6 +45,13 @@ export const submitClientSelection = createServerFn({ method: "POST" })
         token: z.string().min(8),
         selection: z.record(z.string(), z.any()),
         computed_total: z.number().min(0),
+        client_response: z
+          .object({
+            overall_message: z.string().optional(),
+            item_notes: z.record(z.string(), z.string()).optional(),
+            selected_alternatives: z.record(z.string(), z.string()).optional(),
+          })
+          .optional(),
       })
       .parse(data),
   )
@@ -54,10 +61,15 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       .from("share_tokens")
       .select("token, kind, deal_id, proposal_id, company_id, expires_at")
       .eq("token", data.token)
-      .eq("kind", "client_proposal")
+      .in("kind", ["client_proposal", "preview"] as any)
       .maybeSingle();
     if (!tok || !tok.proposal_id || !tok.deal_id) throw new Error("Invalid link");
     if (tok.expires_at && new Date(tok.expires_at) < new Date()) throw new Error("Link expired");
+
+    // Preview tokens: no-op, do not touch deal state or record a selection.
+    if ((tok.kind as string) === "preview") {
+      return { ok: true as const, preview: true };
+    }
 
     await supabaseAdmin.from("proposal_selections").insert({
       proposal_id: tok.proposal_id,
@@ -65,6 +77,30 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       selection: data.selection,
       computed_total: data.computed_total,
     });
+
+    // Merge client_response into proposal.constraints so the manager sees it.
+    if (data.client_response) {
+      const { data: prop } = await supabaseAdmin
+        .from("proposals")
+        .select("constraints")
+        .eq("id", tok.proposal_id)
+        .maybeSingle();
+      const currentConstraints = (prop?.constraints as Record<string, any> | null) ?? {};
+      await supabaseAdmin
+        .from("proposals")
+        .update({
+          constraints: {
+            ...currentConstraints,
+            client_response: {
+              ...data.client_response,
+              submitted_at: new Date().toISOString(),
+              computed_total: data.computed_total,
+            },
+          },
+        })
+        .eq("id", tok.proposal_id);
+    }
+
     await supabaseAdmin
       .from("deals")
       .update({ stage: "client_selected", estimated_value: data.computed_total })
@@ -73,7 +109,10 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       deal_id: tok.deal_id,
       company_id: tok.company_id,
       kind: "client_submitted_selection",
-      meta: { computed_total: data.computed_total },
+      meta: {
+        computed_total: data.computed_total,
+        has_message: !!data.client_response?.overall_message,
+      },
     });
 
     return { ok: true as const };
