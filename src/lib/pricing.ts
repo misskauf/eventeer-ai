@@ -113,6 +113,7 @@ function lineFor(
 export function computeTotals(offer: Offer, selection: Selection): Totals {
   const mult = offer.season_multiplier ?? 1;
   const defaults = offer.category_defaults ?? null;
+  const cur = offer.currency ?? "USD";
   const lines: LineItem[] = [];
 
   for (const s of offer.spaces.filter((x) => selection.space_ids.includes(x.id))) {
