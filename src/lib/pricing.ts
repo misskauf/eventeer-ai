@@ -194,8 +194,18 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
 
   const discount = offer.discount ?? 0;
   const afterDiscount = Math.max(0, gross_subtotal - discount);
-  const service_charge = (net_subtotal * offer.fees.service_charge_pct) / 100;
-  const grand_total = afterDiscount + service_charge;
+
+  const gratuity_type: "service_charge" | "tip" = offer.fees.gratuity_type ?? "service_charge";
+  const gratuity_pct = Number(offer.fees.service_charge_pct ?? 0);
+  const gratuity_tax_rate =
+    gratuity_type === "tip" ? 0 : Number(offer.fees.gratuity_tax_rate_pct ?? 0);
+  const gratuity_net = (net_subtotal * gratuity_pct) / 100;
+  const gratuity_tax = gratuity_net * (gratuity_tax_rate / 100);
+  const gratuity_gross = gratuity_net + gratuity_tax;
+  const gratuity_label = gratuity_type === "tip" ? "Tip" : "Service charge";
+
+  const grand_total = afterDiscount + gratuity_gross;
+  const combined_tax = tax_subtotal + gratuity_tax;
 
   const min_required = offer.min_revenue_required ?? 0;
   const min_shortfall = Math.max(0, min_required - net_subtotal);
@@ -203,16 +213,22 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
   return {
     lines,
     net_subtotal,
-    tax_subtotal,
+    tax_subtotal: combined_tax,
     gross_subtotal,
     subtotal: gross_subtotal,
-    service_charge,
-    tax: tax_subtotal,
+    service_charge: gratuity_gross,
+    gratuity_net,
+    gratuity_tax,
+    gratuity_gross,
+    gratuity_label,
+    gratuity_type,
+    tax: combined_tax,
     discount,
     grand_total,
     min_required,
     min_shortfall,
   };
+
 }
 
 export function money(n: number, currency = "USD") {
