@@ -338,6 +338,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          days_of_week: number[]
           end_date: string
           id: string
           multiplier: number
@@ -347,6 +348,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          days_of_week?: number[]
           end_date: string
           id?: string
           multiplier?: number
@@ -356,6 +358,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          days_of_week?: number[]
           end_date?: string
           id?: string
           multiplier?: number
