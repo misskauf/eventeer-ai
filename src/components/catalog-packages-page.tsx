@@ -110,8 +110,12 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
                   <div className="font-medium">{r.name}</div>
                   <div className="text-xs text-muted-foreground">
                     {money(Number(r.price_per_person), currency)} / guest · min {r.min_guests ?? 0} ·{" "}
-                    {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
+                    {basis === "gross" ? "Gross" : "Net"} · Tax {rate}% · {r.included_hours ?? defHours}h included
+                    {Number(r.overage_price_per_person_per_hour ?? 0) > 0 && (
+                      <> · +{money(Number(r.overage_price_per_person_per_hour), currency)}/guest/h overtime</>
+                    )}
                   </div>
+
                 </div>
                 <div className="text-xs text-muted-foreground">for {sampleGuests} guests</div>
               </div>
