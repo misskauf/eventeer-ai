@@ -4,8 +4,9 @@ import { useCurrentCompany } from "@/lib/auth-hooks";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { money } from "@/lib/pricing";
 import { PriceBreakdown } from "@/components/price-breakdown";
-import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
+import { categoryDefault, categoryDefaultHours, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
   const { companyId } = useCurrentCompany();
