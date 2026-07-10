@@ -12,8 +12,9 @@ import { toast } from "sonner";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea";
+  type?: "text" | "number" | "select" | "textarea" | "tags";
   options?: { value: string; label: string }[];
+  suggestions?: string[]; // for type "tags"
   step?: string;
   defaultValue?: string | number;
   nullable?: boolean; // empty string -> null (for optional numbers/selects)
