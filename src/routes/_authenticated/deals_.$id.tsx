@@ -185,15 +185,20 @@ function DealDetail() {
     if (window.location.hash === "#edit") setEditOpen(true);
   }, [id]);
 
-  // Auto cover title from event type + date, unless the manager typed something.
+  // Auto cover title "Your [event type] at [location] on [date]" unless the manager typed something.
   useEffect(() => {
     if (coverTouched) return;
     if (!deal) return;
-    const parts: string[] = [];
-    if (deal.event_type) parts.push(deal.event_type);
-    if (deal.event_date) parts.push(formatEventDate(deal.event_date));
-    if (parts.length) setCoverTitle(parts.join(" · "));
-  }, [deal?.event_type, deal?.event_date, coverTouched, deal]);
+    const eventType = deal.event_type?.trim();
+    const spaceNames = spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => s.name);
+    const dateStr = deal.event_date ? formatEventDate(deal.event_date) : "";
+    if (!eventType && !spaceNames.length && !dateStr) return;
+    let title = "Your";
+    if (eventType) title += ` ${eventType}`;
+    if (spaceNames.length) title += ` at ${spaceNames.join(" & ")}`;
+    if (dateStr) title += ` on ${dateStr}`;
+    setCoverTitle(title);
+  }, [deal?.event_type, deal?.event_date, coverTouched, deal, spaces, selectedSpaces]);
 
   const seasonMult = useMemo(
     () => seasons.find((s) => s.id === seasonId)?.multiplier ?? 1,
