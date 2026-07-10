@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/catalog/extras")({
   component: ExtrasPage,
@@ -8,6 +10,7 @@ export const Route = createFileRoute("/_authenticated/catalog/extras")({
 
 function ExtrasPage() {
   const { companyId } = useCurrentCompany();
+  const currency = useCompanyCurrency();
   return (
     <CrudList
       title="extra"
@@ -32,10 +35,11 @@ function ExtrasPage() {
         <div>
           <div className="font-medium">{r.name}</div>
           <div className="text-xs text-muted-foreground">
-            ${Number(r.price).toLocaleString()} · {r.pricing_type?.replace("_", " ")}
+            {money(Number(r.price), currency)} · {r.pricing_type?.replace("_", " ")}
           </div>
         </div>
       )}
     />
   );
 }
+
