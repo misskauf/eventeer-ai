@@ -921,7 +921,7 @@ function DealDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Totals (using group defaults)</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Event quote</CardTitle></CardHeader>
             <CardContent className="space-y-1 text-sm">
               {totals.lines.map((l, i) => (
                 <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
