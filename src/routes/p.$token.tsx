@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel } from "@/lib/pricing";
+import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare } from "lucide-react";
