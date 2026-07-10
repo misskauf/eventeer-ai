@@ -76,6 +76,21 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             hint: `Leave blank to use the ${cat} default (${def.rate}%).`,
           },
           {
+            name: "included_hours",
+            label: "Standard hours included",
+            type: "number",
+            step: "0.5",
+            nullable: true,
+            hint: `Leave blank to use the ${cat} default (${defHours}h).`,
+          },
+          {
+            name: "overage_price_per_person_per_hour",
+            label: "Overtime price per guest / hour",
+            type: "number",
+            step: "0.01",
+            hint: "Charged per guest for each hour beyond the standard duration. Set 0 to disable.",
+          },
+          {
             name: "long_description",
             label: "Full details",
             type: "textarea",
@@ -83,6 +98,7 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
         ]}
+
         render={(r: any) => {
           const amount = Number(r.price_per_person) * sampleGuests;
           const basis = resolveBasis(r, defaults, cat);
