@@ -283,6 +283,31 @@ function SeasonForm({
         </div>
       </div>
       <div className="space-y-1.5">
+        <Label>Days of week</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {DAYS.map((d, i) => {
+            const on = days.includes(i);
+            return (
+              <button
+                type="button"
+                key={d}
+                onClick={() => toggleDay(i)}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-background hover:bg-accent"
+                }`}
+              >
+                {d.slice(0, 3)}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Leave empty to apply to all days.
+        </p>
+      </div>
+      <div className="space-y-1.5">
         <Label htmlFor="mult">Multiplier (e.g. 1.25)</Label>
         <Input
           id="mult"
