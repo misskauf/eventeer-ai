@@ -1185,12 +1185,13 @@ function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: stri
 }
 
 function PickRow({
-  checked, onChange, title, subtitle,
+  checked, onChange, title, subtitle, link,
 }: {
   checked: boolean;
   onChange: (v: boolean | "indeterminate") => void;
   title: string;
   subtitle: string;
+  link?: { href: string; label?: string } | null;
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3 hover:bg-muted/40">
@@ -1198,6 +1199,17 @@ function PickRow({
       <div className="min-w-0 flex-1">
         <div className="font-medium">{title}</div>
         <div className="text-xs text-muted-foreground">{subtitle}</div>
+        {link?.href && (
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
+          >
+            {link.label ?? "View space details"} ↗
+          </a>
+        )}
       </div>
     </label>
   );
