@@ -407,7 +407,7 @@ function DealDetail() {
       </div>
       <PageHeader
         title={deal.client_name}
-        description={`${deal.client_email}${deal.event_date ? " · " + new Date(deal.event_date).toLocaleDateString() : ""} · ${deal.guest_count} guests · ${deal.event_type ?? "Event"}`}
+        description={`${deal.client_email}${deal.event_date ? " · " + formatEventDate(deal.event_date) : ""} · ${deal.guest_count} guests · ${deal.event_type ?? "Event"}`}
         action={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setEditOpen(true)}>
