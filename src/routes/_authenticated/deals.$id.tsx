@@ -100,6 +100,8 @@ function DealDetail() {
       setSelectedPackages(cfg.package_ids ?? []);
       setSelectedExtras(cfg.extra_ids ?? []);
       setPackageGuests(cfg.package_guests ?? {});
+      setPackageHours(cfg.package_hours ?? {});
+
       setSeasonId(cfg.season_id ?? "none");
       setDiscount(cfg.discount ?? 0);
       setMinRevenue(cfg.min_revenue_required ?? 0);
