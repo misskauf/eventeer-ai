@@ -51,6 +51,7 @@ export type Offer = {
   season_multiplier?: number;
   min_revenue_required?: number;
   discount?: number;
+  currency?: string;
 };
 
 
