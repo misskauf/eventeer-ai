@@ -155,18 +155,25 @@ function DealDetail() {
       setAltGroups(cfg.alternative_groups ?? []);
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       const savedService = cfg.service_charge_pct_override;
-      setServicePct(
-        typeof savedService === "number" ? savedService : Number(feeRow?.service_charge_pct ?? 0),
-      );
+      const gratDefault =
+        feeRow?.gratuity_mode === "fixed"
+          ? Number(feeRow?.gratuity_fixed_pct ?? 0)
+          : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServicePct(typeof savedService === "number" ? savedService : gratDefault);
       // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
       const savedMin = Number(cfg.min_revenue_required ?? 0);
       const matched = pickMinRevRule(rules, d.event_date);
       setMinRevenue(savedMin || Number(matched?.min_revenue ?? 0));
     } else {
-      setServicePct(Number(feeRow?.service_charge_pct ?? 0));
+      const gratDefault =
+        feeRow?.gratuity_mode === "fixed"
+          ? Number(feeRow?.gratuity_fixed_pct ?? 0)
+          : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServicePct(gratDefault);
       const matched = pickMinRevRule(rules, d.event_date);
       setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
+
   }
 
   useEffect(() => {
