@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { createFileRoute as _ } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentCompany } from "@/lib/auth-hooks";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
