@@ -420,14 +420,9 @@ function RulesSection({ companyId }: { companyId: string | null }) {
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{r.notes ?? "Rule"}</div>
                     <div className="text-xs text-muted-foreground">
-                      {r.day_of_week === null || r.day_of_week === undefined
-                        ? "Any day"
-                        : DAYS[r.day_of_week]}{" "}
-                      ·{" "}
-                      {r.month === null || r.month === undefined
-                        ? "Any month"
-                        : MONTHS[r.month - 1]}{" "}
-                      · min ${Number(r.min_revenue).toLocaleString()}
+                      {formatRuleDays(r.days_of_week)} ·{" "}
+                      {formatMonths(r.months)} · min $
+                      {Number(r.min_revenue).toLocaleString()}
                     </div>
                   </div>
                   <div className="flex gap-1">
