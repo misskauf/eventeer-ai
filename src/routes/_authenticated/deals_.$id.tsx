@@ -62,6 +62,7 @@ type Deal = {
 };
 
 type Season = { id: string; name: string; multiplier: number };
+type SpaceRow = SpaceSel & { available_days?: number[] | null };
 
 type AlternativeGroup = {
   id: string;
