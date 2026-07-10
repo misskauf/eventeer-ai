@@ -223,6 +223,9 @@ function DealDetail() {
 
   const setGuestOverride = (pid: string, v: number) =>
     setPackageGuests((cur) => ({ ...cur, [pid]: v }));
+  const setHoursOverride = (pid: string, v: number) =>
+    setPackageHours((cur) => ({ ...cur, [pid]: v }));
+
 
   return (
     <AppShell>
