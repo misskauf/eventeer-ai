@@ -60,6 +60,7 @@ function RulesPage() {
 
 /* ---------------- Seasons ---------------- */
 
+type Basis = "net" | "gross";
 type Season = {
   id: string;
   name: string;
@@ -67,6 +68,7 @@ type Season = {
   end_date: string;
   multiplier: number;
   days_of_week: number[] | null;
+  basis: Basis;
 };
 
 function formatDays(days: number[] | null | undefined) {
