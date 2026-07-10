@@ -1,6 +1,6 @@
 // Pure pricing engine with per-item net/tax/gross accounting.
 
-import { resolveBasis, resolveTaxRate, splitNetTaxGross, type CategoryDefaults, type Category } from "./tax";
+import { categoryDefaultHours, resolveBasis, resolveTaxRate, splitNetTaxGross, type CategoryDefaults, type Category } from "./tax";
 
 export type SpaceSel = {
   id: string;
