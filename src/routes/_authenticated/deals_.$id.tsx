@@ -959,9 +959,9 @@ function DealDetail() {
                 <div className="flex justify-between"><span>{totals.gratuity_label}</span><span className="tabular-nums">{money(totals.gratuity_gross, currency)}</span></div>
               </div>
 
-              <div className="mt-3 rounded-lg bg-primary text-primary-foreground p-4 flex items-baseline justify-between shadow-md">
-                <span className="text-xs uppercase tracking-wider opacity-80">Grand total</span>
-                <span className="text-2xl font-bold tabular-nums tracking-tight">{money(totals.grand_total, currency)}</span>
+              <div className="mt-3 rounded-lg bg-primary/10 text-foreground border border-primary/20 p-3 flex items-baseline justify-between">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">Grand total</span>
+                <span className="text-lg font-semibold tabular-nums tracking-tight text-primary">{money(totals.grand_total, currency)}</span>
               </div>
 
               {totals.min_shortfall > 0 ? (
