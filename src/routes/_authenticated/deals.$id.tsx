@@ -428,6 +428,7 @@ function DealDetail() {
 
 function PackageCard({
   title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
+  packageHours, onHoursChange, defaultHours,
 }: {
   title: string;
   emptyTo: string;
@@ -438,6 +439,9 @@ function PackageCard({
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
+  packageHours: Record<string, number>;
+  onHoursChange: (id: string, v: number) => void;
+  defaultHours: number;
 }) {
   return (
     <Card>
@@ -447,34 +451,57 @@ function PackageCard({
         {items.map((p) => {
           const checked = selected.includes(p.id);
           const guests = packageGuests[p.id] ?? dealGuests;
+          const standardHours = p.included_hours != null ? Number(p.included_hours) : defaultHours;
+          const hours = packageHours[p.id] ?? standardHours;
+          const overRate = Number(p.overage_price_per_person_per_hour ?? 0);
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
                 <Checkbox checked={checked} onCheckedChange={(v) => onToggle(p.id, v)} className="mt-1" />
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{money(p.price_per_person, currency)} per guest</div>
+                  <div className="text-xs text-muted-foreground">
+                    {money(p.price_per_person, currency)} per guest · {standardHours}h included
+                    {overRate > 0 && <> · +{money(overRate, currency)}/guest/h overtime</>}
+                  </div>
                 </div>
               </label>
               {checked && (
-                <div className="mt-2 flex items-center gap-2 border-t pt-2 text-xs">
-                  <span className="text-muted-foreground">Guests for this package</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={guests}
-                    onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
-                    className="h-7 w-20"
-                  />
-                  {guests !== dealGuests && (
-                    <button
-                      type="button"
-                      className="text-primary underline"
-                      onClick={() => onGuestChange(p.id, dealGuests)}
-                    >
-                      reset to {dealGuests}
-                    </button>
-                  )}
+                <div className="mt-2 space-y-2 border-t pt-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-32 text-muted-foreground">Guests</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={guests}
+                      onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
+                      className="h-7 w-20"
+                    />
+                    {guests !== dealGuests && (
+                      <button type="button" className="text-primary underline"
+                        onClick={() => onGuestChange(p.id, dealGuests)}>
+                        reset to {dealGuests}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-32 text-muted-foreground">Event hours</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      value={hours}
+                      onChange={(e) => onHoursChange(p.id, Math.max(0, Number(e.target.value) || 0))}
+                      className="h-7 w-20"
+                    />
+                    <span className="text-muted-foreground">standard {standardHours}h</span>
+                    {hours !== standardHours && (
+                      <button type="button" className="text-primary underline"
+                        onClick={() => onHoursChange(p.id, standardHours)}>
+                        reset
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -483,6 +510,7 @@ function PackageCard({
       </CardContent>
     </Card>
   );
+
 }
 
 function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: string, v: boolean | "indeterminate") {
