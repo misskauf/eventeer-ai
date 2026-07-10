@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+
 import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel } from "@/lib/pricing";
 import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
