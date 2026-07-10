@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { money } from "@/lib/pricing";
@@ -127,6 +127,14 @@ function DealsPage() {
     });
   }, [deals, search, stageFilter]);
 
+  const openDeal = (dealId: string, edit = false) => {
+    navigate({
+      to: "/deals/$id",
+      params: { id: dealId },
+      hash: edit ? "edit" : undefined,
+    });
+  };
+
   return (
     <AppShell>
       <PageHeader
@@ -190,14 +198,28 @@ function DealsPage() {
                       <th className="px-4 py-2 text-right font-medium">Est. value</th>
                       <th className="px-4 py-2 text-left font-medium">Stage</th>
                       <th className="px-4 py-2 text-left font-medium">Updated</th>
+                      <th className="px-4 py-2 text-right font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {filtered.map((d) => (
                       <tr
                         key={d.id}
-                        className="cursor-pointer hover:bg-muted/40"
-                        onClick={() => navigate({ to: "/deals/$id", params: { id: d.id } })}
+                        className="cursor-pointer hover:bg-muted/40 focus-within:bg-muted/40"
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Open deal for ${d.client_name}`}
+                        onClick={(event) => {
+                          const target = event.target as HTMLElement;
+                          if (target.closest("button,a,[role='combobox']")) return;
+                          openDeal(d.id);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openDeal(d.id);
+                          }
+                        }}
                       >
                         <td className="px-4 py-3">
                           <div className="font-medium">{d.client_name}</div>
@@ -243,12 +265,25 @@ function DealsPage() {
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {formatRelative(d.updated_at)}
                         </td>
+                        <td
+                          className="px-4 py-3 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeal(d.id, true)}
+                          >
+                            <Pencil className="mr-1 h-4 w-4" /> Edit
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                     {filtered.length === 0 && (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-4 py-8 text-center text-sm text-muted-foreground"
                         >
                           No deals match your filters.
