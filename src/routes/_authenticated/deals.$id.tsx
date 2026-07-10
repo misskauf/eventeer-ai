@@ -149,6 +149,10 @@ function DealDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => {
+    if (window.location.hash === "#edit") setEditOpen(true);
+  }, [id]);
+
   const seasonMult = useMemo(
     () => seasons.find((s) => s.id === seasonId)?.multiplier ?? 1,
     [seasonId, seasons],
