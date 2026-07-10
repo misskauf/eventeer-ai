@@ -19,7 +19,10 @@ export type PackageSel = {
   basis?: "net" | "gross" | null;
   tax_rate_pct?: number | null;
   long_description?: string | null;
+  included_hours?: number | null;
+  overage_price_per_person_per_hour?: number | null;
 };
+
 export type ExtraSel = {
   id: string;
   name: string;
