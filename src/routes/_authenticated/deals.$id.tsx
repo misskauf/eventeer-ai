@@ -60,6 +60,8 @@ function DealDetail() {
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
+  const [packageHours, setPackageHours] = useState<Record<string, number>>({});
+
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
   const [minRevenue, setMinRevenue] = useState(0);
