@@ -81,7 +81,7 @@ function DealsPage() {
     );
     const { error } = await supabase
       .from("deals")
-      .update({ stage: next as Deal["stage"] })
+      .update({ stage: next as any })
       .eq("id", dealId);
     if (error) {
       toast.error(error.message);
