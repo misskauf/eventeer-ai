@@ -66,7 +66,15 @@ type Season = {
   start_date: string;
   end_date: string;
   multiplier: number;
+  days_of_week: number[] | null;
 };
+
+function formatDays(days: number[] | null | undefined) {
+  if (!days || days.length === 0) return "All days";
+  if (days.length === 7) return "All days";
+  const sorted = [...days].sort((a, b) => a - b);
+  return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
+}
 
 function SeasonsSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Season[]>([]);
