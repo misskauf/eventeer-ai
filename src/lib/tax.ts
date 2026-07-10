@@ -12,7 +12,19 @@ export type CategoryDefaults = {
   tax_rate_extra?: number;
   default_basis_rental?: Basis;
   tax_rate_rental?: number;
+  default_hours_food?: number;
+  default_hours_beverage?: number;
 };
+
+export function categoryDefaultHours(
+  defaults: CategoryDefaults | null | undefined,
+  kind: "food" | "beverage",
+): number {
+  const d = defaults ?? {};
+  const v = kind === "beverage" ? d.default_hours_beverage : d.default_hours_food;
+  return Number(v ?? (kind === "beverage" ? 4 : 2));
+}
+
 
 export type TaxedItem = {
   basis?: Basis | null;

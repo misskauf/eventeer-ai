@@ -63,7 +63,10 @@ function SettingsPage() {
         tax_rate_extra: num("tax_rate_extra"),
         default_basis_rental: str("default_basis_rental"),
         tax_rate_rental: num("tax_rate_rental"),
+        default_hours_food: num("default_hours_food"),
+        default_hours_beverage: num("default_hours_beverage"),
       })
+
       .eq("company_id", company.id);
     if (error) return toast.error(error.message);
     toast.success("Fees saved");
@@ -109,6 +112,15 @@ function SettingsPage() {
                   <CategoryRow cat="extra" label="Extras" fees={fees} />
                   <CategoryRow cat="rental" label="Rental / Spaces" fees={fees} />
                 </div>
+                <div className="space-y-2 rounded-md border p-3">
+                  <div className="text-sm font-medium">Standard event hours</div>
+                  <p className="text-xs text-muted-foreground">Used when a package doesn't set its own included hours. Overtime is billed per package.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field name="default_hours_food" label="Food (hours)" type="number" step="0.5" defaultValue={fees.default_hours_food ?? 2} />
+                    <Field name="default_hours_beverage" label="Beverage (hours)" type="number" step="0.5" defaultValue={fees.default_hours_beverage ?? 4} />
+                  </div>
+                </div>
+
                 <Button className="w-full">Save fees</Button>
               </form>
             </CardContent>

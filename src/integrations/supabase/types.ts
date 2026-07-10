@@ -220,10 +220,12 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          included_hours: number | null
           kind: string
           long_description: string | null
           min_guests: number
           name: string
+          overage_price_per_person_per_hour: number
           price_per_person: number
           tax_rate_pct: number | null
           updated_at: string
@@ -237,10 +239,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          included_hours?: number | null
           kind?: string
           long_description?: string | null
           min_guests?: number
           name: string
+          overage_price_per_person_per_hour?: number
           price_per_person?: number
           tax_rate_pct?: number | null
           updated_at?: string
@@ -254,10 +258,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          included_hours?: number | null
           kind?: string
           long_description?: string | null
           min_guests?: number
           name?: string
+          overage_price_per_person_per_hour?: number
           price_per_person?: number
           tax_rate_pct?: number | null
           updated_at?: string
@@ -280,6 +286,8 @@ export type Database = {
           default_basis_extra: string
           default_basis_food: string
           default_basis_rental: string
+          default_hours_beverage: number
+          default_hours_food: number
           overtime_fee_per_hour: number
           service_charge_pct: number
           tax_pct: number
@@ -296,6 +304,8 @@ export type Database = {
           default_basis_extra?: string
           default_basis_food?: string
           default_basis_rental?: string
+          default_hours_beverage?: number
+          default_hours_food?: number
           overtime_fee_per_hour?: number
           service_charge_pct?: number
           tax_pct?: number
@@ -312,6 +322,8 @@ export type Database = {
           default_basis_extra?: string
           default_basis_food?: string
           default_basis_rental?: string
+          default_hours_beverage?: number
+          default_hours_food?: number
           overtime_fee_per_hour?: number
           service_charge_pct?: number
           tax_pct?: number

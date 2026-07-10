@@ -1,6 +1,6 @@
 // Pure pricing engine with per-item net/tax/gross accounting.
 
-import { resolveBasis, resolveTaxRate, splitNetTaxGross, type CategoryDefaults, type Category } from "./tax";
+import { categoryDefaultHours, resolveBasis, resolveTaxRate, splitNetTaxGross, type CategoryDefaults, type Category } from "./tax";
 
 export type SpaceSel = {
   id: string;
@@ -19,7 +19,10 @@ export type PackageSel = {
   basis?: "net" | "gross" | null;
   tax_rate_pct?: number | null;
   long_description?: string | null;
+  included_hours?: number | null;
+  overage_price_per_person_per_hour?: number | null;
 };
+
 export type ExtraSel = {
   id: string;
   name: string;
@@ -54,7 +57,9 @@ export type Selection = {
   package_ids: string[];
   extra_ids: string[];
   package_guests?: Record<string, number>; // override per package
+  package_hours?: Record<string, number>; // override event hours per package
 };
+
 
 export type LineItem = {
   label: string;
@@ -107,8 +112,10 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
 
   for (const p of offer.packages.filter((x) => selection.package_ids.includes(x.id))) {
     const guests = selection.package_guests?.[p.id] ?? selection.guest_count;
-    const amount = p.price_per_person * guests * mult;
     const cat: Category = p.kind === "beverage" ? "beverage" : "food";
+    const standardHours = p.included_hours != null ? Number(p.included_hours) : categoryDefaultHours(defaults, cat);
+    const hours = selection.package_hours?.[p.id] ?? standardHours;
+    const amount = p.price_per_person * guests * mult;
     lines.push(
       lineFor(
         amount,
@@ -116,10 +123,26 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
         defaults,
         cat,
         `${p.name}`,
-        `${guests} guests × ${money(p.price_per_person)}`,
+        `${guests} guests × ${money(p.price_per_person)} · ${standardHours}h included`,
       ),
     );
+    const overageRate = Number(p.overage_price_per_person_per_hour ?? 0);
+    const extraHours = Math.max(0, hours - standardHours);
+    if (overageRate > 0 && extraHours > 0) {
+      const overAmount = overageRate * extraHours * guests * mult;
+      lines.push(
+        lineFor(
+          overAmount,
+          p,
+          defaults,
+          cat,
+          `${p.name} — overtime`,
+          `${extraHours}h × ${guests} guests × ${money(overageRate)}`,
+        ),
+      );
+    }
   }
+
 
   for (const e of offer.extras.filter((x) => selection.extra_ids.includes(x.id))) {
     let amount = 0;

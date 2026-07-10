@@ -4,8 +4,9 @@ import { useCurrentCompany } from "@/lib/auth-hooks";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { money } from "@/lib/pricing";
 import { PriceBreakdown } from "@/components/price-breakdown";
-import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
+import { categoryDefault, categoryDefaultHours, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
   const { companyId } = useCurrentCompany();
@@ -21,14 +22,17 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
 
   const cat = kind;
   const def = categoryDefault(defaults, cat);
+  const defHours = categoryDefaultHours(defaults, kind);
   const label = kind === "food" ? "food package" : "beverage package";
+
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-md border bg-muted/30 px-4 py-2 text-sm">
         <div>
-          Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b>
+          Category default: <b>{def.basis === "gross" ? "Gross" : "Net"}</b> · Tax <b>{def.rate}%</b> · Standard <b>{defHours}h</b>
         </div>
+
         <div className="flex items-center gap-2">
           <label className="text-muted-foreground">Preview guests</label>
           <input
@@ -72,6 +76,21 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             hint: `Leave blank to use the ${cat} default (${def.rate}%).`,
           },
           {
+            name: "included_hours",
+            label: "Standard hours included",
+            type: "number",
+            step: "0.5",
+            nullable: true,
+            hint: `Leave blank to use the ${cat} default (${defHours}h).`,
+          },
+          {
+            name: "overage_price_per_person_per_hour",
+            label: "Overtime price per guest / hour",
+            type: "number",
+            step: "0.01",
+            hint: "Charged per guest for each hour beyond the standard duration. Set 0 to disable.",
+          },
+          {
             name: "long_description",
             label: "Full details",
             type: "textarea",
@@ -79,6 +98,7 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
         ]}
+
         render={(r: any) => {
           const amount = Number(r.price_per_person) * sampleGuests;
           const basis = resolveBasis(r, defaults, cat);
@@ -90,8 +110,12 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
                   <div className="font-medium">{r.name}</div>
                   <div className="text-xs text-muted-foreground">
                     {money(Number(r.price_per_person), currency)} / guest · min {r.min_guests ?? 0} ·{" "}
-                    {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
+                    {basis === "gross" ? "Gross" : "Net"} · Tax {rate}% · {r.included_hours ?? defHours}h included
+                    {Number(r.overage_price_per_person_per_hour ?? 0) > 0 && (
+                      <> · +{money(Number(r.overage_price_per_person_per_hour), currency)}/guest/h overtime</>
+                    )}
                   </div>
+
                 </div>
                 <div className="text-xs text-muted-foreground">for {sampleGuests} guests</div>
               </div>

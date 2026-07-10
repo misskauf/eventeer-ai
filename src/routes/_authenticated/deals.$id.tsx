@@ -20,7 +20,8 @@ import {
   type PackageSel,
   type ExtraSel,
 } from "@/lib/pricing";
-import type { CategoryDefaults } from "@/lib/tax";
+import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
+
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, Send, AlertTriangle } from "lucide-react";
@@ -59,6 +60,8 @@ function DealDetail() {
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
+  const [packageHours, setPackageHours] = useState<Record<string, number>>({});
+
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
   const [minRevenue, setMinRevenue] = useState(0);
@@ -72,7 +75,7 @@ function DealDetail() {
     setDeal(d as Deal);
     const [sp, pk, ex, fc, ss, co, ac, pr] = await Promise.all([
       supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").eq("active", true),
-      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description").eq("active", true),
+      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
@@ -97,6 +100,8 @@ function DealDetail() {
       setSelectedPackages(cfg.package_ids ?? []);
       setSelectedExtras(cfg.extra_ids ?? []);
       setPackageGuests(cfg.package_guests ?? {});
+      setPackageHours(cfg.package_hours ?? {});
+
       setSeasonId(cfg.season_id ?? "none");
       setDiscount(cfg.discount ?? 0);
       setMinRevenue(cfg.min_revenue_required ?? 0);
@@ -132,7 +137,9 @@ function DealDetail() {
     package_ids: selectedPackages,
     extra_ids: selectedExtras,
     package_guests: packageGuests,
+    package_hours: packageHours,
   };
+
 
   const totals = offer ? computeTotals(offer, selection) : null;
 
@@ -146,6 +153,8 @@ function DealDetail() {
       package_ids: selectedPackages,
       extra_ids: selectedExtras,
       package_guests: packageGuests,
+      package_hours: packageHours,
+
       season_id: seasonId,
       discount,
       min_revenue_required: minRevenue,
@@ -214,6 +223,9 @@ function DealDetail() {
 
   const setGuestOverride = (pid: string, v: number) =>
     setPackageGuests((cur) => ({ ...cur, [pid]: v }));
+  const setHoursOverride = (pid: string, v: number) =>
+    setPackageHours((cur) => ({ ...cur, [pid]: v }));
+
 
   return (
     <AppShell>
@@ -265,6 +277,9 @@ function DealDetail() {
             dealGuests={deal.guest_count}
             packageGuests={packageGuests}
             onGuestChange={setGuestOverride}
+            packageHours={packageHours}
+            onHoursChange={setHoursOverride}
+            defaultHours={categoryDefaultHours(fees as CategoryDefaults, "food")}
           />
           <PackageCard
             title="Beverage packages"
@@ -276,7 +291,11 @@ function DealDetail() {
             dealGuests={deal.guest_count}
             packageGuests={packageGuests}
             onGuestChange={setGuestOverride}
+            packageHours={packageHours}
+            onHoursChange={setHoursOverride}
+            defaultHours={categoryDefaultHours(fees as CategoryDefaults, "beverage")}
           />
+
 
           <Card>
             <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
@@ -409,6 +428,7 @@ function DealDetail() {
 
 function PackageCard({
   title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
+  packageHours, onHoursChange, defaultHours,
 }: {
   title: string;
   emptyTo: string;
@@ -419,6 +439,9 @@ function PackageCard({
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
+  packageHours: Record<string, number>;
+  onHoursChange: (id: string, v: number) => void;
+  defaultHours: number;
 }) {
   return (
     <Card>
@@ -428,34 +451,57 @@ function PackageCard({
         {items.map((p) => {
           const checked = selected.includes(p.id);
           const guests = packageGuests[p.id] ?? dealGuests;
+          const standardHours = p.included_hours != null ? Number(p.included_hours) : defaultHours;
+          const hours = packageHours[p.id] ?? standardHours;
+          const overRate = Number(p.overage_price_per_person_per_hour ?? 0);
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
                 <Checkbox checked={checked} onCheckedChange={(v) => onToggle(p.id, v)} className="mt-1" />
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{money(p.price_per_person, currency)} per guest</div>
+                  <div className="text-xs text-muted-foreground">
+                    {money(p.price_per_person, currency)} per guest · {standardHours}h included
+                    {overRate > 0 && <> · +{money(overRate, currency)}/guest/h overtime</>}
+                  </div>
                 </div>
               </label>
               {checked && (
-                <div className="mt-2 flex items-center gap-2 border-t pt-2 text-xs">
-                  <span className="text-muted-foreground">Guests for this package</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={guests}
-                    onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
-                    className="h-7 w-20"
-                  />
-                  {guests !== dealGuests && (
-                    <button
-                      type="button"
-                      className="text-primary underline"
-                      onClick={() => onGuestChange(p.id, dealGuests)}
-                    >
-                      reset to {dealGuests}
-                    </button>
-                  )}
+                <div className="mt-2 space-y-2 border-t pt-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-32 text-muted-foreground">Guests</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={guests}
+                      onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
+                      className="h-7 w-20"
+                    />
+                    {guests !== dealGuests && (
+                      <button type="button" className="text-primary underline"
+                        onClick={() => onGuestChange(p.id, dealGuests)}>
+                        reset to {dealGuests}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-32 text-muted-foreground">Event hours</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      value={hours}
+                      onChange={(e) => onHoursChange(p.id, Math.max(0, Number(e.target.value) || 0))}
+                      className="h-7 w-20"
+                    />
+                    <span className="text-muted-foreground">standard {standardHours}h</span>
+                    {hours !== standardHours && (
+                      <button type="button" className="text-primary underline"
+                        onClick={() => onHoursChange(p.id, standardHours)}>
+                        reset
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -464,6 +510,7 @@ function PackageCard({
       </CardContent>
     </Card>
   );
+
 }
 
 function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: string, v: boolean | "indeterminate") {
