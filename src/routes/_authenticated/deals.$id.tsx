@@ -829,10 +829,7 @@ function EditDealDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline"><Pencil className="mr-1 h-4 w-4" /> Edit deal</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Edit deal</DialogTitle>
         </DialogHeader>
