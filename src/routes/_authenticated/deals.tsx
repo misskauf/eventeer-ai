@@ -92,7 +92,7 @@ function DealsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right text-sm tabular-nums">
-                      ${Number(d.estimated_value).toLocaleString()}
+                      {money(Number(d.estimated_value), currency)}
                     </div>
                     <Badge variant="secondary">{STAGE_LABELS[d.stage] ?? d.stage}</Badge>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
