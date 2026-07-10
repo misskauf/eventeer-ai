@@ -178,10 +178,32 @@ function DealDetail() {
     if (window.location.hash === "#edit") setEditOpen(true);
   }, [id]);
 
+  // Auto cover title from event type + date, unless the manager typed something.
+  useEffect(() => {
+    if (coverTouched) return;
+    if (!deal) return;
+    const parts: string[] = [];
+    if (deal.event_type) parts.push(deal.event_type);
+    if (deal.event_date) parts.push(formatEventDate(deal.event_date));
+    if (parts.length) setCoverTitle(parts.join(" · "));
+  }, [deal?.event_type, deal?.event_date, coverTouched, deal]);
+
   const seasonMult = useMemo(
     () => seasons.find((s) => s.id === seasonId)?.multiplier ?? 1,
     [seasonId, seasons],
   );
+
+  const matchedRule = useMemo(
+    () => pickMinRevRule(minRevRules, deal?.event_date),
+    [minRevRules, deal?.event_date],
+  );
+
+  // Filter spaces by day-of-week availability when the deal has an event date.
+  const availableSpaces = useMemo(() => {
+    const wd = weekdayOf(deal?.event_date);
+    if (wd == null) return spaces;
+    return spaces.filter((s) => !s.available_days || s.available_days.length === 0 || s.available_days.includes(wd));
+  }, [spaces, deal?.event_date]);
 
   // For the manager's own totals preview, resolve each alt group to its default choice.
   const resolvedSelection = useMemo(() => {
@@ -205,28 +227,31 @@ function DealDetail() {
     } as Selection;
   }, [deal, selectedSpaces, selectedPackages, selectedExtras, packageGuests, packageHours, altGroups]);
 
+  const effectiveDiscount = showDiscount ? discount : 0;
+
   const offer: Offer | null = useMemo(() => {
     if (!fees) return null;
     return {
       spaces, packages, extras,
-      fees: { ...fees, overtime_hours: 0 },
+      fees: { ...fees, service_charge_pct: servicePct, overtime_hours: 0 },
       category_defaults: fees as CategoryDefaults,
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
-      discount,
+      discount: effectiveDiscount,
     };
-  }, [spaces, packages, extras, fees, seasonMult, discount, minRevenue]);
+  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct]);
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
 
   const foodPackages = packages.filter((p) => (p.kind ?? "food") === "food");
   const beveragePackages = packages.filter((p) => p.kind === "beverage");
   const itemsForCategory = (cat: AlternativeGroup["category"]) => {
-    if (cat === "space") return spaces.map((s) => ({ id: s.id, name: s.name }));
+    if (cat === "space") return availableSpaces.map((s) => ({ id: s.id, name: s.name }));
     if (cat === "food") return foodPackages.map((p) => ({ id: p.id, name: p.name }));
     if (cat === "beverage") return beveragePackages.map((p) => ({ id: p.id, name: p.name }));
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
+
 
   function buildOfferConfig() {
     return {
