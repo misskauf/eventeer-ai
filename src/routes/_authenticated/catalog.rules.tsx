@@ -203,6 +203,13 @@ function SeasonForm({
   const [multiplier, setMultiplier] = useState<string>(
     initial ? String(initial.multiplier) : "1",
   );
+  const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
+
+  function toggleDay(i: number) {
+    setDays((prev) =>
+      prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b),
+    );
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -216,6 +223,7 @@ function SeasonForm({
       start_date,
       end_date,
       multiplier: Number(multiplier),
+      days_of_week: days,
     };
     const res = initial
       ? await supabase.from("pricing_seasons").update(payload).eq("id", initial.id)
