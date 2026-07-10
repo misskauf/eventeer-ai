@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/deals")({
   component: DealsPage,
