@@ -22,7 +22,9 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
 
   const cat = kind;
   const def = categoryDefault(defaults, cat);
+  const defHours = categoryDefaultHours(defaults, kind);
   const label = kind === "food" ? "food package" : "beverage package";
+
 
   return (
     <div className="space-y-4">
