@@ -312,16 +312,22 @@ function SeasonForm({
           Leave empty to apply to all days.
         </p>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mult">Multiplier (e.g. 1.25)</Label>
-        <Input
-          id="mult"
-          type="number"
-          step="0.01"
-          value={multiplier}
-          onChange={(e) => setMultiplier(e.target.value)}
-          required
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="mult">Multiplier (e.g. 1.25)</Label>
+          <Input
+            id="mult"
+            type="number"
+            step="0.01"
+            value={multiplier}
+            onChange={(e) => setMultiplier(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Applies to</Label>
+          <BasisToggle value={basis} onChange={setBasis} />
+        </div>
       </div>
       <Button className="w-full">Save</Button>
     </form>
