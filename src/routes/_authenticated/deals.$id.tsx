@@ -8,9 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   computeTotals,
   money,
@@ -21,10 +35,10 @@ import {
   type ExtraSel,
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
-
+import { Markdown } from "@/components/markdown";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Send, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare } from "lucide-react";
 import { stageLabel } from "@/lib/deal-stages";
 
 export const Route = createFileRoute("/_authenticated/deals/$id")({
@@ -47,6 +61,20 @@ type Deal = {
 
 type Season = { id: string; name: string; multiplier: number };
 
+type AlternativeGroup = {
+  id: string;
+  name: string;
+  category: "space" | "food" | "beverage" | "extra";
+  item_ids: string[];
+  default_id: string;
+};
+
+function newGroupId() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+}
+
 function DealDetail() {
   const { id } = Route.useParams();
   const [deal, setDeal] = useState<Deal | null>(null);
@@ -66,9 +94,14 @@ function DealDetail() {
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
   const [minRevenue, setMinRevenue] = useState(0);
-  const [clientMessage, setClientMessage] = useState("");
+  const [coverTitle, setCoverTitle] = useState("");
+  const [introMarkdown, setIntroMarkdown] = useState("");
+  const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
+  const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
+
   const [activities, setActivities] = useState<any[]>([]);
   const [existingProposal, setExistingProposal] = useState<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   async function loadAll() {
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
@@ -102,11 +135,12 @@ function DealDetail() {
       setSelectedExtras(cfg.extra_ids ?? []);
       setPackageGuests(cfg.package_guests ?? {});
       setPackageHours(cfg.package_hours ?? {});
-
       setSeasonId(cfg.season_id ?? "none");
       setDiscount(cfg.discount ?? 0);
       setMinRevenue(cfg.min_revenue_required ?? 0);
-      setClientMessage(cons.client_message ?? "");
+      setCoverTitle(cfg.cover_title ?? "");
+      setAltGroups(cfg.alternative_groups ?? []);
+      setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
     }
   }
 
@@ -120,6 +154,28 @@ function DealDetail() {
     [seasonId, seasons],
   );
 
+  // For the manager's own totals preview, resolve each alt group to its default choice.
+  const resolvedSelection = useMemo(() => {
+    const extraSpaces: string[] = [];
+    const extraPkgs: string[] = [];
+    const extraExtras: string[] = [];
+    for (const g of altGroups) {
+      const target = g.default_id && g.item_ids.includes(g.default_id) ? g.default_id : g.item_ids[0];
+      if (!target) continue;
+      if (g.category === "space") extraSpaces.push(target);
+      else if (g.category === "extra") extraExtras.push(target);
+      else extraPkgs.push(target);
+    }
+    return {
+      guest_count: deal?.guest_count ?? 0,
+      space_ids: Array.from(new Set([...selectedSpaces, ...extraSpaces])),
+      package_ids: Array.from(new Set([...selectedPackages, ...extraPkgs])),
+      extra_ids: Array.from(new Set([...selectedExtras, ...extraExtras])),
+      package_guests: packageGuests,
+      package_hours: packageHours,
+    } as Selection;
+  }, [deal, selectedSpaces, selectedPackages, selectedExtras, packageGuests, packageHours, altGroups]);
+
   const offer: Offer | null = useMemo(() => {
     if (!fees) return null;
     return {
@@ -132,35 +188,35 @@ function DealDetail() {
     };
   }, [spaces, packages, extras, fees, seasonMult, discount, minRevenue]);
 
-  const selection: Selection = {
-    guest_count: deal?.guest_count ?? 0,
-    space_ids: selectedSpaces,
-    package_ids: selectedPackages,
-    extra_ids: selectedExtras,
-    package_guests: packageGuests,
-    package_hours: packageHours,
-  };
-
-
-  const totals = offer ? computeTotals(offer, selection) : null;
+  const totals = offer ? computeTotals(offer, resolvedSelection) : null;
 
   const foodPackages = packages.filter((p) => (p.kind ?? "food") === "food");
   const beveragePackages = packages.filter((p) => p.kind === "beverage");
+  const itemsForCategory = (cat: AlternativeGroup["category"]) => {
+    if (cat === "space") return spaces.map((s) => ({ id: s.id, name: s.name }));
+    if (cat === "food") return foodPackages.map((p) => ({ id: p.id, name: p.name }));
+    if (cat === "beverage") return beveragePackages.map((p) => ({ id: p.id, name: p.name }));
+    return extras.map((e) => ({ id: e.id, name: e.name }));
+  };
 
-  async function saveProposal(send: boolean) {
-    if (!deal || !totals) return;
-    const config = {
+  function buildOfferConfig() {
+    return {
       space_ids: selectedSpaces,
       package_ids: selectedPackages,
       extra_ids: selectedExtras,
       package_guests: packageGuests,
       package_hours: packageHours,
-
       season_id: seasonId,
       discount,
       min_revenue_required: minRevenue,
-      guest_count: deal.guest_count,
+      guest_count: deal?.guest_count ?? 0,
+      cover_title: coverTitle,
+      alternative_groups: altGroups,
     };
+  }
+
+  async function saveProposal(send: boolean): Promise<{ id: string; version: number } | null> {
+    if (!deal || !totals) return null;
     const version = existingProposal ? existingProposal.version + 1 : 1;
     const status = send ? "sent" : "draft";
     const { data: newProp, error } = await supabase
@@ -170,9 +226,10 @@ function DealDetail() {
         company_id: deal.company_id,
         version,
         status,
-        offer: config,
+        offer: buildOfferConfig(),
         constraints: {
-          client_message: clientMessage,
+          intro_markdown: introMarkdown,
+          client_message: introMarkdown, // back-compat
           computed_net: totals.net_subtotal,
           computed_tax: totals.tax_subtotal,
           computed_total: totals.grand_total,
@@ -181,9 +238,8 @@ function DealDetail() {
       })
       .select("*")
       .single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return null; }
 
-    let shareUrl: string | null = null;
     if (send) {
       const token = randomToken(24);
       await supabase.from("share_tokens").insert({
@@ -193,20 +249,35 @@ function DealDetail() {
         proposal_id: newProp.id,
         company_id: deal.company_id,
       });
-      await supabase.from("deals").update({ stage: "proposal_sent" }).eq("id", deal.id);
+      await supabase.from("deals").update({ stage: "proposal_sent" as any }).eq("id", deal.id);
       await supabase.from("deal_activities").insert({
         deal_id: deal.id, company_id: deal.company_id, kind: "proposal_sent",
         meta: { version, computed_total: totals.grand_total },
       });
-      shareUrl = `${window.location.origin}/p/${token}`;
+      const shareUrl = `${window.location.origin}/p/${token}`;
       await navigator.clipboard.writeText(shareUrl).catch(() => {});
       toast.success("Proposal sent · link copied to clipboard");
     } else {
-      await supabase.from("deals").update({ stage: "proposal_draft" }).eq("id", deal.id);
+      await supabase.from("deals").update({ stage: "proposal_draft" as any }).eq("id", deal.id);
       toast.success(`Draft v${version} saved`);
     }
     await loadAll();
-    if (shareUrl) console.log("Share link:", shareUrl);
+    return { id: newProp.id, version };
+  }
+
+  async function previewAsClient() {
+    const saved = await saveProposal(false);
+    if (!saved || !deal) return;
+    const token = randomToken(24);
+    const { error } = await supabase.from("share_tokens").insert({
+      token,
+      kind: "preview" as any,
+      deal_id: deal.id,
+      proposal_id: saved.id,
+      company_id: deal.company_id,
+    });
+    if (error) return toast.error(error.message);
+    window.open(`/p/${token}`, "_blank", "noopener");
   }
 
   async function shareDashboard() {
@@ -227,6 +298,25 @@ function DealDetail() {
   const setHoursOverride = (pid: string, v: number) =>
     setPackageHours((cur) => ({ ...cur, [pid]: v }));
 
+  const clientResponse = (existingProposal?.constraints as any)?.client_response as
+    | {
+        overall_message?: string;
+        item_notes?: Record<string, string>;
+        selected_alternatives?: Record<string, string>;
+        submitted_at?: string;
+        computed_total?: number;
+      }
+    | undefined;
+
+  const itemName = (itemId: string) => {
+    const s = spaces.find((x) => x.id === itemId);
+    if (s) return s.name;
+    const p = packages.find((x) => x.id === itemId);
+    if (p) return p.name;
+    const e = extras.find((x) => x.id === itemId);
+    if (e) return e.name;
+    return itemId;
+  };
 
   return (
     <AppShell>
@@ -250,8 +340,145 @@ function DealDetail() {
         }
       />
 
+      {/* DEAL SECTION */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Deal details</CardTitle>
+          <EditDealDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            deal={deal}
+            onSaved={loadAll}
+          />
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+          <Detail label="Client">{deal.client_name}</Detail>
+          <Detail label="Email">{deal.client_email}</Detail>
+          <Detail label="Company">{deal.client_company || "—"}</Detail>
+          <Detail label="Event type">{deal.event_type || "—"}</Detail>
+          <Detail label="Event date">{deal.event_date ? new Date(deal.event_date).toLocaleDateString() : "—"}</Detail>
+          <Detail label="Guests">{deal.guest_count || "—"}</Detail>
+          <Detail label="Stage">{stageLabel(deal.stage)}</Detail>
+          <Detail label="Estimated value">{money(Number(deal.estimated_value), currency)}</Detail>
+          {deal.notes && (
+            <div className="sm:col-span-2 lg:col-span-4">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Notes</div>
+              <div className="mt-1 whitespace-pre-wrap">{deal.notes}</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* CLIENT RESPONSE (if any) */}
+      {clientResponse && (
+        <Card className="mb-6 border-emerald-200 bg-emerald-50/40">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" /> Client response
+            </CardTitle>
+            {clientResponse.submitted_at && (
+              <span className="text-xs text-muted-foreground">
+                {new Date(clientResponse.submitted_at).toLocaleString()}
+              </span>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {clientResponse.overall_message && (
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message</div>
+                <div className="mt-1 whitespace-pre-wrap rounded-md border bg-background p-3">
+                  {clientResponse.overall_message}
+                </div>
+              </div>
+            )}
+            {clientResponse.selected_alternatives && Object.keys(clientResponse.selected_alternatives).length > 0 && (
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Client picks</div>
+                <ul className="mt-1 space-y-1">
+                  {Object.entries(clientResponse.selected_alternatives).map(([gid, itemId]) => {
+                    const g = altGroups.find((x) => x.id === gid);
+                    return (
+                      <li key={gid}>
+                        <span className="text-muted-foreground">{g?.name ?? gid}:</span>{" "}
+                        <span className="font-medium">{itemName(itemId)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            {clientResponse.item_notes && Object.keys(clientResponse.item_notes).length > 0 && (
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Item notes</div>
+                <ul className="mt-1 space-y-1">
+                  {Object.entries(clientResponse.item_notes).map(([itemId, note]) => (
+                    <li key={itemId}>
+                      <span className="text-muted-foreground">{itemName(itemId)}:</span>{" "}
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {clientResponse.computed_total != null && (
+              <div className="text-xs text-muted-foreground">
+                Client-computed total: {money(clientResponse.computed_total, currency)}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PROPOSAL SECTION */}
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Proposal</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={previewAsClient}>
+            <Eye className="mr-1 h-4 w-4" /> Preview as client
+          </Button>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <CardHeader><CardTitle>Cover</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Cover title</Label>
+                <Input
+                  value={coverTitle}
+                  onChange={(e) => setCoverTitle(e.target.value)}
+                  placeholder="e.g. Your winter wedding at Villa Rosa"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Intro message (Markdown supported)</Label>
+                <Tabs value={editorTab} onValueChange={(v) => setEditorTab(v as any)}>
+                  <TabsList className="mb-2">
+                    <TabsTrigger value="write">Write</TabsTrigger>
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="write">
+                    <Textarea
+                      rows={6}
+                      value={introMarkdown}
+                      onChange={(e) => setIntroMarkdown(e.target.value)}
+                      placeholder={"Dear Alex,\n\nWe're delighted to share the following options for your event.\n\n**What's included:**\n- Space rental\n- Menu options to choose from"}
+                    />
+                  </TabsContent>
+                  <TabsContent value="preview">
+                    <div className="min-h-[8rem] rounded-md border p-3">
+                      {introMarkdown ? <Markdown source={introMarkdown} /> : (
+                        <div className="text-sm text-muted-foreground">Nothing to preview yet.</div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><CardTitle>Spaces</CardTitle></CardHeader>
             <CardContent className="space-y-2">
@@ -297,7 +524,6 @@ function DealDetail() {
             defaultHours={categoryDefaultHours(fees as CategoryDefaults, "beverage")}
           />
 
-
           <Card>
             <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
             <CardContent className="space-y-2">
@@ -315,14 +541,128 @@ function DealDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Client message</CardTitle></CardHeader>
-            <CardContent>
-              <Textarea
-                rows={4}
-                value={clientMessage}
-                onChange={(e) => setClientMessage(e.target.value)}
-                placeholder="A short personal note that appears at the top of the client proposal."
-              />
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Options for the client to choose from</CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setAltGroups((cur) => [
+                    ...cur,
+                    { id: newGroupId(), name: "New choice", category: "food", item_ids: [], default_id: "" },
+                  ])
+                }
+              >
+                <Plus className="mr-1 h-4 w-4" /> Add option group
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {altGroups.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Give the client a choice, e.g. "Dinner: 3-course menu OR buffet". Add a group and pick two or more
+                  items — the client picks exactly one.
+                </p>
+              )}
+              {altGroups.map((g, idx) => {
+                const items = itemsForCategory(g.category);
+                return (
+                  <div key={g.id} className="space-y-3 rounded-md border p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        className="max-w-xs"
+                        value={g.name}
+                        onChange={(e) =>
+                          setAltGroups((cur) => cur.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))
+                        }
+                        placeholder="Group name"
+                      />
+                      <Select
+                        value={g.category}
+                        onValueChange={(v) =>
+                          setAltGroups((cur) =>
+                            cur.map((x, i) =>
+                              i === idx
+                                ? { ...x, category: v as AlternativeGroup["category"], item_ids: [], default_id: "" }
+                                : x,
+                            ),
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="space">Space</SelectItem>
+                          <SelectItem value="food">Food</SelectItem>
+                          <SelectItem value="beverage">Beverage</SelectItem>
+                          <SelectItem value="extra">Extra</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex-1" />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setAltGroups((cur) => cur.filter((_, i) => i !== idx))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Items in this group (client picks one)</Label>
+                      {items.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No items in this category yet.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                          {items.map((it) => {
+                            const included = g.item_ids.includes(it.id);
+                            return (
+                              <label key={it.id} className="flex items-center gap-2 rounded border px-2 py-1 text-sm">
+                                <Checkbox
+                                  checked={included}
+                                  onCheckedChange={(v) =>
+                                    setAltGroups((cur) =>
+                                      cur.map((x, i) => {
+                                        if (i !== idx) return x;
+                                        const next = v
+                                          ? Array.from(new Set([...x.item_ids, it.id]))
+                                          : x.item_ids.filter((y) => y !== it.id);
+                                        return {
+                                          ...x,
+                                          item_ids: next,
+                                          default_id: next.includes(x.default_id) ? x.default_id : next[0] ?? "",
+                                        };
+                                      }),
+                                    )
+                                  }
+                                />
+                                <span className="flex-1">{it.name}</span>
+                                {included && (
+                                  <button
+                                    type="button"
+                                    className={
+                                      "text-[11px] " +
+                                      (g.default_id === it.id
+                                        ? "font-semibold text-primary"
+                                        : "text-muted-foreground hover:text-foreground")
+                                    }
+                                    onClick={() =>
+                                      setAltGroups((cur) =>
+                                        cur.map((x, i) => (i === idx ? { ...x, default_id: it.id } : x)),
+                                      )
+                                    }
+                                  >
+                                    {g.default_id === it.id ? "Default" : "Set default"}
+                                  </button>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>
@@ -365,7 +705,7 @@ function DealDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Totals</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Totals (using group defaults)</CardTitle></CardHeader>
             <CardContent className="space-y-1 text-sm">
               {totals.lines.map((l, i) => (
                 <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
@@ -393,7 +733,7 @@ function DealDetail() {
                 <div className="mt-3 flex items-start gap-2 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <div>
-                    Net minimum not met. Shortfall of {money(totals.min_shortfall, currency)}. Consider adding extras or adjusting the discount.
+                    Net minimum not met. Shortfall of {money(totals.min_shortfall, currency)}.
                   </div>
                 </div>
               )}
@@ -424,6 +764,95 @@ function DealDetail() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-0.5">{children}</div>
+    </div>
+  );
+}
+
+function EditDealDialog({
+  open, onOpenChange, deal, onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  deal: Deal;
+  onSaved: () => void | Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    const fd = new FormData(e.currentTarget);
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        client_name: fd.get("client_name") as string,
+        client_email: fd.get("client_email") as string,
+        client_company: (fd.get("client_company") as string) || null,
+        event_type: (fd.get("event_type") as string) || null,
+        event_date: (fd.get("event_date") as string) || null,
+        guest_count: Number(fd.get("guest_count") || 0),
+        notes: (fd.get("notes") as string) || null,
+      })
+      .eq("id", deal.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id,
+      company_id: deal.company_id,
+      kind: "deal_updated",
+    });
+    toast.success("Deal updated");
+    onOpenChange(false);
+    await onSaved();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline"><Pencil className="mr-1 h-4 w-4" /> Edit deal</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit deal</DialogTitle>
+        </DialogHeader>
+        <form className="space-y-3" onSubmit={onSubmit}>
+          <div className="grid grid-cols-2 gap-3">
+            <TextField name="client_name" label="Client name" defaultValue={deal.client_name} required />
+            <TextField name="client_email" label="Client email" type="email" defaultValue={deal.client_email} required />
+          </div>
+          <TextField name="client_company" label="Client company" defaultValue={deal.client_company ?? ""} />
+          <div className="grid grid-cols-3 gap-3">
+            <TextField name="event_type" label="Event type" defaultValue={deal.event_type ?? ""} />
+            <TextField name="event_date" label="Event date" type="date" defaultValue={deal.event_date ?? ""} />
+            <TextField name="guest_count" label="Guests" type="number" defaultValue={String(deal.guest_count ?? 0)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea id="notes" name="notes" rows={3} defaultValue={deal.notes ?? ""} />
+          </div>
+          <Button className="w-full" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TextField(props: {
+  name: string; label: string; type?: string; required?: boolean; defaultValue?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={props.name}>{props.label}</Label>
+      <Input {...props} id={props.name} />
+    </div>
   );
 }
 
@@ -511,7 +940,6 @@ function PackageCard({
       </CardContent>
     </Card>
   );
-
 }
 
 function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: string, v: boolean | "indeterminate") {

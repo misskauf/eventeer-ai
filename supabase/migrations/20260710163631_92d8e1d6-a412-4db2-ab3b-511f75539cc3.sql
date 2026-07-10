@@ -1,0 +1,1 @@
+ALTER TYPE public.share_token_kind ADD VALUE IF NOT EXISTS 'preview';
