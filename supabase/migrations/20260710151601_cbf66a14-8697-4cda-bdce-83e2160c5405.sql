@@ -1,0 +1,2 @@
+ALTER TABLE public.pricing_rules ADD COLUMN IF NOT EXISTS basis text NOT NULL DEFAULT 'gross' CHECK (basis IN ('net','gross'));
+ALTER TABLE public.pricing_seasons ADD COLUMN IF NOT EXISTS basis text NOT NULL DEFAULT 'gross' CHECK (basis IN ('net','gross'));
