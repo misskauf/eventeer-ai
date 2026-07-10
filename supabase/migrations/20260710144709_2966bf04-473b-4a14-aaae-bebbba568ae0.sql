@@ -1,0 +1,1 @@
+CREATE POLICY "creator views company" ON public.companies FOR SELECT TO authenticated USING (auth.uid() = created_by);
