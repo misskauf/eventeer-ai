@@ -1,0 +1,1 @@
+ALTER TABLE public.pricing_seasons ADD COLUMN IF NOT EXISTS days_of_week smallint[] NOT NULL DEFAULT '{}';

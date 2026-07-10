@@ -66,7 +66,15 @@ type Season = {
   start_date: string;
   end_date: string;
   multiplier: number;
+  days_of_week: number[] | null;
 };
+
+function formatDays(days: number[] | null | undefined) {
+  if (!days || days.length === 0) return "All days";
+  if (days.length === 7) return "All days";
+  const sorted = [...days].sort((a, b) => a - b);
+  return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
+}
 
 function SeasonsSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Season[]>([]);
@@ -146,7 +154,8 @@ function SeasonsSection({ companyId }: { companyId: string | null }) {
                       <div className="font-medium">{r.name}</div>
                       <div className="text-xs text-muted-foreground">
                         {sm !== null ? MONTHS[sm] : r.start_date} →{" "}
-                        {em !== null ? MONTHS[em] : r.end_date} · ×{r.multiplier}
+                        {em !== null ? MONTHS[em] : r.end_date} ·{" "}
+                        {formatDays(r.days_of_week)} · ×{r.multiplier}
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -194,6 +203,13 @@ function SeasonForm({
   const [multiplier, setMultiplier] = useState<string>(
     initial ? String(initial.multiplier) : "1",
   );
+  const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
+
+  function toggleDay(i: number) {
+    setDays((prev) =>
+      prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b),
+    );
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -207,6 +223,7 @@ function SeasonForm({
       start_date,
       end_date,
       multiplier: Number(multiplier),
+      days_of_week: days,
     };
     const res = initial
       ? await supabase.from("pricing_seasons").update(payload).eq("id", initial.id)
@@ -264,6 +281,31 @@ function SeasonForm({
             </SelectContent>
           </Select>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Days of week</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {DAYS.map((d, i) => {
+            const on = days.includes(i);
+            return (
+              <button
+                type="button"
+                key={d}
+                onClick={() => toggleDay(i)}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-background hover:bg-accent"
+                }`}
+              >
+                {d.slice(0, 3)}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Leave empty to apply to all days.
+        </p>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="mult">Multiplier (e.g. 1.25)</Label>
