@@ -115,7 +115,7 @@ function DealDetail() {
     if (!d) return;
     setDeal(d as Deal);
     const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days").eq("active", true),
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
