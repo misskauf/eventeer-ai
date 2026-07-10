@@ -240,13 +240,20 @@ function DealDetail() {
     if (!fees) return null;
     return {
       spaces, packages, extras,
-      fees: { ...fees, service_charge_pct: servicePct, overtime_hours: 0 },
+      fees: {
+        ...fees,
+        service_charge_pct: servicePct,
+        overtime_hours: 0,
+        gratuity_type: (fees as any)?.gratuity_type ?? "service_charge",
+        gratuity_tax_rate_pct: Number((fees as any)?.gratuity_tax_rate_pct ?? 0),
+      },
       category_defaults: fees as CategoryDefaults,
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
     };
   }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct]);
+
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
 
