@@ -592,16 +592,22 @@ function RuleForm({
         </div>
         <p className="text-xs text-muted-foreground">Leave empty for any month.</p>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="min">Minimum revenue required</Label>
-        <Input
-          id="min"
-          type="number"
-          step="0.01"
-          value={minRevenue}
-          onChange={(e) => setMinRevenue(e.target.value)}
-          required
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="min">Minimum revenue required</Label>
+          <Input
+            id="min"
+            type="number"
+            step="0.01"
+            value={minRevenue}
+            onChange={(e) => setMinRevenue(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Amount is</Label>
+          <BasisToggle value={basis} onChange={setBasis} />
+        </div>
       </div>
       <Button className="w-full">Save</Button>
     </form>
