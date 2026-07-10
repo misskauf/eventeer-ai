@@ -607,6 +607,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_company_workspace: {
+        Args: { _currency: string; _name: string; _primary_color: string }
+        Returns: string
+      }
       is_member_of: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
