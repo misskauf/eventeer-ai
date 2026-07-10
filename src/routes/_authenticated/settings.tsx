@@ -112,6 +112,15 @@ function SettingsPage() {
                   <CategoryRow cat="extra" label="Extras" fees={fees} />
                   <CategoryRow cat="rental" label="Rental / Spaces" fees={fees} />
                 </div>
+                <div className="space-y-2 rounded-md border p-3">
+                  <div className="text-sm font-medium">Standard event hours</div>
+                  <p className="text-xs text-muted-foreground">Used when a package doesn't set its own included hours. Overtime is billed per package.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field name="default_hours_food" label="Food (hours)" type="number" step="0.5" defaultValue={fees.default_hours_food ?? 2} />
+                    <Field name="default_hours_beverage" label="Beverage (hours)" type="number" step="0.5" defaultValue={fees.default_hours_beverage ?? 4} />
+                  </div>
+                </div>
+
                 <Button className="w-full">Save fees</Button>
               </form>
             </CardContent>
