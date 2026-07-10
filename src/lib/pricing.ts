@@ -81,13 +81,19 @@ export type Totals = {
   tax_subtotal: number;
   gross_subtotal: number;
   subtotal: number; // = gross_subtotal (kept for back-compat)
-  service_charge: number;
+  service_charge: number; // gross gratuity (back-compat)
+  gratuity_net: number;
+  gratuity_tax: number;
+  gratuity_gross: number;
+  gratuity_label: string;
+  gratuity_type: "service_charge" | "tip";
   tax: number; // = tax_subtotal
   discount: number;
   grand_total: number;
   min_required: number;
   min_shortfall: number;
 };
+
 
 function lineFor(
   amount: number,
