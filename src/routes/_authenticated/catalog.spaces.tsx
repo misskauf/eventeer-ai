@@ -82,6 +82,20 @@ function SpacesPage() {
             hint: `Leave blank to use the rental default (${def.rate}%).`,
           },
           {
+            name: "details_url",
+            label: "Link to space details",
+            type: "url",
+            nullable: true,
+            placeholder: "https://example.com/spaces/bellboy",
+            hint: "Optional link shown on the deal page for quick reference.",
+          },
+          {
+            name: "available_days",
+            label: "Available days",
+            type: "weekdays",
+            hint: "Days of the week this space can be booked.",
+          },
+          {
             name: "long_description",
             label: "Full details",
             type: "textarea",
