@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/catalog/packages")({
   component: PackagesPage,
@@ -8,6 +10,7 @@ export const Route = createFileRoute("/_authenticated/catalog/packages")({
 
 function PackagesPage() {
   const { companyId } = useCurrentCompany();
+  const currency = useCompanyCurrency();
   return (
     <CrudList
       title="package"
@@ -23,10 +26,11 @@ function PackagesPage() {
         <div>
           <div className="font-medium">{r.name}</div>
           <div className="text-xs text-muted-foreground">
-            ${Number(r.price_per_person).toLocaleString()} / guest · min {r.min_guests ?? 0}
+            {money(Number(r.price_per_person), currency)} / guest · min {r.min_guests ?? 0}
           </div>
         </div>
       )}
     />
   );
 }
+
