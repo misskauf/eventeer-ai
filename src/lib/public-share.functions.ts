@@ -11,7 +11,7 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
       .from("share_tokens")
       .select("token, kind, deal_id, proposal_id, company_id, expires_at")
       .eq("token", data.token)
-      .in("kind", ["client_proposal", "preview"])
+      .in("kind", ["client_proposal", "preview"] as any)
       .maybeSingle();
 
     if (!tok || !tok.proposal_id) return { ok: false as const, reason: "not_found" };
@@ -34,7 +34,7 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
       proposal,
       company,
       deal,
-      preview: tok.kind === "preview",
+      preview: (tok.kind as string) === "preview",
     };
   });
 
