@@ -328,10 +328,23 @@ function SeasonForm({
 type Rule = {
   id: string;
   notes: string | null;
-  day_of_week: number | null;
-  month: number | null;
+  days_of_week: number[] | null;
+  months: number[] | null;
   min_revenue: number;
 };
+
+function formatMonths(months: number[] | null | undefined) {
+  if (!months || months.length === 0) return "Any month";
+  if (months.length === 12) return "Any month";
+  const sorted = [...months].sort((a, b) => a - b);
+  return sorted.map((m) => MONTHS[m - 1].slice(0, 3)).join(", ");
+}
+function formatRuleDays(days: number[] | null | undefined) {
+  if (!days || days.length === 0) return "Any day";
+  if (days.length === 7) return "Any day";
+  const sorted = [...days].sort((a, b) => a - b);
+  return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
+}
 
 function RulesSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Rule[]>([]);
