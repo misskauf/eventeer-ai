@@ -449,7 +449,7 @@ function DealDetail() {
           <Detail label="Email">{deal.client_email}</Detail>
           <Detail label="Company">{deal.client_company || "—"}</Detail>
           <Detail label="Event type">{deal.event_type || "—"}</Detail>
-          <Detail label="Event date">{deal.event_date ? new Date(deal.event_date).toLocaleDateString() : "—"}</Detail>
+          <Detail label="Event date">{deal.event_date ? formatEventDate(deal.event_date) : "—"}</Detail>
           <Detail label="Guests">{deal.guest_count || "—"}</Detail>
           <Detail label="Stage">{stageLabel(deal.stage)}</Detail>
           <Detail label="Estimated value">{money(Number(deal.estimated_value), currency)}</Detail>
