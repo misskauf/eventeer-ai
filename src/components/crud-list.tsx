@@ -70,6 +70,12 @@ export function CrudList<T extends { id: string }>({
         } catch {
           payload[f.name] = [];
         }
+      } else if (f.type === "weekdays") {
+        try {
+          payload[f.name] = str === "" ? [] : JSON.parse(str);
+        } catch {
+          payload[f.name] = [];
+        }
       } else if (f.nullable) {
         payload[f.name] = str === "" ? null : str;
       } else {
