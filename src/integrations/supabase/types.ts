@@ -288,6 +288,7 @@ export type Database = {
       }
       pricing_rules: {
         Row: {
+          basis: string
           company_id: string
           created_at: string
           day_of_week: number | null
@@ -300,6 +301,7 @@ export type Database = {
           space_id: string | null
         }
         Insert: {
+          basis?: string
           company_id: string
           created_at?: string
           day_of_week?: number | null
@@ -312,6 +314,7 @@ export type Database = {
           space_id?: string | null
         }
         Update: {
+          basis?: string
           company_id?: string
           created_at?: string
           day_of_week?: number | null
@@ -342,6 +345,7 @@ export type Database = {
       }
       pricing_seasons: {
         Row: {
+          basis: string
           company_id: string
           created_at: string
           days_of_week: number[]
@@ -352,6 +356,7 @@ export type Database = {
           start_date: string
         }
         Insert: {
+          basis?: string
           company_id: string
           created_at?: string
           days_of_week?: number[]
@@ -362,6 +367,7 @@ export type Database = {
           start_date: string
         }
         Update: {
+          basis?: string
           company_id?: string
           created_at?: string
           days_of_week?: number[]

@@ -60,6 +60,7 @@ function RulesPage() {
 
 /* ---------------- Seasons ---------------- */
 
+type Basis = "net" | "gross";
 type Season = {
   id: string;
   name: string;
@@ -67,6 +68,7 @@ type Season = {
   end_date: string;
   multiplier: number;
   days_of_week: number[] | null;
+  basis: Basis;
 };
 
 function formatDays(days: number[] | null | undefined) {
@@ -75,6 +77,35 @@ function formatDays(days: number[] | null | undefined) {
   const sorted = [...days].sort((a, b) => a - b);
   return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
 }
+
+function BasisToggle({
+  value,
+  onChange,
+}: {
+  value: Basis;
+  onChange: (v: Basis) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-md border p-0.5">
+      {(["gross", "net"] as Basis[]).map((b) => (
+        <button
+          key={b}
+          type="button"
+          onClick={() => onChange(b)}
+          className={`rounded-sm px-3 py-1 text-xs capitalize ${
+            value === b
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {b}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+
 
 function SeasonsSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Season[]>([]);
@@ -155,7 +186,8 @@ function SeasonsSection({ companyId }: { companyId: string | null }) {
                       <div className="text-xs text-muted-foreground">
                         {sm !== null ? MONTHS[sm] : r.start_date} →{" "}
                         {em !== null ? MONTHS[em] : r.end_date} ·{" "}
-                        {formatDays(r.days_of_week)} · ×{r.multiplier}
+                        {formatDays(r.days_of_week)} · ×{r.multiplier} ·{" "}
+                        {r.basis === "net" ? "Net" : "Gross"}
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -204,6 +236,7 @@ function SeasonForm({
     initial ? String(initial.multiplier) : "1",
   );
   const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
+  const [basis, setBasis] = useState<Basis>(initial?.basis ?? "gross");
 
   function toggleDay(i: number) {
     setDays((prev) =>
@@ -224,6 +257,7 @@ function SeasonForm({
       end_date,
       multiplier: Number(multiplier),
       days_of_week: days,
+      basis,
     };
     const res = initial
       ? await supabase.from("pricing_seasons").update(payload).eq("id", initial.id)
@@ -307,16 +341,22 @@ function SeasonForm({
           Leave empty to apply to all days.
         </p>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="mult">Multiplier (e.g. 1.25)</Label>
-        <Input
-          id="mult"
-          type="number"
-          step="0.01"
-          value={multiplier}
-          onChange={(e) => setMultiplier(e.target.value)}
-          required
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="mult">Multiplier (e.g. 1.25)</Label>
+          <Input
+            id="mult"
+            type="number"
+            step="0.01"
+            value={multiplier}
+            onChange={(e) => setMultiplier(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Applies to</Label>
+          <BasisToggle value={basis} onChange={setBasis} />
+        </div>
       </div>
       <Button className="w-full">Save</Button>
     </form>
@@ -331,6 +371,7 @@ type Rule = {
   days_of_week: number[] | null;
   months: number[] | null;
   min_revenue: number;
+  basis: Basis;
 };
 
 function formatMonths(months: number[] | null | undefined) {
@@ -422,7 +463,7 @@ function RulesSection({ companyId }: { companyId: string | null }) {
                     <div className="text-xs text-muted-foreground">
                       {formatRuleDays(r.days_of_week)} ·{" "}
                       {formatMonths(r.months)} · min $
-                      {Number(r.min_revenue).toLocaleString()}
+                      {Number(r.min_revenue).toLocaleString()} ({r.basis})
                     </div>
                   </div>
                   <div className="flex gap-1">
@@ -465,6 +506,7 @@ function RuleForm({
   const [minRevenue, setMinRevenue] = useState<string>(
     initial ? String(initial.min_revenue) : "0",
   );
+  const [basis, setBasis] = useState<Basis>(initial?.basis ?? "gross");
 
   function toggleDay(i: number) {
     setDays((prev) =>
@@ -488,6 +530,7 @@ function RuleForm({
       day_of_week: null,
       month: null,
       min_revenue: Number(minRevenue),
+      basis,
     };
     const res = initial
       ? await supabase.from("pricing_rules").update(payload).eq("id", initial.id)
@@ -549,16 +592,22 @@ function RuleForm({
         </div>
         <p className="text-xs text-muted-foreground">Leave empty for any month.</p>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="min">Minimum revenue required</Label>
-        <Input
-          id="min"
-          type="number"
-          step="0.01"
-          value={minRevenue}
-          onChange={(e) => setMinRevenue(e.target.value)}
-          required
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="min">Minimum revenue required</Label>
+          <Input
+            id="min"
+            type="number"
+            step="0.01"
+            value={minRevenue}
+            onChange={(e) => setMinRevenue(e.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Amount is</Label>
+          <BasisToggle value={basis} onChange={setBasis} />
+        </div>
       </div>
       <Button className="w-full">Save</Button>
     </form>
