@@ -460,19 +460,22 @@ function RuleForm({
   onSaved: () => void;
 }) {
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [dow, setDow] = useState<string>(
-    initial?.day_of_week === null || initial?.day_of_week === undefined
-      ? "any"
-      : String(initial.day_of_week),
-  );
-  const [month, setMonth] = useState<string>(
-    initial?.month === null || initial?.month === undefined
-      ? "any"
-      : String(initial.month),
-  );
+  const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
+  const [months, setMonths] = useState<number[]>(initial?.months ?? []);
   const [minRevenue, setMinRevenue] = useState<string>(
     initial ? String(initial.min_revenue) : "0",
   );
+
+  function toggleDay(i: number) {
+    setDays((prev) =>
+      prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b),
+    );
+  }
+  function toggleMonth(i: number) {
+    setMonths((prev) =>
+      prev.includes(i) ? prev.filter((m) => m !== i) : [...prev, i].sort((a, b) => a - b),
+    );
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -480,8 +483,10 @@ function RuleForm({
     const payload = {
       company_id: companyId,
       notes: notes || null,
-      day_of_week: dow === "any" ? null : Number(dow),
-      month: month === "any" ? null : Number(month),
+      days_of_week: days,
+      months,
+      day_of_week: null,
+      month: null,
       min_revenue: Number(minRevenue),
     };
     const res = initial
@@ -498,39 +503,51 @@ function RuleForm({
         <Label htmlFor="notes">Label / notes</Label>
         <Input id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Day of week</Label>
-          <Select value={dow} onValueChange={setDow}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Any day</SelectItem>
-              {DAYS.map((d, i) => (
-                <SelectItem key={d} value={String(i)}>
-                  {d}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="space-y-1.5">
+        <Label>Days of week</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {DAYS.map((d, i) => {
+            const on = days.includes(i);
+            return (
+              <button
+                type="button"
+                key={d}
+                onClick={() => toggleDay(i)}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-background hover:bg-accent"
+                }`}
+              >
+                {d.slice(0, 3)}
+              </button>
+            );
+          })}
         </div>
-        <div className="space-y-1.5">
-          <Label>Month</Label>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Any month</SelectItem>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={m} value={String(i + 1)}>
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <p className="text-xs text-muted-foreground">Leave empty for any day.</p>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Months</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {MONTHS.map((m, i) => {
+            const on = months.includes(i + 1);
+            return (
+              <button
+                type="button"
+                key={m}
+                onClick={() => toggleMonth(i + 1)}
+                className={`rounded-md border px-2.5 py-1 text-xs ${
+                  on
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-background hover:bg-accent"
+                }`}
+              >
+                {m.slice(0, 3)}
+              </button>
+            );
+          })}
         </div>
+        <p className="text-xs text-muted-foreground">Leave empty for any month.</p>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="min">Minimum revenue required</Label>
