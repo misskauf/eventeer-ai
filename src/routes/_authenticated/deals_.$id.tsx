@@ -549,7 +549,12 @@ function DealDetail() {
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label>Intro message (Markdown supported)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Intro message (Markdown supported)</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={suggestIntroText}>
+                    <Sparkles className="mr-1 h-3.5 w-3.5" /> Suggest text
+                  </Button>
+                </div>
                 <Tabs value={editorTab} onValueChange={(v) => setEditorTab(v as any)}>
                   <TabsList className="mb-2">
                     <TabsTrigger value="write">Write</TabsTrigger>
