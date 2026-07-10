@@ -623,6 +623,7 @@ function DealDetail() {
                   onChange={(v) => toggle(setSelectedSpaces, s.id, v)}
                   title={s.name}
                   subtitle={`Base ${money(s.base_rental_fee, currency)} · min ${money(s.min_rental_fee, currency)}`}
+                  link={s.details_url ? { href: s.details_url } : null}
                 />
               ))}
             </CardContent>
