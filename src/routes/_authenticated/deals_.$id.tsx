@@ -581,10 +581,20 @@ function DealDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Spaces</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Spaces</CardTitle>
+              {deal.event_date && spaces.length > availableSpaces.length && (
+                <p className="text-xs text-muted-foreground">
+                  Showing spaces available on {formatEventDate(deal.event_date)} ({spaces.length - availableSpaces.length} hidden).
+                </p>
+              )}
+            </CardHeader>
             <CardContent className="space-y-2">
               {spaces.length === 0 && <EmptyHint to="/catalog/spaces" label="Add spaces in catalog" />}
-              {spaces.map((s) => (
+              {availableSpaces.length === 0 && spaces.length > 0 && (
+                <p className="text-sm text-muted-foreground">No spaces are configured for this weekday.</p>
+              )}
+              {availableSpaces.map((s) => (
                 <PickRow
                   key={s.id}
                   checked={selectedSpaces.includes(s.id)}
