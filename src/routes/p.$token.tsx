@@ -425,9 +425,38 @@ function ClientProposal() {
                 <Row label="Tax" value={money(totals.tax_subtotal, currency)} />
                 <Row label="Gross" value={money(totals.gross_subtotal, currency)} />
                 {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
-                <Row label="Service" value={money(totals.service_charge, currency)} />
+                {(() => {
+                  const fcAny = feesCfg as any;
+                  const gMode = fcAny?.gratuity_mode ?? "slider";
+                  const gMin = Number(fcAny?.gratuity_min_pct ?? 0);
+                  const gMax = Number(fcAny?.gratuity_max_pct ?? 20);
+                  const label = totals.gratuity_label;
+                  return (
+                    <>
+                      {gMode === "slider" && gMax > gMin && (
+                        <div className="mt-2 space-y-1 rounded-md border p-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{label}</span>
+                            <span className="tabular-nums">
+                              {(servicePct ?? gMin).toFixed(1)}%
+                            </span>
+                          </div>
+                          <Slider
+                            value={[Math.max(gMin, Math.min(gMax, servicePct ?? gMin))]}
+                            min={gMin}
+                            max={gMax}
+                            step={0.5}
+                            onValueChange={(v) => setServicePct(v[0] ?? gMin)}
+                          />
+                        </div>
+                      )}
+                      <Row label={label} value={money(totals.gratuity_gross, currency)} />
+                    </>
+                  );
+                })()}
                 <Separator className="my-2" />
                 <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
+
                 {totals.min_shortfall > 0 && (
                   <div className="mt-3 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
                     Add {money(totals.min_shortfall, currency)} more to meet the venue minimum.
