@@ -148,7 +148,7 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
           defaults,
           cat,
           `${p.name} — overtime`,
-          `${extraHours}h × ${guests} guests × ${money(overageRate)}`,
+          `${extraHours}h × ${guests} guests × ${money(overageRate, cur)}`,
         ),
       );
     }
