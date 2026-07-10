@@ -81,11 +81,12 @@ function newGroupId() {
 function DealDetail() {
   const { id } = Route.useParams();
   const [deal, setDeal] = useState<Deal | null>(null);
-  const [spaces, setSpaces] = useState<SpaceSel[]>([]);
+  const [spaces, setSpaces] = useState<SpaceRow[]>([]);
   const [packages, setPackages] = useState<PackageSel[]>([]);
   const [extras, setExtras] = useState<ExtraSel[]>([]);
   const [fees, setFees] = useState<any>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [minRevRules, setMinRevRules] = useState<MinRevRule[]>([]);
   const [currency, setCurrency] = useState("USD");
 
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([]);
@@ -96,8 +97,11 @@ function DealDetail() {
 
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
+  const [showDiscount, setShowDiscount] = useState(false);
   const [minRevenue, setMinRevenue] = useState(0);
+  const [servicePct, setServicePct] = useState<number>(0);
   const [coverTitle, setCoverTitle] = useState("");
+  const [coverTouched, setCoverTouched] = useState(false);
   const [introMarkdown, setIntroMarkdown] = useState("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
