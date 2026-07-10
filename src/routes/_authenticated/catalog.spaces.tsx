@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
+import { useCompanyCurrency } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
   component: SpacesPage,
@@ -8,6 +10,7 @@ export const Route = createFileRoute("/_authenticated/catalog/spaces")({
 
 function SpacesPage() {
   const { companyId } = useCurrentCompany();
+  const currency = useCompanyCurrency();
   return (
     <CrudList
       title="space"
@@ -24,10 +27,11 @@ function SpacesPage() {
         <div>
           <div className="font-medium">{r.name}</div>
           <div className="text-xs text-muted-foreground">
-            Cap {r.capacity ?? "—"} · Base ${Number(r.base_rental_fee).toLocaleString()} · Min ${Number(r.min_rental_fee).toLocaleString()}
+            Cap {r.capacity ?? "—"} · Base {money(Number(r.base_rental_fee), currency)} · Min {money(Number(r.min_rental_fee), currency)}
           </div>
         </div>
       )}
     />
   );
 }
+
