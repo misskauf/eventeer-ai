@@ -236,7 +236,7 @@ function ClientProposal() {
             </h1>
             <div className="mt-0.5 text-xs text-muted-foreground">
               For {state.deal.client_name}
-              {state.deal.event_date && ` · ${new Date(state.deal.event_date).toLocaleDateString()}`}
+              {state.deal.event_date && ` · ${formatEventDate(state.deal.event_date)}`}
               {state.deal.guest_count > 0 && ` · ${state.deal.guest_count} guests`}
             </div>
           </div>
