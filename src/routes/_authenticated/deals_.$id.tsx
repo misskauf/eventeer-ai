@@ -39,7 +39,7 @@ import { Markdown } from "@/components/markdown";
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2 } from "lucide-react";
 import { stageLabel } from "@/lib/deal-stages";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 
@@ -920,9 +920,14 @@ function DealDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Event quote</CardTitle></CardHeader>
-            <CardContent className="space-y-1 text-sm">
+          <Card className="sticky top-4 border-2 border-primary/30 shadow-xl overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardHeader className="border-b bg-primary/5">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Receipt className="h-5 w-5 text-primary" />
+                Event quote
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm pt-4">
               {totals.lines.map((l, i) => (
                 <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
                   <div className="flex justify-between">
@@ -937,24 +942,44 @@ function DealDetail() {
                   </div>
                 </div>
               ))}
-              <Separator className="my-2" />
-              <Row label="Net subtotal" value={money(totals.net_subtotal, currency)} />
-              <Row label="Total tax" value={money(totals.tax_subtotal, currency)} />
-              <Row label="Gross subtotal" value={money(totals.gross_subtotal, currency)} />
-              {effectiveDiscount > 0 && <Row label="Discount" value={"-" + money(effectiveDiscount, currency)} />}
-              <Row label={totals.gratuity_label} value={money(totals.gratuity_gross, currency)} />
-              <Separator className="my-2" />
-              <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
-              {totals.min_shortfall > 0 && (
-                <div className="mt-3 flex items-start gap-2 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
+
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
+                <div className="flex justify-between"><span>Total tax</span><span className="tabular-nums">{money(totals.tax_subtotal, currency)}</span></div>
+                <div className="flex justify-between"><span>Gross subtotal</span><span className="tabular-nums">{money(totals.gross_subtotal, currency)}</span></div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-1 text-sm">
+                {effectiveDiscount > 0 && (
+                  <div className="flex justify-between"><span>Discount</span><span className="tabular-nums">-{money(effectiveDiscount, currency)}</span></div>
+                )}
+                <div className="flex justify-between"><span>{totals.gratuity_label}</span><span className="tabular-nums">{money(totals.gratuity_gross, currency)}</span></div>
+              </div>
+
+              <div className="mt-3 rounded-lg bg-primary text-primary-foreground p-4 flex items-baseline justify-between shadow-md">
+                <span className="text-xs uppercase tracking-wider opacity-80">Grand total</span>
+                <span className="text-2xl font-bold tabular-nums tracking-tight">{money(totals.grand_total, currency)}</span>
+              </div>
+
+              {totals.min_shortfall > 0 ? (
+                <div className="flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-2.5 text-xs text-yellow-900">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                   <div>
-                    Net minimum not met. Shortfall of {money(totals.min_shortfall, currency)}.
+                    <div className="font-semibold">Net minimum not met</div>
+                    <div>Shortfall of {money(totals.min_shortfall, currency)}.</div>
                   </div>
                 </div>
-              )}
+              ) : minRevenue > 0 ? (
+                <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span className="font-medium">Minimum revenue met</span>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
+
 
           <div className="flex flex-col gap-2">
             <Button onClick={() => saveProposal(false)} variant="outline">Save draft</Button>
