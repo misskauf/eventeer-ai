@@ -183,3 +183,87 @@ export function CrudList<T extends { id: string }>({
     </div>
   );
 }
+
+function TagsInput({
+  name,
+  suggestions,
+  defaultValue,
+}: {
+  name: string;
+  suggestions: string[];
+  defaultValue: string[];
+}) {
+  const [tags, setTags] = useState<string[]>(defaultValue);
+  const [input, setInput] = useState("");
+
+  function add(v: string) {
+    const val = v.trim();
+    if (!val) return;
+    if (tags.some((t) => t.toLowerCase() === val.toLowerCase())) return;
+    setTags([...tags, val]);
+    setInput("");
+  }
+  function remove(t: string) {
+    setTags(tags.filter((x) => x !== t));
+  }
+
+  const available = suggestions.filter(
+    (s) => !tags.some((t) => t.toLowerCase() === s.toLowerCase()),
+  );
+
+  return (
+    <div className="space-y-2">
+      <input type="hidden" name={name} value={JSON.stringify(tags)} />
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tags.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/10 px-2 py-0.5 text-xs text-primary"
+            >
+              {t}
+              <button
+                type="button"
+                onClick={() => remove(t)}
+                className="hover:text-destructive"
+                aria-label={`Remove ${t}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add(input);
+            }
+          }}
+          placeholder="Add a custom feature and press Enter"
+        />
+        <Button type="button" variant="outline" onClick={() => add(input)}>
+          Add
+        </Button>
+      </div>
+      {available.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {available.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => add(s)}
+              className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+            >
+              + {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
