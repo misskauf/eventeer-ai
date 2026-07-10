@@ -506,6 +506,7 @@ function RuleForm({
   const [minRevenue, setMinRevenue] = useState<string>(
     initial ? String(initial.min_revenue) : "0",
   );
+  const [basis, setBasis] = useState<Basis>(initial?.basis ?? "gross");
 
   function toggleDay(i: number) {
     setDays((prev) =>
