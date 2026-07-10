@@ -31,6 +31,7 @@ import {
   stageLabel,
   stageToneClass,
 } from "@/lib/deal-stages";
+import { formatEventDate } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/deals")({
