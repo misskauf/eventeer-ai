@@ -155,18 +155,25 @@ function DealDetail() {
       setAltGroups(cfg.alternative_groups ?? []);
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       const savedService = cfg.service_charge_pct_override;
-      setServicePct(
-        typeof savedService === "number" ? savedService : Number(feeRow?.service_charge_pct ?? 0),
-      );
+      const gratDefault =
+        feeRow?.gratuity_mode === "fixed"
+          ? Number(feeRow?.gratuity_fixed_pct ?? 0)
+          : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServicePct(typeof savedService === "number" ? savedService : gratDefault);
       // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
       const savedMin = Number(cfg.min_revenue_required ?? 0);
       const matched = pickMinRevRule(rules, d.event_date);
       setMinRevenue(savedMin || Number(matched?.min_revenue ?? 0));
     } else {
-      setServicePct(Number(feeRow?.service_charge_pct ?? 0));
+      const gratDefault =
+        feeRow?.gratuity_mode === "fixed"
+          ? Number(feeRow?.gratuity_fixed_pct ?? 0)
+          : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServicePct(gratDefault);
       const matched = pickMinRevRule(rules, d.event_date);
       setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
+
   }
 
   useEffect(() => {
@@ -233,13 +240,20 @@ function DealDetail() {
     if (!fees) return null;
     return {
       spaces, packages, extras,
-      fees: { ...fees, service_charge_pct: servicePct, overtime_hours: 0 },
+      fees: {
+        ...fees,
+        service_charge_pct: servicePct,
+        overtime_hours: 0,
+        gratuity_type: (fees as any)?.gratuity_type ?? "service_charge",
+        gratuity_tax_rate_pct: Number((fees as any)?.gratuity_tax_rate_pct ?? 0),
+      },
       category_defaults: fees as CategoryDefaults,
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
     };
   }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct]);
+
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
 
@@ -828,22 +842,52 @@ function DealDetail() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Service charge</Label>
-                  <span className="text-sm font-medium tabular-nums">{servicePct.toFixed(1)}%</span>
-                </div>
-                <Slider
-                  value={[servicePct]}
-                  min={0}
-                  max={20}
-                  step={0.5}
-                  onValueChange={(v) => setServicePct(v[0] ?? 0)}
-                />
-                <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
-                  Calculated service: <span className="tabular-nums font-medium text-foreground">{money(totals.service_charge, currency)}</span>
-                </div>
-              </div>
+              {(() => {
+                const gType = (fees as any)?.gratuity_type ?? "service_charge";
+                const gMode = (fees as any)?.gratuity_mode ?? "slider";
+                const gMin = Number((fees as any)?.gratuity_min_pct ?? 0);
+                const gMax = Number((fees as any)?.gratuity_max_pct ?? 20);
+                const gFixed = Number((fees as any)?.gratuity_fixed_pct ?? 0);
+                const label = gType === "tip" ? "Tip" : "Service charge";
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>{label}</Label>
+                      <span className="text-sm font-medium tabular-nums">
+                        {(gMode === "fixed" ? gFixed : servicePct).toFixed(1)}%
+                      </span>
+                    </div>
+                    {gMode === "fixed" ? (
+                      <div className="text-xs text-muted-foreground">
+                        Fixed rate configured in Catalog → Pricing rules.
+                      </div>
+                    ) : (
+                      <Slider
+                        value={[Math.max(gMin, Math.min(gMax, servicePct))]}
+                        min={gMin}
+                        max={gMax}
+                        step={0.5}
+                        onValueChange={(v) => setServicePct(v[0] ?? gMin)}
+                      />
+                    )}
+                    <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
+                      Calculated {label.toLowerCase()}:{" "}
+                      <span className="tabular-nums font-medium text-foreground">
+                        {money(totals.gratuity_gross, currency)}
+                      </span>
+                      {gType === "service_charge" && totals.gratuity_tax > 0 && (
+                        <>
+                          {" "}· incl. tax{" "}
+                          <span className="tabular-nums font-medium text-foreground">
+                            {money(totals.gratuity_tax, currency)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
 
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm">
@@ -890,7 +934,7 @@ function DealDetail() {
               <Row label="Total tax" value={money(totals.tax_subtotal, currency)} />
               <Row label="Gross subtotal" value={money(totals.gross_subtotal, currency)} />
               {effectiveDiscount > 0 && <Row label="Discount" value={"-" + money(effectiveDiscount, currency)} />}
-              <Row label="Service" value={money(totals.service_charge, currency)} />
+              <Row label={totals.gratuity_label} value={money(totals.gratuity_gross, currency)} />
               <Separator className="my-2" />
               <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
               {totals.min_shortfall > 0 && (

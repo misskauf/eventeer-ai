@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+
 import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel } from "@/lib/pricing";
 import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
@@ -94,11 +96,17 @@ function ClientProposal() {
       setSeasonMult((ss as any).data?.multiplier ?? 1);
       setDiscount(Number(offerCfg.discount ?? 0));
       setMinRev(Number(offerCfg.min_revenue_required ?? 0));
+      const fcData: any = fc.data;
+      const gratDefault =
+        fcData?.gratuity_mode === "fixed"
+          ? Number(fcData?.gratuity_fixed_pct ?? 0)
+          : Number(fcData?.gratuity_default_pct ?? fcData?.service_charge_pct ?? 0);
       setServicePct(
         typeof offerCfg.service_charge_pct_override === "number"
           ? offerCfg.service_charge_pct_override
-          : null,
+          : gratDefault,
       );
+
       setCoverTitle(offerCfg.cover_title ?? "");
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
@@ -145,17 +153,31 @@ function ClientProposal() {
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
+    const fcAny = feesCfg as any;
+    const gMode = fcAny?.gratuity_mode ?? "slider";
+    const gFixed = Number(fcAny?.gratuity_fixed_pct ?? 0);
     const effectiveService =
-      servicePct != null ? servicePct : Number(feesCfg.service_charge_pct ?? 0);
+      gMode === "fixed"
+        ? gFixed
+        : servicePct != null
+        ? servicePct
+        : Number(fcAny?.gratuity_default_pct ?? feesCfg.service_charge_pct ?? 0);
     return {
       spaces, packages, extras,
-      fees: { ...feesCfg, service_charge_pct: effectiveService, overtime_hours: 0 },
+      fees: {
+        ...feesCfg,
+        service_charge_pct: effectiveService,
+        overtime_hours: 0,
+        gratuity_type: fcAny?.gratuity_type ?? "service_charge",
+        gratuity_tax_rate_pct: Number(fcAny?.gratuity_tax_rate_pct ?? 0),
+      },
       category_defaults: feesCfg,
       season_multiplier: seasonMult,
       min_revenue_required: minRev,
       discount,
     };
   }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev, servicePct]);
+
 
   const totals = useMemo(() => {
     if (!offer || !resolvedSelection) return null;
@@ -403,9 +425,38 @@ function ClientProposal() {
                 <Row label="Tax" value={money(totals.tax_subtotal, currency)} />
                 <Row label="Gross" value={money(totals.gross_subtotal, currency)} />
                 {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
-                <Row label="Service" value={money(totals.service_charge, currency)} />
+                {(() => {
+                  const fcAny = feesCfg as any;
+                  const gMode = fcAny?.gratuity_mode ?? "slider";
+                  const gMin = Number(fcAny?.gratuity_min_pct ?? 0);
+                  const gMax = Number(fcAny?.gratuity_max_pct ?? 20);
+                  const label = totals.gratuity_label;
+                  return (
+                    <>
+                      {gMode === "slider" && gMax > gMin && (
+                        <div className="mt-2 space-y-1 rounded-md border p-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{label}</span>
+                            <span className="tabular-nums">
+                              {(servicePct ?? gMin).toFixed(1)}%
+                            </span>
+                          </div>
+                          <Slider
+                            value={[Math.max(gMin, Math.min(gMax, servicePct ?? gMin))]}
+                            min={gMin}
+                            max={gMax}
+                            step={0.5}
+                            onValueChange={(v) => setServicePct(v[0] ?? gMin)}
+                          />
+                        </div>
+                      )}
+                      <Row label={label} value={money(totals.gratuity_gross, currency)} />
+                    </>
+                  );
+                })()}
                 <Separator className="my-2" />
                 <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
+
                 {totals.min_shortfall > 0 && (
                   <div className="mt-3 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
                     Add {money(totals.min_shortfall, currency)} more to meet the venue minimum.

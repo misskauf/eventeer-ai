@@ -54,11 +54,205 @@ function RulesPage() {
   const { companyId } = useCurrentCompany();
   return (
     <div className="space-y-8">
+      <GratuitySection companyId={companyId} />
       <SeasonsSection companyId={companyId} />
       <RulesSection companyId={companyId} />
     </div>
   );
 }
+
+/* ---------------- Service charge / tip ---------------- */
+
+type GratuityType = "service_charge" | "tip";
+type GratuityMode = "fixed" | "slider";
+
+type GratuityConfig = {
+  gratuity_type: GratuityType;
+  gratuity_mode: GratuityMode;
+  gratuity_fixed_pct: number;
+  gratuity_min_pct: number;
+  gratuity_max_pct: number;
+  gratuity_default_pct: number;
+  gratuity_tax_rate_pct: number;
+};
+
+function GratuitySection({ companyId }: { companyId: string | null }) {
+  const [cfg, setCfg] = useState<GratuityConfig | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("fee_config")
+      .select(
+        "gratuity_type, gratuity_mode, gratuity_fixed_pct, gratuity_min_pct, gratuity_max_pct, gratuity_default_pct, gratuity_tax_rate_pct",
+      )
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (data) setCfg(data as GratuityConfig);
+  }
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
+
+  async function save() {
+    if (!companyId || !cfg) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("fee_config")
+      .update(cfg)
+      .eq("company_id", companyId);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Saved");
+  }
+
+  if (!cfg) return null;
+  const set = <K extends keyof GratuityConfig>(k: K, v: GratuityConfig[K]) =>
+    setCfg({ ...cfg, [k]: v });
+
+  const Seg = ({
+    value,
+    options,
+    onChange,
+  }: {
+    value: string;
+    options: { value: string; label: string }[];
+    onChange: (v: string) => void;
+  }) => (
+    <div className="inline-flex rounded-md border p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={`rounded-sm px-3 py-1 text-xs ${
+            value === o.value
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          Service charge &amp; tip
+        </h2>
+        <Button onClick={save} disabled={saving}>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Type</Label>
+              <Seg
+                value={cfg.gratuity_type}
+                onChange={(v) => set("gratuity_type", v as GratuityType)}
+                options={[
+                  { value: "service_charge", label: "Service charge (taxed)" },
+                  { value: "tip", label: "Tip (untaxed)" },
+                ]}
+              />
+              <p className="text-xs text-muted-foreground">
+                Service charges are calculated on net and taxed at the rate below. Tips are added
+                gross with no tax.
+              </p>
+            </div>
+            {cfg.gratuity_type === "service_charge" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="grat_tax">Service tax rate %</Label>
+                <Input
+                  id="grat_tax"
+                  type="number"
+                  step="0.01"
+                  value={cfg.gratuity_tax_rate_pct}
+                  onChange={(e) =>
+                    set("gratuity_tax_rate_pct", Number(e.target.value))
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Rate mode</Label>
+            <Seg
+              value={cfg.gratuity_mode}
+              onChange={(v) => set("gratuity_mode", v as GratuityMode)}
+              options={[
+                { value: "fixed", label: "Fixed rate" },
+                { value: "slider", label: "Client slider" },
+              ]}
+            />
+          </div>
+
+          {cfg.gratuity_mode === "fixed" ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="grat_fixed">Fixed rate %</Label>
+                <Input
+                  id="grat_fixed"
+                  type="number"
+                  step="0.1"
+                  value={cfg.gratuity_fixed_pct}
+                  onChange={(e) =>
+                    set("gratuity_fixed_pct", Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="grat_min">Minimum %</Label>
+                <Input
+                  id="grat_min"
+                  type="number"
+                  step="0.1"
+                  value={cfg.gratuity_min_pct}
+                  onChange={(e) => set("gratuity_min_pct", Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="grat_max">Maximum %</Label>
+                <Input
+                  id="grat_max"
+                  type="number"
+                  step="0.1"
+                  value={cfg.gratuity_max_pct}
+                  onChange={(e) => set("gratuity_max_pct", Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="grat_default">Default %</Label>
+                <Input
+                  id="grat_default"
+                  type="number"
+                  step="0.1"
+                  value={cfg.gratuity_default_pct}
+                  onChange={(e) =>
+                    set("gratuity_default_pct", Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+
 
 /* ---------------- Seasons ---------------- */
 
