@@ -190,7 +190,9 @@ function DealDetail() {
     if (coverTouched) return;
     if (!deal) return;
     const eventType = deal.event_type?.trim();
-    const spaceNames = spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => s.name);
+    const stripSpaceSuffix = (name: string) =>
+      name.split(/\s+(?:-|–|—|\||,|Weekday|Weekend|Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)\b/i)[0].trim();
+    const spaceNames = spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => stripSpaceSuffix(s.name));
     const dateStr = deal.event_date ? formatEventDate(deal.event_date) : "";
     if (!eventType && !spaceNames.length && !dateStr) return;
     let title = "Your";
