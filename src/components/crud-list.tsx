@@ -63,6 +63,12 @@ export function CrudList<T extends { id: string }>({
       const str = raw == null ? "" : String(raw);
       if (f.type === "number") {
         payload[f.name] = str === "" ? (f.nullable ? null : 0) : Number(str);
+      } else if (f.type === "tags") {
+        try {
+          payload[f.name] = str === "" ? [] : JSON.parse(str);
+        } catch {
+          payload[f.name] = [];
+        }
       } else if (f.nullable) {
         payload[f.name] = str === "" ? null : str;
       } else {
