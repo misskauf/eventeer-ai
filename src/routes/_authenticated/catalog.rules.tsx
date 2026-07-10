@@ -103,6 +103,9 @@ function BasisToggle({
       ))}
     </div>
   );
+}
+
+
 
 function SeasonsSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Season[]>([]);
