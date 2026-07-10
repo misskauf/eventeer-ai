@@ -329,7 +329,10 @@ function DealDetail() {
         title={deal.client_name}
         description={`${deal.client_email}${deal.event_date ? " · " + new Date(deal.event_date).toLocaleDateString() : ""} · ${deal.guest_count} guests · ${deal.event_type ?? "Event"}`}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-1 h-4 w-4" /> Edit deal
+            </Button>
             <Button variant="outline" onClick={shareDashboard}>
               <Copy className="mr-1 h-4 w-4" /> Share dashboard
             </Button>
@@ -340,16 +343,26 @@ function DealDetail() {
         }
       />
 
+      <EditDealDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        deal={deal}
+        onSaved={loadAll}
+      />
+
       {/* DEAL SECTION */}
-      <Card className="mb-6">
+      <Card
+        className="mb-6 cursor-pointer transition hover:border-primary hover:shadow-sm"
+        onClick={() => setEditOpen(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter") setEditOpen(true); }}
+      >
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Deal details</CardTitle>
-          <EditDealDialog
-            open={editOpen}
-            onOpenChange={setEditOpen}
-            deal={deal}
-            onSaved={loadAll}
-          />
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Pencil className="h-3.5 w-3.5" /> Click to edit
+          </span>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
           <Detail label="Client">{deal.client_name}</Detail>
