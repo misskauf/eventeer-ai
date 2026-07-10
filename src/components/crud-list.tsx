@@ -280,3 +280,37 @@ function TagsInput({
     </div>
   );
 }
+
+function WeekdaysInput({ name, defaultValue }: { name: string; defaultValue: number[] }) {
+  const [days, setDays] = useState<number[]>(defaultValue.length ? defaultValue : [0, 1, 2, 3, 4, 5, 6]);
+  const WEEKDAYS = [
+    { d: 0, s: "Sun" }, { d: 1, s: "Mon" }, { d: 2, s: "Tue" }, { d: 3, s: "Wed" },
+    { d: 4, s: "Thu" }, { d: 5, s: "Fri" }, { d: 6, s: "Sat" },
+  ];
+  function toggle(d: number) {
+    setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort());
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <input type="hidden" name={name} value={JSON.stringify(days)} />
+      {WEEKDAYS.map((w) => {
+        const active = days.includes(w.d);
+        return (
+          <button
+            key={w.d}
+            type="button"
+            onClick={() => toggle(w.d)}
+            className={
+              "rounded-full border px-2 py-0.5 text-xs transition " +
+              (active
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground")
+            }
+          >
+            {w.s}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
