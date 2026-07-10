@@ -620,9 +620,12 @@ export type Database = {
           base_rental_fee: number
           basis: string | null
           capacity: number
+          capacity_seated: number | null
+          capacity_standing: number | null
           company_id: string
           created_at: string
           description: string | null
+          features: string[]
           id: string
           long_description: string | null
           min_rental_fee: number
@@ -637,9 +640,12 @@ export type Database = {
           base_rental_fee?: number
           basis?: string | null
           capacity?: number
+          capacity_seated?: number | null
+          capacity_standing?: number | null
           company_id: string
           created_at?: string
           description?: string | null
+          features?: string[]
           id?: string
           long_description?: string | null
           min_rental_fee?: number
@@ -654,9 +660,12 @@ export type Database = {
           base_rental_fee?: number
           basis?: string | null
           capacity?: number
+          capacity_seated?: number | null
+          capacity_standing?: number | null
           company_id?: string
           created_at?: string
           description?: string | null
+          features?: string[]
           id?: string
           long_description?: string | null
           min_rental_fee?: number

@@ -58,7 +58,8 @@ function SpacesPage() {
         fields={[
           { name: "name", label: "Name" },
           { name: "description", label: "Short description", type: "textarea", rows: 2 },
-          { name: "capacity", label: "Capacity", type: "number", nullable: true },
+          { name: "capacity_standing", label: "Capacity (standing)", type: "number", nullable: true },
+          { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true },
           { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01" },
           { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
           {
@@ -87,6 +88,33 @@ function SpacesPage() {
             rows: 6,
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
+          {
+            name: "features",
+            label: "Features",
+            type: "tags",
+            suggestions: [
+              "Stage",
+              "Lighting",
+              "WiFi",
+              "Furniture",
+              "DJ Equipment",
+              "PA / Sound system",
+              "Microphones",
+              "Projector",
+              "Screen",
+              "Dance floor",
+              "Bar",
+              "Kitchen access",
+              "Outdoor area",
+              "Air conditioning",
+              "Heating",
+              "Wheelchair accessible",
+              "Parking",
+              "Coat check",
+              "Green room",
+            ],
+            hint: "Pick from suggestions or add your own.",
+          },
         ]}
         render={(r: any) => {
           const amount = Math.max(Number(r.base_rental_fee), Number(r.min_rental_fee));
@@ -98,9 +126,35 @@ function SpacesPage() {
               <div>
                 <div className="font-medium">{r.name}</div>
                 <div className="text-xs text-muted-foreground">
-                  Cap {r.capacity ?? "—"} · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
+                  {(() => {
+                    const stand = r.capacity_standing ?? null;
+                    const seat = r.capacity_seated ?? null;
+                    const legacy = r.capacity ?? null;
+                    const capParts: string[] = [];
+                    if (stand != null) capParts.push(`${stand} standing`);
+                    if (seat != null) capParts.push(`${seat} seated`);
+                    const capStr = capParts.length
+                      ? capParts.join(" / ")
+                      : legacy != null
+                        ? `${legacy}`
+                        : "—";
+                    return `Cap ${capStr}`;
+                  })()}{" "}
+                  · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
                   {money(Number(r.min_rental_fee), currency)} · {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
                 </div>
+                {Array.isArray(r.features) && r.features.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {r.features.map((f: string) => (
+                      <span
+                        key={f}
+                        className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
               <div className="flex flex-wrap items-center gap-1 pt-1">
