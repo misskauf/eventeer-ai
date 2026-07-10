@@ -39,26 +39,15 @@ function Onboarding() {
     if (!user) return;
     setBusy(true);
     const fd = new FormData(e.currentTarget);
-    const { data: company, error } = await supabase
-      .from("companies")
-      .insert({
-        name: fd.get("name") as string,
-        primary_color: (fd.get("primary_color") as string) || "#0f172a",
-        currency: (fd.get("currency") as string) || "USD",
-        created_by: user.id,
-      })
-      .select("id")
-      .single();
-    if (error || !company) {
-      setBusy(false);
-      return toast.error(error?.message ?? "Failed to create workspace");
-    }
-    await supabase.from("user_roles").insert({
-      user_id: user.id,
-      company_id: company.id,
-      role: "owner",
+    const { error } = await supabase.rpc("create_company_workspace", {
+      _name: fd.get("name") as string,
+      _primary_color: (fd.get("primary_color") as string) || "#0f172a",
+      _currency: (fd.get("currency") as string) || "USD",
     });
-    await supabase.from("fee_config").insert({ company_id: company.id });
+    if (error) {
+      setBusy(false);
+      return toast.error(error.message);
+    }
     toast.success("Workspace created");
     await navigate({ to: "/deals" });
   }
