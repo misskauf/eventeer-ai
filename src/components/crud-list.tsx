@@ -128,6 +128,12 @@ export function CrudList<T extends { id: string }>({
                         rows={f.rows ?? 5}
                         defaultValue={cur ?? ""}
                       />
+                    ) : f.type === "tags" ? (
+                      <TagsInput
+                        name={f.name}
+                        suggestions={f.suggestions ?? []}
+                        defaultValue={Array.isArray(cur) ? cur : []}
+                      />
                     ) : (
                       <Input
                         id={f.name}
