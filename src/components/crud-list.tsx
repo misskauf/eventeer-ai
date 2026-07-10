@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags";
+  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
@@ -20,6 +20,7 @@ export type Field = {
   nullable?: boolean; // empty string -> null (for optional numbers/selects)
   hint?: string;
   rows?: number;
+  placeholder?: string;
 };
 
 export function CrudList<T extends { id: string }>({
