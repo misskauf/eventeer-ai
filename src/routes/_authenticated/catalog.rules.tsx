@@ -530,6 +530,7 @@ function RuleForm({
       day_of_week: null,
       month: null,
       min_revenue: Number(minRevenue),
+      basis,
     };
     const res = initial
       ? await supabase.from("pricing_rules").update(payload).eq("id", initial.id)
