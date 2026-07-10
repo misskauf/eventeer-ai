@@ -114,23 +114,27 @@ function DealDetail() {
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
     if (!d) return;
     setDeal(d as Deal);
-    const [sp, pk, ex, fc, ss, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").eq("active", true),
+    const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
+      supabase.from("pricing_rules").select("id, notes, days_of_week, months, min_revenue, basis").eq("company_id", d.company_id),
       supabase.from("companies").select("currency").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setSpaces((sp.data as SpaceSel[]) ?? []);
+    setSpaces((sp.data as SpaceRow[]) ?? []);
     setPackages((pk.data as PackageSel[]) ?? []);
     setExtras((ex.data as ExtraSel[]) ?? []);
-    setFees(fc.data ?? {
+    const feeRow: any = fc.data ?? {
       service_charge_pct: 0, tax_pct: 0, cleaning_fee: 0, overtime_fee_per_hour: 0,
-    });
+    };
+    setFees(feeRow);
     setSeasons((ss.data as Season[]) ?? []);
+    const rules = (mr.data as MinRevRule[]) ?? [];
+    setMinRevRules(rules);
     if (co.data?.currency) setCurrency(co.data.currency);
     setActivities(ac.data ?? []);
     if (pr.data) {
@@ -143,11 +147,25 @@ function DealDetail() {
       setPackageGuests(cfg.package_guests ?? {});
       setPackageHours(cfg.package_hours ?? {});
       setSeasonId(cfg.season_id ?? "none");
-      setDiscount(cfg.discount ?? 0);
-      setMinRevenue(cfg.min_revenue_required ?? 0);
+      const savedDiscount = Number(cfg.discount ?? 0);
+      setDiscount(savedDiscount);
+      setShowDiscount(savedDiscount > 0);
       setCoverTitle(cfg.cover_title ?? "");
+      setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
+      const savedService = cfg.service_charge_pct_override;
+      setServicePct(
+        typeof savedService === "number" ? savedService : Number(feeRow?.service_charge_pct ?? 0),
+      );
+      // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
+      const savedMin = Number(cfg.min_revenue_required ?? 0);
+      const matched = pickMinRevRule(rules, d.event_date);
+      setMinRevenue(savedMin || Number(matched?.min_revenue ?? 0));
+    } else {
+      setServicePct(Number(feeRow?.service_charge_pct ?? 0));
+      const matched = pickMinRevRule(rules, d.event_date);
+      setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
   }
 
