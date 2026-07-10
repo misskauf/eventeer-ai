@@ -595,6 +595,7 @@ export type Database = {
       spaces: {
         Row: {
           active: boolean
+          available_days: number[]
           base_rental_fee: number
           basis: string | null
           capacity: number
@@ -611,6 +612,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          available_days?: number[]
           base_rental_fee?: number
           basis?: string | null
           capacity?: number
@@ -627,6 +629,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          available_days?: number[]
           base_rental_fee?: number
           basis?: string | null
           capacity?: number

@@ -8,15 +8,27 @@ import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
   component: SpacesPage,
 });
 
+const WEEKDAYS = [
+  { d: 0, s: "Sun" },
+  { d: 1, s: "Mon" },
+  { d: 2, s: "Tue" },
+  { d: 3, s: "Wed" },
+  { d: 4, s: "Thu" },
+  { d: 5, s: "Fri" },
+  { d: 6, s: "Sat" },
+];
+
 function SpacesPage() {
   const { companyId } = useCurrentCompany();
   const currency = useCompanyCurrency();
   const [defaults, setDefaults] = useState<CategoryDefaults | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!companyId) return;
@@ -26,11 +38,20 @@ function SpacesPage() {
 
   const def = categoryDefault(defaults, "rental");
 
+  async function toggleDay(row: any, day: number) {
+    const cur: number[] = row.available_days && row.available_days.length ? row.available_days : [0, 1, 2, 3, 4, 5, 6];
+    const next = cur.includes(day) ? cur.filter((x) => x !== day) : [...cur, day].sort();
+    const { error } = await supabase.from("spaces").update({ available_days: next }).eq("id", row.id);
+    if (error) return toast.error(error.message);
+    setReloadKey((k) => k + 1);
+  }
+
   return (
     <div className="space-y-4">
       <CategoryDefaultsBar companyId={companyId} category="rental" defaults={defaults} onSaved={setDefaults} />
 
       <CrudList
+        key={reloadKey}
         title="space"
         table="spaces"
         companyId={companyId}
@@ -71,6 +92,7 @@ function SpacesPage() {
           const amount = Math.max(Number(r.base_rental_fee), Number(r.min_rental_fee));
           const basis = resolveBasis(r, defaults, "rental");
           const rate = resolveTaxRate(r, defaults, "rental");
+          const days: number[] = r.available_days && r.available_days.length ? r.available_days : [0, 1, 2, 3, 4, 5, 6];
           return (
             <div className="space-y-2">
               <div>
@@ -81,6 +103,27 @@ function SpacesPage() {
                 </div>
               </div>
               <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
+              <div className="flex flex-wrap items-center gap-1 pt-1">
+                <span className="mr-1 text-[11px] uppercase tracking-wide text-muted-foreground">Available</span>
+                {WEEKDAYS.map((w) => {
+                  const active = days.includes(w.d);
+                  return (
+                    <button
+                      key={w.d}
+                      type="button"
+                      onClick={() => toggleDay(r, w.d)}
+                      className={
+                        "rounded-full border px-2 py-0.5 text-[11px] transition " +
+                        (active
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:text-foreground")
+                      }
+                    >
+                      {w.s}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           );
         }}

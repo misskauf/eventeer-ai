@@ -31,6 +31,7 @@ import {
   stageLabel,
   stageToneClass,
 } from "@/lib/deal-stages";
+import { formatEventDate } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/deals")({
@@ -229,7 +230,7 @@ function DealsPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{d.client_email}</td>
                         <td className="px-4 py-3">
-                          {d.event_date ? new Date(d.event_date).toLocaleDateString() : "—"}
+                          {d.event_date ? formatEventDate(d.event_date) : "—"}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums">
                           {d.guest_count || "—"}

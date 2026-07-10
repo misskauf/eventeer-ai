@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel } from "@/lib/pricing";
+import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare } from "lucide-react";
@@ -42,6 +43,7 @@ function ClientProposal() {
   const [seasonMult, setSeasonMult] = useState(1);
   const [minRev, setMinRev] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [servicePct, setServicePct] = useState<number | null>(null);
   const [feesCfg, setFeesCfg] = useState<any>(null);
   const [coverTitle, setCoverTitle] = useState<string>("");
   const [introMarkdown, setIntroMarkdown] = useState<string>("");
@@ -90,8 +92,13 @@ function ClientProposal() {
       setExtras((ex.data as ExtraSel[]) ?? []);
       setFeesCfg(fc.data);
       setSeasonMult((ss as any).data?.multiplier ?? 1);
-      setDiscount(offerCfg.discount ?? 0);
-      setMinRev(offerCfg.min_revenue_required ?? 0);
+      setDiscount(Number(offerCfg.discount ?? 0));
+      setMinRev(Number(offerCfg.min_revenue_required ?? 0));
+      setServicePct(
+        typeof offerCfg.service_charge_pct_override === "number"
+          ? offerCfg.service_charge_pct_override
+          : null,
+      );
       setCoverTitle(offerCfg.cover_title ?? "");
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
@@ -138,15 +145,17 @@ function ClientProposal() {
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
+    const effectiveService =
+      servicePct != null ? servicePct : Number(feesCfg.service_charge_pct ?? 0);
     return {
       spaces, packages, extras,
-      fees: { ...feesCfg, overtime_hours: 0 },
+      fees: { ...feesCfg, service_charge_pct: effectiveService, overtime_hours: 0 },
       category_defaults: feesCfg,
       season_multiplier: seasonMult,
       min_revenue_required: minRev,
       discount,
     };
-  }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev]);
+  }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev, servicePct]);
 
   const totals = useMemo(() => {
     if (!offer || !resolvedSelection) return null;
@@ -228,7 +237,7 @@ function ClientProposal() {
             </h1>
             <div className="mt-0.5 text-xs text-muted-foreground">
               For {state.deal.client_name}
-              {state.deal.event_date && ` · ${new Date(state.deal.event_date).toLocaleDateString()}`}
+              {state.deal.event_date && ` · ${formatEventDate(state.deal.event_date)}`}
               {state.deal.guest_count > 0 && ` · ${state.deal.guest_count} guests`}
             </div>
           </div>

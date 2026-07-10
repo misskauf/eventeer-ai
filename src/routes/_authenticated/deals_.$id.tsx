@@ -36,10 +36,12 @@ import {
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { Markdown } from "@/components/markdown";
+import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles } from "lucide-react";
 import { stageLabel } from "@/lib/deal-stages";
+import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 
 export const Route = createFileRoute("/_authenticated/deals_/$id")({
   component: DealDetail,
@@ -60,6 +62,7 @@ type Deal = {
 };
 
 type Season = { id: string; name: string; multiplier: number };
+type SpaceRow = SpaceSel & { available_days?: number[] | null };
 
 type AlternativeGroup = {
   id: string;
@@ -78,11 +81,12 @@ function newGroupId() {
 function DealDetail() {
   const { id } = Route.useParams();
   const [deal, setDeal] = useState<Deal | null>(null);
-  const [spaces, setSpaces] = useState<SpaceSel[]>([]);
+  const [spaces, setSpaces] = useState<SpaceRow[]>([]);
   const [packages, setPackages] = useState<PackageSel[]>([]);
   const [extras, setExtras] = useState<ExtraSel[]>([]);
   const [fees, setFees] = useState<any>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [minRevRules, setMinRevRules] = useState<MinRevRule[]>([]);
   const [currency, setCurrency] = useState("USD");
 
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([]);
@@ -93,8 +97,11 @@ function DealDetail() {
 
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
+  const [showDiscount, setShowDiscount] = useState(false);
   const [minRevenue, setMinRevenue] = useState(0);
+  const [servicePct, setServicePct] = useState<number>(0);
   const [coverTitle, setCoverTitle] = useState("");
+  const [coverTouched, setCoverTouched] = useState(false);
   const [introMarkdown, setIntroMarkdown] = useState("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
@@ -107,23 +114,27 @@ function DealDetail() {
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
     if (!d) return;
     setDeal(d as Deal);
-    const [sp, pk, ex, fc, ss, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").eq("active", true),
+    const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
+      supabase.from("pricing_rules").select("id, notes, days_of_week, months, min_revenue, basis").eq("company_id", d.company_id),
       supabase.from("companies").select("currency").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setSpaces((sp.data as SpaceSel[]) ?? []);
+    setSpaces((sp.data as SpaceRow[]) ?? []);
     setPackages((pk.data as PackageSel[]) ?? []);
     setExtras((ex.data as ExtraSel[]) ?? []);
-    setFees(fc.data ?? {
+    const feeRow: any = fc.data ?? {
       service_charge_pct: 0, tax_pct: 0, cleaning_fee: 0, overtime_fee_per_hour: 0,
-    });
+    };
+    setFees(feeRow);
     setSeasons((ss.data as Season[]) ?? []);
+    const rules = (mr.data as MinRevRule[]) ?? [];
+    setMinRevRules(rules);
     if (co.data?.currency) setCurrency(co.data.currency);
     setActivities(ac.data ?? []);
     if (pr.data) {
@@ -136,11 +147,25 @@ function DealDetail() {
       setPackageGuests(cfg.package_guests ?? {});
       setPackageHours(cfg.package_hours ?? {});
       setSeasonId(cfg.season_id ?? "none");
-      setDiscount(cfg.discount ?? 0);
-      setMinRevenue(cfg.min_revenue_required ?? 0);
+      const savedDiscount = Number(cfg.discount ?? 0);
+      setDiscount(savedDiscount);
+      setShowDiscount(savedDiscount > 0);
       setCoverTitle(cfg.cover_title ?? "");
+      setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
+      const savedService = cfg.service_charge_pct_override;
+      setServicePct(
+        typeof savedService === "number" ? savedService : Number(feeRow?.service_charge_pct ?? 0),
+      );
+      // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
+      const savedMin = Number(cfg.min_revenue_required ?? 0);
+      const matched = pickMinRevRule(rules, d.event_date);
+      setMinRevenue(savedMin || Number(matched?.min_revenue ?? 0));
+    } else {
+      setServicePct(Number(feeRow?.service_charge_pct ?? 0));
+      const matched = pickMinRevRule(rules, d.event_date);
+      setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
   }
 
@@ -153,10 +178,32 @@ function DealDetail() {
     if (window.location.hash === "#edit") setEditOpen(true);
   }, [id]);
 
+  // Auto cover title from event type + date, unless the manager typed something.
+  useEffect(() => {
+    if (coverTouched) return;
+    if (!deal) return;
+    const parts: string[] = [];
+    if (deal.event_type) parts.push(deal.event_type);
+    if (deal.event_date) parts.push(formatEventDate(deal.event_date));
+    if (parts.length) setCoverTitle(parts.join(" · "));
+  }, [deal?.event_type, deal?.event_date, coverTouched, deal]);
+
   const seasonMult = useMemo(
     () => seasons.find((s) => s.id === seasonId)?.multiplier ?? 1,
     [seasonId, seasons],
   );
+
+  const matchedRule = useMemo(
+    () => pickMinRevRule(minRevRules, deal?.event_date),
+    [minRevRules, deal?.event_date],
+  );
+
+  // Filter spaces by day-of-week availability when the deal has an event date.
+  const availableSpaces = useMemo(() => {
+    const wd = weekdayOf(deal?.event_date);
+    if (wd == null) return spaces;
+    return spaces.filter((s) => !s.available_days || s.available_days.length === 0 || s.available_days.includes(wd));
+  }, [spaces, deal?.event_date]);
 
   // For the manager's own totals preview, resolve each alt group to its default choice.
   const resolvedSelection = useMemo(() => {
@@ -180,28 +227,31 @@ function DealDetail() {
     } as Selection;
   }, [deal, selectedSpaces, selectedPackages, selectedExtras, packageGuests, packageHours, altGroups]);
 
+  const effectiveDiscount = showDiscount ? discount : 0;
+
   const offer: Offer | null = useMemo(() => {
     if (!fees) return null;
     return {
       spaces, packages, extras,
-      fees: { ...fees, overtime_hours: 0 },
+      fees: { ...fees, service_charge_pct: servicePct, overtime_hours: 0 },
       category_defaults: fees as CategoryDefaults,
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
-      discount,
+      discount: effectiveDiscount,
     };
-  }, [spaces, packages, extras, fees, seasonMult, discount, minRevenue]);
+  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct]);
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
 
   const foodPackages = packages.filter((p) => (p.kind ?? "food") === "food");
   const beveragePackages = packages.filter((p) => p.kind === "beverage");
   const itemsForCategory = (cat: AlternativeGroup["category"]) => {
-    if (cat === "space") return spaces.map((s) => ({ id: s.id, name: s.name }));
+    if (cat === "space") return availableSpaces.map((s) => ({ id: s.id, name: s.name }));
     if (cat === "food") return foodPackages.map((p) => ({ id: p.id, name: p.name }));
     if (cat === "beverage") return beveragePackages.map((p) => ({ id: p.id, name: p.name }));
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
+
 
   function buildOfferConfig() {
     return {
@@ -211,12 +261,38 @@ function DealDetail() {
       package_guests: packageGuests,
       package_hours: packageHours,
       season_id: seasonId,
-      discount,
+      discount: effectiveDiscount,
       min_revenue_required: minRevenue,
+      service_charge_pct_override: servicePct,
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
     };
+  }
+
+  function suggestIntroText() {
+    if (!deal) return;
+    const lines: string[] = [];
+    const who = deal.client_name || "there";
+    const occasion = deal.event_type ? deal.event_type.toLowerCase() : "event";
+    const date = deal.event_date ? formatEventDate(deal.event_date) : "your chosen date";
+    lines.push(`Hi ${who},`);
+    lines.push("");
+    lines.push(`Thank you for considering us for your ${occasion} on **${date}**. Here is a tailored proposal for ${deal.guest_count} guests.`);
+    lines.push("");
+    const spaceNames = availableSpaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => s.name);
+    if (spaceNames.length) lines.push(`**Venue:** ${spaceNames.join(", ")}.`);
+    const foodNames = foodPackages.filter((p) => selectedPackages.includes(p.id)).map((p) => p.name);
+    if (foodNames.length) lines.push(`**Food:** ${foodNames.join(", ")}.`);
+    const bevNames = beveragePackages.filter((p) => selectedPackages.includes(p.id)).map((p) => p.name);
+    if (bevNames.length) lines.push(`**Beverage:** ${bevNames.join(", ")}.`);
+    const extraNames = extras.filter((e) => selectedExtras.includes(e.id)).map((e) => e.name);
+    if (extraNames.length) lines.push(`**Extras:** ${extraNames.join(", ")}.`);
+    if (altGroups.length) lines.push(`We've included a few **choices** below so you can shape the experience yourself.`);
+    lines.push("");
+    lines.push("Let me know what you think, or reply directly with any tweaks.");
+    setIntroMarkdown(lines.join("\n"));
+    toast.success("Suggested text inserted");
   }
 
   async function saveProposal(send: boolean): Promise<{ id: string; version: number } | null> {
@@ -331,7 +407,7 @@ function DealDetail() {
       </div>
       <PageHeader
         title={deal.client_name}
-        description={`${deal.client_email}${deal.event_date ? " · " + new Date(deal.event_date).toLocaleDateString() : ""} · ${deal.guest_count} guests · ${deal.event_type ?? "Event"}`}
+        description={`${deal.client_email}${deal.event_date ? " · " + formatEventDate(deal.event_date) : ""} · ${deal.guest_count} guests · ${deal.event_type ?? "Event"}`}
         action={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setEditOpen(true)}>
@@ -373,7 +449,7 @@ function DealDetail() {
           <Detail label="Email">{deal.client_email}</Detail>
           <Detail label="Company">{deal.client_company || "—"}</Detail>
           <Detail label="Event type">{deal.event_type || "—"}</Detail>
-          <Detail label="Event date">{deal.event_date ? new Date(deal.event_date).toLocaleDateString() : "—"}</Detail>
+          <Detail label="Event date">{deal.event_date ? formatEventDate(deal.event_date) : "—"}</Detail>
           <Detail label="Guests">{deal.guest_count || "—"}</Detail>
           <Detail label="Stage">{stageLabel(deal.stage)}</Detail>
           <Detail label="Estimated value">{money(Number(deal.estimated_value), currency)}</Detail>
@@ -465,12 +541,20 @@ function DealDetail() {
                 <Label>Cover title</Label>
                 <Input
                   value={coverTitle}
-                  onChange={(e) => setCoverTitle(e.target.value)}
+                  onChange={(e) => { setCoverTitle(e.target.value); setCoverTouched(true); }}
                   placeholder="e.g. Your winter wedding at Villa Rosa"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Auto-generated from event type + date. Edit to override.
+                </p>
               </div>
               <div className="space-y-1.5">
-                <Label>Intro message (Markdown supported)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Intro message (Markdown supported)</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={suggestIntroText}>
+                    <Sparkles className="mr-1 h-3.5 w-3.5" /> Suggest text
+                  </Button>
+                </div>
                 <Tabs value={editorTab} onValueChange={(v) => setEditorTab(v as any)}>
                   <TabsList className="mb-2">
                     <TabsTrigger value="write">Write</TabsTrigger>
@@ -497,10 +581,20 @@ function DealDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Spaces</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Spaces</CardTitle>
+              {deal.event_date && spaces.length > availableSpaces.length && (
+                <p className="text-xs text-muted-foreground">
+                  Showing spaces available on {formatEventDate(deal.event_date)} ({spaces.length - availableSpaces.length} hidden).
+                </p>
+              )}
+            </CardHeader>
             <CardContent className="space-y-2">
               {spaces.length === 0 && <EmptyHint to="/catalog/spaces" label="Add spaces in catalog" />}
-              {spaces.map((s) => (
+              {availableSpaces.length === 0 && spaces.length > 0 && (
+                <p className="text-sm text-muted-foreground">No spaces are configured for this weekday.</p>
+              )}
+              {availableSpaces.map((s) => (
                 <PickRow
                   key={s.id}
                   checked={selectedSpaces.includes(s.id)}
@@ -687,36 +781,89 @@ function DealDetail() {
         <div className="space-y-4">
           <Card>
             <CardHeader><CardTitle>Pricing rules</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label>Season</Label>
-                <Select value={seasonId} onValueChange={setSeasonId}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No season adjustment</SelectItem>
-                    {seasons.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} (×{s.multiplier})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <CardContent className="space-y-4">
+              <div className="rounded-md border bg-muted/30 p-3 text-xs">
+                <div className="font-medium text-foreground">
+                  Minimum revenue {matchedRule ? "(auto-matched)" : "(no rule matched)"}
+                </div>
+                {matchedRule ? (
+                  <div className="mt-1 space-y-1 text-muted-foreground">
+                    <div>
+                      {matchedRule.notes || "Rule"} · {money(Number(matchedRule.min_revenue), currency)} {matchedRule.basis}
+                    </div>
+                    {deal.event_date && (
+                      <div>Applied for {formatEventDate(deal.event_date)}.</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-muted-foreground">
+                    No minimum revenue rule matches this weekday/month. Set one in Catalog → Rules.
+                  </div>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <Label className="text-[11px] text-muted-foreground">Override</Label>
+                  <Input
+                    type="number"
+                    className="h-7 w-32"
+                    value={minRevenue}
+                    onChange={(e) => setMinRevenue(Number(e.target.value))}
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Minimum revenue required (net)</Label>
-                <Input
-                  type="number"
-                  value={minRevenue}
-                  onChange={(e) => setMinRevenue(Number(e.target.value))}
+
+              {seasons.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>Season multiplier</Label>
+                  <Select value={seasonId} onValueChange={setSeasonId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No season adjustment</SelectItem>
+                      {seasons.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} (×{s.multiplier})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Service charge</Label>
+                  <span className="text-sm font-medium tabular-nums">{servicePct.toFixed(1)}%</span>
+                </div>
+                <Slider
+                  value={[servicePct]}
+                  min={0}
+                  max={20}
+                  step={0.5}
+                  onValueChange={(v) => setServicePct(v[0] ?? 0)}
                 />
+                <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
+                  Calculated service: <span className="tabular-nums font-medium text-foreground">{money(totals.service_charge, currency)}</span>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Discount (gross)</Label>
-                <Input
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                />
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showDiscount}
+                    onChange={(e) => setShowDiscount(e.target.checked)}
+                  />
+                  Apply a discount (optional)
+                </label>
+                {showDiscount && (
+                  <div className="space-y-1.5">
+                    <Label>Discount (gross)</Label>
+                    <Input
+                      type="number"
+                      value={discount}
+                      onChange={(e) => setDiscount(Number(e.target.value))}
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -742,7 +889,7 @@ function DealDetail() {
               <Row label="Net subtotal" value={money(totals.net_subtotal, currency)} />
               <Row label="Total tax" value={money(totals.tax_subtotal, currency)} />
               <Row label="Gross subtotal" value={money(totals.gross_subtotal, currency)} />
-              {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
+              {effectiveDiscount > 0 && <Row label="Discount" value={"-" + money(effectiveDiscount, currency)} />}
               <Row label="Service" value={money(totals.service_charge, currency)} />
               <Separator className="my-2" />
               <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
