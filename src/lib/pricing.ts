@@ -44,12 +44,15 @@ export type Offer = {
     cleaning_fee: number;
     overtime_fee_per_hour: number;
     overtime_hours?: number;
+    gratuity_type?: "service_charge" | "tip";
+    gratuity_tax_rate_pct?: number;
   };
   category_defaults?: CategoryDefaults | null;
   season_multiplier?: number;
   min_revenue_required?: number;
   discount?: number;
 };
+
 
 export type Selection = {
   guest_count: number;
