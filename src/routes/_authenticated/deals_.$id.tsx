@@ -842,22 +842,52 @@ function DealDetail() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Service charge</Label>
-                  <span className="text-sm font-medium tabular-nums">{servicePct.toFixed(1)}%</span>
-                </div>
-                <Slider
-                  value={[servicePct]}
-                  min={0}
-                  max={20}
-                  step={0.5}
-                  onValueChange={(v) => setServicePct(v[0] ?? 0)}
-                />
-                <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
-                  Calculated service: <span className="tabular-nums font-medium text-foreground">{money(totals.service_charge, currency)}</span>
-                </div>
-              </div>
+              {(() => {
+                const gType = (fees as any)?.gratuity_type ?? "service_charge";
+                const gMode = (fees as any)?.gratuity_mode ?? "slider";
+                const gMin = Number((fees as any)?.gratuity_min_pct ?? 0);
+                const gMax = Number((fees as any)?.gratuity_max_pct ?? 20);
+                const gFixed = Number((fees as any)?.gratuity_fixed_pct ?? 0);
+                const label = gType === "tip" ? "Tip" : "Service charge";
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>{label}</Label>
+                      <span className="text-sm font-medium tabular-nums">
+                        {(gMode === "fixed" ? gFixed : servicePct).toFixed(1)}%
+                      </span>
+                    </div>
+                    {gMode === "fixed" ? (
+                      <div className="text-xs text-muted-foreground">
+                        Fixed rate configured in Catalog → Pricing rules.
+                      </div>
+                    ) : (
+                      <Slider
+                        value={[Math.max(gMin, Math.min(gMax, servicePct))]}
+                        min={gMin}
+                        max={gMax}
+                        step={0.5}
+                        onValueChange={(v) => setServicePct(v[0] ?? gMin)}
+                      />
+                    )}
+                    <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
+                      Calculated {label.toLowerCase()}:{" "}
+                      <span className="tabular-nums font-medium text-foreground">
+                        {money(totals.gratuity_gross, currency)}
+                      </span>
+                      {gType === "service_charge" && totals.gratuity_tax > 0 && (
+                        <>
+                          {" "}· incl. tax{" "}
+                          <span className="tabular-nums font-medium text-foreground">
+                            {money(totals.gratuity_tax, currency)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
 
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm">
