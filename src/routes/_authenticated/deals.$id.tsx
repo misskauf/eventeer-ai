@@ -137,7 +137,9 @@ function DealDetail() {
     package_ids: selectedPackages,
     extra_ids: selectedExtras,
     package_guests: packageGuests,
+    package_hours: packageHours,
   };
+
 
   const totals = offer ? computeTotals(offer, selection) : null;
 
