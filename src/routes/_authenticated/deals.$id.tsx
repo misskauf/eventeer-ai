@@ -25,6 +25,7 @@ import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, Send, AlertTriangle } from "lucide-react";
+import { stageLabel } from "@/lib/deal-stages";
 
 export const Route = createFileRoute("/_authenticated/deals/$id")({
   component: DealDetail,
@@ -243,7 +244,7 @@ function DealDetail() {
               <Copy className="mr-1 h-4 w-4" /> Share dashboard
             </Button>
             <Badge variant="secondary" className="self-center">
-              {deal.stage.replace(/_/g, " ")}
+              {stageLabel(deal.stage)}
             </Badge>
           </div>
         }
