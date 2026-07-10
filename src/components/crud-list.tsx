@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags";
+  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
@@ -20,6 +20,7 @@ export type Field = {
   nullable?: boolean; // empty string -> null (for optional numbers/selects)
   hint?: string;
   rows?: number;
+  placeholder?: string;
 };
 
 export function CrudList<T extends { id: string }>({
@@ -64,6 +65,12 @@ export function CrudList<T extends { id: string }>({
       if (f.type === "number") {
         payload[f.name] = str === "" ? (f.nullable ? null : 0) : Number(str);
       } else if (f.type === "tags") {
+        try {
+          payload[f.name] = str === "" ? [] : JSON.parse(str);
+        } catch {
+          payload[f.name] = [];
+        }
+      } else if (f.type === "weekdays") {
         try {
           payload[f.name] = str === "" ? [] : JSON.parse(str);
         } catch {
@@ -134,12 +141,18 @@ export function CrudList<T extends { id: string }>({
                         suggestions={f.suggestions ?? []}
                         defaultValue={Array.isArray(cur) ? cur : []}
                       />
+                    ) : f.type === "weekdays" ? (
+                      <WeekdaysInput
+                        name={f.name}
+                        defaultValue={Array.isArray(cur) ? cur : []}
+                      />
                     ) : (
                       <Input
                         id={f.name}
                         name={f.name}
-                        type={f.type ?? "text"}
+                        type={f.type === "url" ? "url" : (f.type ?? "text")}
                         step={f.step}
+                        placeholder={f.placeholder}
                         defaultValue={cur ?? ""}
                       />
                     )}
@@ -264,6 +277,40 @@ function TagsInput({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function WeekdaysInput({ name, defaultValue }: { name: string; defaultValue: number[] }) {
+  const [days, setDays] = useState<number[]>(defaultValue.length ? defaultValue : [0, 1, 2, 3, 4, 5, 6]);
+  const WEEKDAYS = [
+    { d: 0, s: "Sun" }, { d: 1, s: "Mon" }, { d: 2, s: "Tue" }, { d: 3, s: "Wed" },
+    { d: 4, s: "Thu" }, { d: 5, s: "Fri" }, { d: 6, s: "Sat" },
+  ];
+  function toggle(d: number) {
+    setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort());
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <input type="hidden" name={name} value={JSON.stringify(days)} />
+      {WEEKDAYS.map((w) => {
+        const active = days.includes(w.d);
+        return (
+          <button
+            key={w.d}
+            type="button"
+            onClick={() => toggle(w.d)}
+            className={
+              "rounded-full border px-2 py-0.5 text-xs transition " +
+              (active
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground")
+            }
+          >
+            {w.s}
+          </button>
+        );
+      })}
     </div>
   );
 }

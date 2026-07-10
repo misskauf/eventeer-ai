@@ -82,6 +82,20 @@ function SpacesPage() {
             hint: `Leave blank to use the rental default (${def.rate}%).`,
           },
           {
+            name: "details_url",
+            label: "Link to space details",
+            type: "url",
+            nullable: true,
+            placeholder: "https://example.com/spaces/bellboy",
+            hint: "Optional link shown on the deal page for quick reference.",
+          },
+          {
+            name: "available_days",
+            label: "Available days",
+            type: "weekdays",
+            hint: "Days of the week this space can be booked.",
+          },
+          {
             name: "long_description",
             label: "Full details",
             type: "textarea",
@@ -143,6 +157,18 @@ function SpacesPage() {
                   · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
                   {money(Number(r.min_rental_fee), currency)} · {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
                 </div>
+                {r.details_url && (
+                  <div className="mt-1 text-xs">
+                    <a
+                      href={r.details_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      View space details ↗
+                    </a>
+                  </div>
+                )}
                 {Array.isArray(r.features) && r.features.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {r.features.map((f: string) => (
