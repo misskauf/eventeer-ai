@@ -1,29 +1,48 @@
-## Problem
+## Goal
 
-The client preview page stays on "Loading proposal…" forever. `p.$token.tsx` gates render on `!state || !totals`. `totals` depends on `offer`, which requires `feesCfg` to be non-null:
+Change the client-facing proposal page (`/p/:token`) so that the manager's base picks drive the client's choice UI:
 
-```ts
-const offer = useMemo(() => { if (!feesCfg) return null; ... }, [...])
-```
+- **Spaces**: if the manager included several, the client picks exactly one (radio). If only one, it is shown as included with no choice. At least one must be selected — no "opt out".
+- **Food packages**: same as spaces (single choice / required).
+- **Beverage packages**: same as spaces (single choice / required).
+- **Extras**: multi-choice (checkboxes) — client picks zero, one, or many. Unchanged.
+- **Beverage package hours**: the client can bump the number of hours on the chosen beverage package; extra hours flow into the existing overtime line in the quote.
 
-`feesCfg` comes from `supabase.from("fee_config").select("*").eq("company_id", ...).maybeSingle()`. When the row is missing (older companies created before the `create_company_workspace` RPC seeded `fee_config`, or when RLS blocks the anonymous public read on `fee_config`), `fc.data` is `null` and the page hangs.
+The manager-side deal builder is not changed. What they already do (adding one or several items per category) becomes the source of truth for how the client sees it.
 
-The public proposal route runs unauthenticated (`ssr:false` + `supabase` anon client). `fee_config` almost certainly has no `TO anon` SELECT policy, so the read silently returns `null` for every visitor even when a row exists — this is the root cause for every viewer, not just old companies.
+## Changes
 
-## Fix
+### 1. `src/routes/p.$token.tsx` — client proposal view
 
-1. Move the `fee_config`, `spaces`, `fb_packages`, `extras`, and `pricing_seasons` reads into the existing `resolveProposalToken` server function (uses `supabaseAdmin`, bypasses RLS). Return them alongside `proposal/company/deal` so the public page never touches those tables directly with the anon client.
-2. In `p.$token.tsx`, consume the pre-fetched arrays from `res` instead of calling `supabase.from(...)` client-side. Fall back to `{}` for `feesCfg` when the row is truly missing, so `offer` still builds.
-3. Same treatment for the read-only shared dashboard route `d.$token.tsx` if it has the equivalent gap (verify while editing).
+- Replace the "base multi-select" sections for **Spaces**, **Food**, and **Beverages** with single-choice logic:
+  - If the manager provided 1 item → render it as an "included" card (no toggle), and force it into the selection.
+  - If the manager provided >1 → render a radio group; default to the first item; client must keep exactly one selected.
+- Keep the existing "Alternative groups" section as-is (already single-choice) so proposals built with explicit alt-groups still work.
+- Keep **Extras** as multi-choice checkboxes.
+- On the selected beverage package card, add a small "Event hours" numeric input (min = `included_hours`, defaults to `included_hours`). Store the value in `packageHours` state, pass it into the `Selection.package_hours` map, and it will flow through `computeTotals` (already supports per-package overtime).
+- Update `submitClientSelection` payload to include `package_hours`.
 
-No schema changes required. No new RLS policies (keeps `fee_config`/catalog tables non-public — safer than granting `anon`).
+### 2. `src/lib/public-share.functions.ts` — token submit
 
-## Technical notes
+- Extend the Zod schema for `submitClientSelection.selection` to accept `package_hours: z.record(z.string(), z.number()).optional()` and pass it through when writing `proposal_selections.selection`.
 
-- Extend `resolveProposalToken` return type with `feeConfig`, `spaces`, `packages`, `extras`, `seasonMultiplier`.
-- Delete the client-side `Promise.all` catalog fetch in `p.$token.tsx`; hydrate state directly from `res`.
-- Keep `submitClientSelection` unchanged.
+### 3. No schema, RLS, or manager-side changes
+
+- `Selection.package_hours` already exists in `src/lib/pricing.ts`.
+- `PackageSel.included_hours` and `overage_price_per_person_per_hour` already exist and are already fetched server-side.
+
+## Out of scope
+
+- Deal builder UI (manager side).
+- Any new backend tables or migrations.
+- Persisting the client's `package_hours` back onto the deal record beyond what's already stored in `proposal_selections.selection`.
 
 ## Verify
 
-Open a fresh "Preview as client" link → page renders totals, not the loading state.
+1. Manager creates a proposal with 2 spaces, 2 food packages, 1 beverage package, 2 extras → open "Preview as client":
+   - Spaces show as radio (pick one, required).
+   - Food shows as radio (pick one, required).
+   - Beverage shows as included card + "Event hours" input.
+   - Extras show as checkboxes (any subset).
+2. Increase beverage hours above `included_hours` → quote shows an overtime line and grand total updates.
+3. Manager creates a proposal with 1 space / 1 food / 1 beverage → each shows as an included card, all in the quote.
