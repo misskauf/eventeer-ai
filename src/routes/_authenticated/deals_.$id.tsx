@@ -40,7 +40,7 @@ import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2 } from "lucide-react";
-import { stageLabel } from "@/lib/deal-stages";
+import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 
 export const Route = createFileRoute("/_authenticated/deals_/$id")({
@@ -109,6 +109,10 @@ function DealDetail() {
   const [activities, setActivities] = useState<any[]>([]);
   const [existingProposal, setExistingProposal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [conflicts, setConflicts] = useState<
+    { id: string; client_name: string; client_company: string | null; stage: string }[]
+  >([]);
+
 
   async function loadAll() {
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
@@ -184,6 +188,25 @@ function DealDetail() {
   useEffect(() => {
     if (window.location.hash === "#edit") setEditOpen(true);
   }, [id]);
+
+  // Fetch other deals on the same event date within the same company.
+  useEffect(() => {
+    if (!deal?.event_date || !deal?.company_id) {
+      setConflicts([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, client_name, client_company, stage")
+        .eq("company_id", deal.company_id)
+        .eq("event_date", deal.event_date!)
+        .neq("id", deal.id);
+      setConflicts(((data as any[]) ?? []).filter((d) => d.stage !== "lost"));
+    })();
+  }, [deal?.id, deal?.event_date, deal?.company_id]);
+
+
 
   // Auto cover title "Your [event type] at [location] on [date]" unless the manager typed something.
   useEffect(() => {
@@ -452,7 +475,57 @@ function DealDetail() {
         onSaved={loadAll}
       />
 
+      {/* CONFLICT BANNER */}
+      {conflicts.length > 0 && (() => {
+        const hard = conflicts.filter((c) => (HARD_CONFLICT_STAGES as string[]).includes(c.stage));
+        const soft = conflicts.filter((c) => (SOFT_CONFLICT_STAGES as string[]).includes(c.stage));
+        if (hard.length === 0 && soft.length === 0) return null;
+        const isHard = hard.length > 0;
+        const list = isHard ? hard : soft;
+        return (
+          <div
+            className={
+              "mb-4 flex items-start gap-3 rounded-md border px-3 py-2 text-sm " +
+              (isHard
+                ? "border-red-300 bg-red-50 text-red-900"
+                : "border-orange-300 bg-orange-50 text-orange-900")
+            }
+          >
+            <span
+              className={
+                "mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full text-xs font-bold " +
+                (isHard ? "bg-red-600 text-white" : "bg-orange-500 text-white")
+              }
+              aria-hidden="true"
+            >
+              {isHard ? "!" : "▲"}
+            </span>
+            <div className="flex-1">
+              <div className="font-medium">
+                {isHard
+                  ? `Conflict: ${hard.length} booked event${hard.length > 1 ? "s" : ""} on this date`
+                  : `Warning: ${soft.length} deal${soft.length > 1 ? "s" : ""} in negotiation for this date`}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                {list.map((c) => (
+                  <Link
+                    key={c.id}
+                    to="/deals/$id"
+                    params={{ id: c.id }}
+                    className="underline underline-offset-2 hover:opacity-80"
+                  >
+                    {c.client_company ? `${c.client_company} · ${c.client_name}` : c.client_name}
+                    <span className="opacity-70"> ({stageLabel(c.stage)})</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* DEAL SECTION */}
+
       <Card
         className="mb-6 cursor-pointer transition hover:border-primary hover:shadow-sm"
         onClick={() => setEditOpen(true)}
