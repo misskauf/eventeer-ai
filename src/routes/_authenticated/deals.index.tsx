@@ -143,6 +143,8 @@ function DealsPage() {
         description="Every event inquiry, from first contact to paid in full."
         action={<NewDealDialog onCreated={(id) => navigate({ to: "/deals/$id", params: { id } })} />}
       />
+      <DealsTabs />
+
 
       {loading ? null : deals.length === 0 ? (
         <EmptyState
