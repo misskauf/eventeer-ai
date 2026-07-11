@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 
 import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel } from "@/lib/pricing";
+import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
@@ -141,11 +142,22 @@ function ClientProposal() {
       setSelExtras(bExtras.filter((id) => !groupItemIds.has(id)));
 
       setPackageGuests(offerCfg.package_guests ?? {});
-      // Seed beverage hours from each package's included_hours.
+      // Seed beverage hours from each package's included hours, falling back to the company default.
       const hoursSeed: Record<string, number> = {};
-      for (const id of bBev) {
+      const defaultBeverageHours = categoryDefaultHours(fcData as CategoryDefaults, "beverage");
+      const allBeverageIds = Array.from(
+        new Set([
+          ...bBev,
+          ...groups.filter((g) => g.category === "beverage").flatMap((g) => g.item_ids),
+        ]),
+      );
+      const savedPackageHours = (offerCfg.package_hours ?? {}) as Record<string, number>;
+      for (const id of allBeverageIds) {
         const p = pkgList.find((x) => x.id === id);
-        if (p?.included_hours != null) hoursSeed[id] = Number(p.included_hours);
+        if (p?.kind === "beverage") {
+          const standardHours = p.included_hours != null ? Number(p.included_hours) : defaultBeverageHours;
+          hoursSeed[id] = Number(savedPackageHours[id] ?? standardHours);
+        }
       }
       setPackageHours(hoursSeed);
       const defaults: Record<string, string> = {};
@@ -325,26 +337,45 @@ function ClientProposal() {
                       onValueChange={(v) => setAltChoices((cur) => ({ ...cur, [g.id]: v }))}
                       className="space-y-2"
                     >
-                      {items.map((it) => (
-                        <label
-                          key={it.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
-                        >
-                          <RadioGroupItem value={it.id} className="mt-1" />
-                          <div className="flex-1">
-                            <div className="font-medium">{it.name}</div>
-                            <div className="text-xs text-muted-foreground">{it.note}</div>
-                            {it.details && <Markdown source={it.details} className="mt-2" />}
-                            <NoteToggle
-                              itemId={it.id}
-                              open={!!openNoteFor[it.id]}
-                              value={itemNotes[it.id] ?? ""}
-                              onToggle={() => noteToggle(it.id)}
-                              onChange={(v) => setItemNotes((cur) => ({ ...cur, [it.id]: v }))}
-                            />
-                          </div>
-                        </label>
-                      ))}
+                      {items.map((it) => {
+                        const beveragePackage = g.category === "beverage" ? packages.find((x) => x.id === it.id) : null;
+                        const beverageStandardHours = beveragePackage
+                          ? beveragePackage.included_hours != null
+                            ? Number(beveragePackage.included_hours)
+                            : categoryDefaultHours(feesCfg as CategoryDefaults, "beverage")
+                          : null;
+                        const isSelectedBeverage = g.category === "beverage" && altChoices[g.id] === it.id && beveragePackage;
+                        return (
+                          <label
+                            key={it.id}
+                            className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
+                          >
+                            <RadioGroupItem value={it.id} className="mt-1" />
+                            <div className="flex-1">
+                              <div className="font-medium">{it.name}</div>
+                              <div className="text-xs text-muted-foreground">{it.note}</div>
+                              {it.details && <Markdown source={it.details} className="mt-2" />}
+                              {isSelectedBeverage && beverageStandardHours != null && (
+                                <BeverageHoursField
+                                  packageId={beveragePackage.id}
+                                  includedHours={beverageStandardHours}
+                                  currentHours={packageHours[beveragePackage.id] ?? beverageStandardHours}
+                                  overageRate={Number(beveragePackage.overage_price_per_person_per_hour ?? 0)}
+                                  currency={currency}
+                                  onHoursChange={(id, value) => setPackageHours((cur) => ({ ...cur, [id]: value }))}
+                                />
+                              )}
+                              <NoteToggle
+                                itemId={it.id}
+                                open={!!openNoteFor[it.id]}
+                                value={itemNotes[it.id] ?? ""}
+                                onToggle={() => noteToggle(it.id)}
+                                onChange={(v) => setItemNotes((cur) => ({ ...cur, [it.id]: v }))}
+                              />
+                            </div>
+                          </label>
+                        );
+                      })}
                     </RadioGroup>
                   </CardContent>
                 </Card>
@@ -397,6 +428,7 @@ function ClientProposal() {
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
                 packageHours={packageHours}
                 onHoursChange={(id, v) => setPackageHours((c) => ({ ...c, [id]: v }))}
+                defaultHours={categoryDefaultHours(feesCfg as CategoryDefaults, "beverage")}
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
@@ -667,7 +699,7 @@ function SingleChoiceSpaces({
 
 function SingleChoicePackages({
   title, items, currency, selectedId, onChange, dealGuests, packageGuests, onGuestChange,
-  packageHours, onHoursChange,
+  packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
   menuModeByPkg, managerMenuChoices,
@@ -682,6 +714,7 @@ function SingleChoicePackages({
   onGuestChange: (id: string, v: number) => void;
   packageHours?: Record<string, number>;
   onHoursChange?: (id: string, v: number) => void;
+  defaultHours?: number;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -710,8 +743,8 @@ function SingleChoicePackages({
           {items.map((p) => {
             const isSelected = p.id === selectedId;
             const guests = packageGuests[p.id] ?? dealGuests;
-            const includedH = p.included_hours != null ? Number(p.included_hours) : null;
-            const currentH = packageHours?.[p.id] ?? includedH ?? 0;
+            const includedH = p.included_hours != null ? Number(p.included_hours) : defaultHours ?? null;
+            const currentH = includedH != null ? packageHours?.[p.id] ?? includedH : 0;
             const mode = p.selection_mode ?? "fixed";
             const groups = Array.isArray(p.selection_groups) ? p.selection_groups : [];
             return (
@@ -758,23 +791,14 @@ function SingleChoicePackages({
                       />
                     </div>
                     {onHoursChange && includedH != null && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Hours</span>
-                        <Input
-                          type="number"
-                          min={includedH}
-                          value={currentH}
-                          onChange={(e) =>
-                            onHoursChange(p.id, Math.max(includedH, Number(e.target.value) || includedH))
-                          }
-                          className="h-7 w-20"
-                        />
-                        {currentH > includedH && (
-                          <span className="text-muted-foreground">
-                            +{currentH - includedH}h overtime
-                          </span>
-                        )}
-                      </div>
+                      <BeverageHoursField
+                        packageId={p.id}
+                        includedHours={includedH}
+                        currentHours={currentH}
+                        overageRate={Number(p.overage_price_per_person_per_hour ?? 0)}
+                        currency={currency}
+                        onHoursChange={onHoursChange}
+                      />
                     )}
                   </div>
                 )}
@@ -879,6 +903,43 @@ function SingleChoicePackages({
         </RadioGroup>
       </CardContent>
     </Card>
+  );
+}
+
+function BeverageHoursField({
+  packageId,
+  includedHours,
+  currentHours,
+  overageRate,
+  currency,
+  onHoursChange,
+}: {
+  packageId: string;
+  includedHours: number;
+  currentHours: number;
+  overageRate: number;
+  currency: string;
+  onHoursChange: (id: string, v: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-muted-foreground">Event hours</span>
+      <Input
+        type="number"
+        min={includedHours}
+        step="0.5"
+        value={currentHours}
+        onChange={(e) => onHoursChange(packageId, Math.max(includedHours, Number(e.target.value) || includedHours))}
+        className="h-7 w-20"
+      />
+      <span className="text-muted-foreground">standard {includedHours}h</span>
+      {overageRate > 0 && (
+        <span className="text-muted-foreground">+{money(overageRate, currency)}/guest/h</span>
+      )}
+      {currentHours > includedHours && (
+        <span className="font-medium text-foreground">+{currentHours - includedHours}h extra</span>
+      )}
+    </div>
   );
 }
 
