@@ -58,9 +58,11 @@ function ClientProposal() {
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
   const [baseExtras, setBaseExtras] = useState<string[]>([]);
   const [selSpaces, setSelSpaces] = useState<string[]>([]);
-  const [selPkgs, setSelPkgs] = useState<string[]>([]);
+  const [selFoodPkgs, setSelFoodPkgs] = useState<string[]>([]);
+  const [selBevPkgs, setSelBevPkgs] = useState<string[]>([]);
   const [selExtras, setSelExtras] = useState<string[]>([]);
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
+  const [packageHours, setPackageHours] = useState<Record<string, number>>({});
   const [altChoices, setAltChoices] = useState<Record<string, string>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   // menuChoices: { [packageId]: { [groupLabel]: string[] } }
