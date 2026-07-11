@@ -115,6 +115,9 @@ function ClientProposal() {
       setCoverTitle(offerCfg.cover_title ?? "");
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
+      setDiscountTarget(offerCfg.discount_target ?? null);
+      setMenuModeByPkg(offerCfg.menu_selection_mode_by_pkg ?? {});
+      setManagerMenuChoices(offerCfg.menu_choices_by_pkg ?? {});
 
       const bSpaces: string[] = offerCfg.space_ids ?? [];
       const bPkgs: string[] = offerCfg.package_ids ?? [];
