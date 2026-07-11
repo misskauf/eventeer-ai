@@ -352,15 +352,11 @@ function ClientProposal() {
             })}
 
             {baseSpaceItems.length > 0 && (
-              <OptionGroup
-                title="Spaces"
-                items={baseSpaceItems.map((s) => ({
-                  id: s.id, name: s.name,
-                  note: `From ${money(s.base_rental_fee, currency)}`,
-                  details: s.long_description,
-                }))}
-                selected={selSpaces}
-                onToggle={(id, v) => toggle(setSelSpaces, id, v)}
+              <SingleChoiceSpaces
+                items={baseSpaceItems}
+                currency={currency}
+                selectedId={selSpaces[0] ?? ""}
+                onChange={(id) => setSelSpaces([id])}
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
@@ -368,12 +364,12 @@ function ClientProposal() {
               />
             )}
             {basePkgFood.length > 0 && (
-              <PackageGroup
+              <SingleChoicePackages
                 title="Food"
                 items={basePkgFood}
                 currency={currency}
-                selected={selPkgs}
-                onToggle={(id, v) => toggle(setSelPkgs, id, v)}
+                selectedId={selFoodPkgs[0] ?? ""}
+                onChange={(id) => setSelFoodPkgs([id])}
                 dealGuests={state.deal.guest_count}
                 packageGuests={packageGuests}
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
@@ -390,15 +386,17 @@ function ClientProposal() {
               />
             )}
             {basePkgBev.length > 0 && (
-              <PackageGroup
+              <SingleChoicePackages
                 title="Beverages"
                 items={basePkgBev}
                 currency={currency}
-                selected={selPkgs}
-                onToggle={(id, v) => toggle(setSelPkgs, id, v)}
+                selectedId={selBevPkgs[0] ?? ""}
+                onChange={(id) => setSelBevPkgs([id])}
                 dealGuests={state.deal.guest_count}
                 packageGuests={packageGuests}
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
+                packageHours={packageHours}
+                onHoursChange={(id, v) => setPackageHours((c) => ({ ...c, [id]: v }))}
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
