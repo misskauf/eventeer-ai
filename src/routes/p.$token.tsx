@@ -386,6 +386,8 @@ function ClientProposal() {
                 onMenuChoiceChange={(pkgId, groupLabel, next) =>
                   setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
                 }
+                menuModeByPkg={menuModeByPkg}
+                managerMenuChoices={managerMenuChoices}
               />
             )}
             {baseExtraItems.length > 0 && (
