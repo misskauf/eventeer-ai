@@ -242,6 +242,7 @@ function ClientProposal() {
           package_ids: resolvedSelection!.package_ids,
           extra_ids: resolvedSelection!.extra_ids,
           package_guests: packageGuests,
+          package_hours: packageHours,
         },
         computed_total: totals!.grand_total,
         client_response: {
