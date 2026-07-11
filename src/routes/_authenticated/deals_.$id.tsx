@@ -162,7 +162,7 @@ function DealDetail() {
       setServicePct(typeof savedService === "number" ? savedService : gratDefault);
       // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
       const savedMin = Number(cfg.min_revenue_required ?? 0);
-      const matched = pickMinRevRule(rules, d.event_date);
+      const matched = pickMinRevRule(rules, d.event_date, cfg.space_ids ?? []);
       setMinRevenue(savedMin || Number(matched?.min_revenue ?? 0));
     } else {
       const gratDefault =
@@ -170,7 +170,7 @@ function DealDetail() {
           ? Number(feeRow?.gratuity_fixed_pct ?? 0)
           : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
       setServicePct(gratDefault);
-      const matched = pickMinRevRule(rules, d.event_date);
+      const matched = pickMinRevRule(rules, d.event_date, []);
       setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
 
