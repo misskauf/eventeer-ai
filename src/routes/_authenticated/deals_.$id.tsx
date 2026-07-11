@@ -200,7 +200,7 @@ function DealDetail() {
         .from("deals")
         .select("id, client_name, client_company, stage")
         .eq("company_id", deal.company_id)
-        .eq("event_date", deal.event_date)
+        .eq("event_date", deal.event_date!)
         .neq("id", deal.id);
       setConflicts(((data as any[]) ?? []).filter((d) => d.stage !== "lost"));
     })();
