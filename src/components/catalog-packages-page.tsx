@@ -116,7 +116,7 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
               />
             ),
           },
-          { name: "selection_mode", label: "", type: "text", render: () => null, defaultValue: "fixed" },
+          { name: "selection_mode", label: "", type: "custom", render: () => null, defaultValue: "fixed" },
         ]}
 
         render={(r: any) => {
