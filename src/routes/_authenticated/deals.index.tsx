@@ -34,7 +34,7 @@ import {
 import { formatEventDate } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/deals")({
+export const Route = createFileRoute("/_authenticated/deals/")({
   component: DealsPage,
 });
 
