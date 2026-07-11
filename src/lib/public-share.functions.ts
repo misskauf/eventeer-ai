@@ -50,6 +50,7 @@ export const submitClientSelection = createServerFn({ method: "POST" })
             overall_message: z.string().optional(),
             item_notes: z.record(z.string(), z.string()).optional(),
             selected_alternatives: z.record(z.string(), z.string()).optional(),
+            menu_choices: z.record(z.string(), z.record(z.string(), z.array(z.string()))).optional(),
           })
           .optional(),
       })
