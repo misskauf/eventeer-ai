@@ -600,6 +600,9 @@ function RulesSection({ companyId }: { companyId: string | null }) {
   const [spaces, setSpaces] = useState<SpaceLite[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
+  const [filterSpace, setFilterSpace] = useState<string>("all");
+  const [filterDay, setFilterDay] = useState<string>("any");
+  const [filterMonth, setFilterMonth] = useState<string>("any");
   const currency = useCompanyCurrency();
 
   async function load() {
@@ -631,6 +634,27 @@ function RulesSection({ companyId }: { companyId: string | null }) {
     if (error) return toast.error(error.message);
     load();
   }
+
+  const filtersActive =
+    filterSpace !== "all" || filterDay !== "any" || filterMonth !== "any";
+
+  const filteredRows = rows.filter((r) => {
+    if (filterSpace !== "all") {
+      const ids = r.space_ids ?? [];
+      if (ids.length > 0 && !ids.includes(filterSpace)) return false;
+    }
+    if (filterDay !== "any") {
+      const d = Number(filterDay);
+      const days = r.days_of_week ?? [];
+      if (days.length > 0 && !days.includes(d)) return false;
+    }
+    if (filterMonth !== "any") {
+      const m = Number(filterMonth);
+      const months = r.months ?? [];
+      if (months.length > 0 && !months.includes(m)) return false;
+    }
+    return true;
+  });
 
   return (
     <section>
@@ -668,15 +692,78 @@ function RulesSection({ companyId }: { companyId: string | null }) {
         </Dialog>
       </div>
 
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Space</Label>
+          <Select value={filterSpace} onValueChange={setFilterSpace}>
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All spaces</SelectItem>
+              {spaces.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Day of week</Label>
+          <Select value={filterDay} onValueChange={setFilterDay}>
+            <SelectTrigger className="h-9 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Any day</SelectItem>
+              {DAYS.map((d, i) => (
+                <SelectItem key={d} value={String(i)}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Month</Label>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="h-9 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Any month</SelectItem>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {filtersActive && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setFilterSpace("all");
+              setFilterDay("any");
+              setFilterMonth("any");
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
+      </div>
+
       <Card>
         <CardContent className="p-0">
           {rows.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
               No rules yet.
             </div>
+          ) : filteredRows.length === 0 ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              No rules match the current filters.
+            </div>
           ) : (
             <div className="divide-y">
-              {rows.map((r) => (
+              {filteredRows.map((r) => (
                 <div
                   key={r.id}
                   className="flex items-center justify-between gap-3 px-4 py-3"
