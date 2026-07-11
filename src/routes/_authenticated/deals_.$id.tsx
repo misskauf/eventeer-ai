@@ -1208,6 +1208,7 @@ function TextField(props: {
 function PackageCard({
   title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
+  menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
 }: {
   title: string;
   emptyTo: string;
@@ -1221,6 +1222,10 @@ function PackageCard({
   packageHours: Record<string, number>;
   onHoursChange: (id: string, v: number) => void;
   defaultHours: number;
+  menuModeByPkg: Record<string, "manager" | "client">;
+  onMenuModeChange: (pid: string, mode: "manager" | "client") => void;
+  menuChoicesByPkg: Record<string, Record<string, string[]>>;
+  onMenuChoiceChange: (pid: string, groupLabel: string, next: string[]) => void;
 }) {
   return (
     <Card>
@@ -1233,6 +1238,10 @@ function PackageCard({
           const standardHours = p.included_hours != null ? Number(p.included_hours) : defaultHours;
           const hours = packageHours[p.id] ?? standardHours;
           const overRate = Number(p.overage_price_per_person_per_hour ?? 0);
+          const selMode = p.selection_mode ?? "fixed";
+          const groups = (Array.isArray(p.selection_groups) ? p.selection_groups : []) as MenuGroupDef[];
+          const hasSelection = selMode !== "fixed" && groups.length > 0;
+          const pickerMode = menuModeByPkg[p.id] ?? "client";
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -1294,6 +1303,42 @@ function PackageCard({
                   </div>
                 </div>
               )}
+              {checked && hasSelection && (
+                <div className="mt-3 space-y-2 border-t pt-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-medium">Menu selection</span>
+                    <span className="text-muted-foreground">— selected by:</span>
+                    <div className="inline-flex overflow-hidden rounded-md border">
+                      <button
+                        type="button"
+                        className={"px-2 py-0.5 " + (pickerMode === "manager" ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                        onClick={() => onMenuModeChange(p.id, "manager")}
+                      >
+                        Manager
+                      </button>
+                      <button
+                        type="button"
+                        className={"px-2 py-0.5 " + (pickerMode === "client" ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                        onClick={() => onMenuModeChange(p.id, "client")}
+                      >
+                        Client
+                      </button>
+                    </div>
+                  </div>
+                  {pickerMode === "manager" ? (
+                    <MenuSelectionPicker
+                      groups={groups}
+                      totalMax={p.selection_total_max ?? null}
+                      value={menuChoicesByPkg[p.id] ?? {}}
+                      onChange={(gl, next) => onMenuChoiceChange(p.id, gl, next)}
+                    />
+                  ) : (
+                    <div className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+                      Client will pick menu items in the proposal.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -1301,6 +1346,7 @@ function PackageCard({
     </Card>
   );
 }
+
 
 function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: string, v: boolean | "indeterminate") {
   setter((cur) => (v ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)));
