@@ -352,6 +352,10 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                menuChoices={menuChoices}
+                onMenuChoiceChange={(pkgId, groupLabel, next) =>
+                  setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                }
               />
             )}
             {basePkgBev.length > 0 && (
@@ -368,6 +372,10 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                menuChoices={menuChoices}
+                onMenuChoiceChange={(pkgId, groupLabel, next) =>
+                  setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                }
               />
             )}
             {baseExtraItems.length > 0 && (
