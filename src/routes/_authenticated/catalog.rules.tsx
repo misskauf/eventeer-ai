@@ -825,7 +825,35 @@ function RuleForm({
         </div>
         <p className="text-xs text-muted-foreground">Leave empty for any month.</p>
       </div>
+      <div className="space-y-1.5">
+        <Label>Applies to spaces</Label>
+        {spaces.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No spaces yet. Create spaces in the Spaces tab.</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {spaces.map((s) => {
+              const on = spaceIds.includes(s.id);
+              return (
+                <button
+                  type="button"
+                  key={s.id}
+                  onClick={() => toggleSpace(s.id)}
+                  className={`rounded-md border px-2.5 py-1 text-xs ${
+                    on
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background hover:bg-accent"
+                  }`}
+                >
+                  {s.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">Leave empty to apply to all spaces.</p>
+      </div>
       <div className="grid grid-cols-2 gap-3">
+
         <div className="space-y-1.5">
           <Label htmlFor="min">Minimum revenue required</Label>
           <Input
