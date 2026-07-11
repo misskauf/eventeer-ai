@@ -564,6 +564,7 @@ function PackageGroup({
   title, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
+  menuModeByPkg, managerMenuChoices,
 }: {
   title: string;
   items: PackageSel[];
@@ -579,6 +580,8 @@ function PackageGroup({
   onNoteChange: (id: string, v: string) => void;
   menuChoices: Record<string, Record<string, string[]>>;
   onMenuChoiceChange: (pkgId: string, groupLabel: string, next: string[]) => void;
+  menuModeByPkg: Record<string, "manager" | "client">;
+  managerMenuChoices: Record<string, Record<string, string[]>>;
 }) {
   if (items.length === 0) return null;
   return (
