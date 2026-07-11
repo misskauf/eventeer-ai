@@ -103,6 +103,20 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             rows: 6,
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
+          {
+            name: "selection_groups",
+            label: "Menu selection",
+            type: "custom",
+            render: (cur: any, editing: any) => (
+              <MenuSelectionEditor
+                modeName="selection_mode"
+                groupsName="selection_groups"
+                defaultMode={(editing?.selection_mode as any) ?? "fixed"}
+                defaultGroups={(Array.isArray(cur) ? cur : []) as MenuGroup[]}
+              />
+            ),
+          },
+          { name: "selection_mode", label: "", type: "custom", render: () => null },
         ]}
 
         render={(r: any) => {
