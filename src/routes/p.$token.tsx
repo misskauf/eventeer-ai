@@ -183,9 +183,10 @@ function ClientProposal() {
       season_multiplier: seasonMult,
       min_revenue_required: minRev,
       discount,
+      discount_target: discountTarget,
       currency: state?.company?.currency ?? "USD",
     };
-  }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev, servicePct, state?.company?.currency]);
+  }, [spaces, packages, extras, feesCfg, seasonMult, discount, discountTarget, minRev, servicePct, state?.company?.currency]);
 
 
   const totals = useMemo(() => {
