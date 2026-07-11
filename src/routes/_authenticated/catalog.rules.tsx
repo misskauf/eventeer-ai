@@ -600,6 +600,9 @@ function RulesSection({ companyId }: { companyId: string | null }) {
   const [spaces, setSpaces] = useState<SpaceLite[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
+  const [filterSpace, setFilterSpace] = useState<string>("all");
+  const [filterDay, setFilterDay] = useState<string>("any");
+  const [filterMonth, setFilterMonth] = useState<string>("any");
   const currency = useCompanyCurrency();
 
   async function load() {
@@ -631,6 +634,27 @@ function RulesSection({ companyId }: { companyId: string | null }) {
     if (error) return toast.error(error.message);
     load();
   }
+
+  const filtersActive =
+    filterSpace !== "all" || filterDay !== "any" || filterMonth !== "any";
+
+  const filteredRows = rows.filter((r) => {
+    if (filterSpace !== "all") {
+      const ids = r.space_ids ?? [];
+      if (ids.length > 0 && !ids.includes(filterSpace)) return false;
+    }
+    if (filterDay !== "any") {
+      const d = Number(filterDay);
+      const days = r.days_of_week ?? [];
+      if (days.length > 0 && !days.includes(d)) return false;
+    }
+    if (filterMonth !== "any") {
+      const m = Number(filterMonth);
+      const months = r.months ?? [];
+      if (months.length > 0 && !months.includes(m)) return false;
+    }
+    return true;
+  });
 
   return (
     <section>
