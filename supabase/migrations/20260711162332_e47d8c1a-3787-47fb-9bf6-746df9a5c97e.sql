@@ -1,0 +1,1 @@
+ALTER TABLE public.pricing_rules ADD COLUMN IF NOT EXISTS space_ids uuid[] NOT NULL DEFAULT '{}';

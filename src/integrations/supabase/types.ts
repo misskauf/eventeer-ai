@@ -377,6 +377,7 @@ export type Database = {
           months: number[]
           notes: string | null
           space_id: string | null
+          space_ids: string[]
         }
         Insert: {
           basis?: string
@@ -390,6 +391,7 @@ export type Database = {
           months?: number[]
           notes?: string | null
           space_id?: string | null
+          space_ids?: string[]
         }
         Update: {
           basis?: string
@@ -403,6 +405,7 @@ export type Database = {
           months?: number[]
           notes?: string | null
           space_id?: string | null
+          space_ids?: string[]
         }
         Relationships: [
           {
