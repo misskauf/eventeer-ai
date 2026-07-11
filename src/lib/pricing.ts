@@ -38,6 +38,11 @@ export type ExtraSel = {
   long_description?: string | null;
 };
 
+export type DiscountTarget = {
+  kind: "space" | "package" | "extra";
+  id: string;
+};
+
 export type Offer = {
   spaces: SpaceSel[];
   packages: PackageSel[];
@@ -55,6 +60,7 @@ export type Offer = {
   season_multiplier?: number;
   min_revenue_required?: number;
   discount?: number;
+  discount_target?: DiscountTarget | null;
   currency?: string;
 };
 
