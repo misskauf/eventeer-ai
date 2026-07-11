@@ -109,6 +109,10 @@ function DealDetail() {
   const [activities, setActivities] = useState<any[]>([]);
   const [existingProposal, setExistingProposal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [conflicts, setConflicts] = useState<
+    { id: string; client_name: string; client_company: string | null; stage: string }[]
+  >([]);
+
 
   async function loadAll() {
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
