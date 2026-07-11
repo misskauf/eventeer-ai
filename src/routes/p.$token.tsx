@@ -50,6 +50,9 @@ function ClientProposal() {
   const [coverTitle, setCoverTitle] = useState<string>("");
   const [introMarkdown, setIntroMarkdown] = useState<string>("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
+  const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
+  const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
+  const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
@@ -112,6 +115,9 @@ function ClientProposal() {
       setCoverTitle(offerCfg.cover_title ?? "");
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
+      setDiscountTarget(offerCfg.discount_target ?? null);
+      setMenuModeByPkg(offerCfg.menu_selection_mode_by_pkg ?? {});
+      setManagerMenuChoices(offerCfg.menu_choices_by_pkg ?? {});
 
       const bSpaces: string[] = offerCfg.space_ids ?? [];
       const bPkgs: string[] = offerCfg.package_ids ?? [];
@@ -177,9 +183,10 @@ function ClientProposal() {
       season_multiplier: seasonMult,
       min_revenue_required: minRev,
       discount,
+      discount_target: discountTarget,
       currency: state?.company?.currency ?? "USD",
     };
-  }, [spaces, packages, extras, feesCfg, seasonMult, discount, minRev, servicePct, state?.company?.currency]);
+  }, [spaces, packages, extras, feesCfg, seasonMult, discount, discountTarget, minRev, servicePct, state?.company?.currency]);
 
 
   const totals = useMemo(() => {
@@ -357,6 +364,8 @@ function ClientProposal() {
                 onMenuChoiceChange={(pkgId, groupLabel, next) =>
                   setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
                 }
+                menuModeByPkg={menuModeByPkg}
+                managerMenuChoices={managerMenuChoices}
               />
             )}
             {basePkgBev.length > 0 && (
@@ -377,6 +386,8 @@ function ClientProposal() {
                 onMenuChoiceChange={(pkgId, groupLabel, next) =>
                   setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
                 }
+                menuModeByPkg={menuModeByPkg}
+                managerMenuChoices={managerMenuChoices}
               />
             )}
             {baseExtraItems.length > 0 && (
@@ -422,10 +433,22 @@ function ClientProposal() {
                   <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
                     <div className="flex justify-between">
                       <span className="font-medium">{l.label}</span>
-                      <span className="tabular-nums">{money(l.gross, currency)}</span>
+                      <span className="tabular-nums">
+                        {l.original_gross != null && l.original_gross !== l.gross && (
+                          <span className="mr-1 text-xs text-muted-foreground line-through">
+                            {money(l.original_gross, currency)}
+                          </span>
+                        )}
+                        {money(l.gross, currency)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-[11px] text-muted-foreground">
-                      <span>{l.qty}</span>
+                      <span>
+                        {l.qty}
+                        {l.discount_applied != null && l.discount_applied > 0 && (
+                          <> · discount -{money(l.discount_applied, currency)}</>
+                        )}
+                      </span>
                       <span className="tabular-nums">
                         net {money(l.net, currency)} · tax {money(l.tax, currency)}
                       </span>
@@ -434,9 +457,12 @@ function ClientProposal() {
                 ))}
                 <Separator className="my-2" />
                 <Row label="Net" value={money(totals.net_subtotal, currency)} />
+                {totals.discount_targeted && totals.discount_net > 0 && (
+                  <Row label="Discount (net)" value={"-" + money(totals.discount_net, currency)} />
+                )}
                 <Row label="Tax" value={money(totals.tax_subtotal, currency)} />
                 <Row label="Gross" value={money(totals.gross_subtotal, currency)} />
-                {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
+                {!totals.discount_targeted && discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
                 {(() => {
                   const fcAny = feesCfg as any;
                   const gMode = fcAny?.gratuity_mode ?? "slider";
@@ -557,6 +583,7 @@ function PackageGroup({
   title, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
+  menuModeByPkg, managerMenuChoices,
 }: {
   title: string;
   items: PackageSel[];
@@ -572,6 +599,8 @@ function PackageGroup({
   onNoteChange: (id: string, v: string) => void;
   menuChoices: Record<string, Record<string, string[]>>;
   onMenuChoiceChange: (pkgId: string, groupLabel: string, next: string[]) => void;
+  menuModeByPkg: Record<string, "manager" | "client">;
+  managerMenuChoices: Record<string, Record<string, string[]>>;
 }) {
   if (items.length === 0) return null;
   return (
@@ -616,7 +645,27 @@ function PackageGroup({
                   />
                 </div>
               )}
-              {checked && mode !== "fixed" && groups.length > 0 && (
+              {checked && mode !== "fixed" && groups.length > 0 && (menuModeByPkg[p.id] ?? "client") === "manager" && (
+                <div className="mt-3 space-y-2 border-t pt-3">
+                  <div className="text-xs font-medium">Menu (selected by the event manager)</div>
+                  {groups.map((g) => {
+                    const picks = managerMenuChoices[p.id]?.[g.label] ?? [];
+                    return (
+                      <div key={g.label} className="text-xs">
+                        <div className="font-medium">{g.label}</div>
+                        {picks.length === 0 ? (
+                          <div className="text-muted-foreground">—</div>
+                        ) : (
+                          <ul className="ml-4 list-disc text-muted-foreground">
+                            {picks.map((x) => <li key={x}>{x}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {checked && mode !== "fixed" && groups.length > 0 && (menuModeByPkg[p.id] ?? "client") === "client" && (
                 <div className="mt-3 space-y-3 border-t pt-3">
                   {(() => {
                     const totalMax = (p as any).selection_total_max as number | null | undefined;

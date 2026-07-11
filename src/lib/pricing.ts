@@ -38,6 +38,11 @@ export type ExtraSel = {
   long_description?: string | null;
 };
 
+export type DiscountTarget = {
+  kind: "space" | "package" | "extra";
+  id: string;
+};
+
 export type Offer = {
   spaces: SpaceSel[];
   packages: PackageSel[];
@@ -55,6 +60,7 @@ export type Offer = {
   season_multiplier?: number;
   min_revenue_required?: number;
   discount?: number;
+  discount_target?: DiscountTarget | null;
   currency?: string;
 };
 
@@ -78,6 +84,12 @@ export type LineItem = {
   gross: number;
   tax_rate_pct: number;
   basis: "net" | "gross";
+  sourceKind?: "space" | "package" | "extra" | "package_overtime" | "fee";
+  sourceId?: string;
+  original_gross?: number;
+  original_net?: number;
+  original_tax?: number;
+  discount_applied?: number; // gross discount taken from this line
 };
 
 export type Totals = {
@@ -93,7 +105,9 @@ export type Totals = {
   gratuity_label: string;
   gratuity_type: "service_charge" | "tip";
   tax: number; // = tax_subtotal
-  discount: number;
+  discount: number; // gross discount applied (from a targeted line, or legacy flat)
+  discount_net: number; // net-equivalent discount, for display below net subtotal
+  discount_targeted: boolean;
   grand_total: number;
   min_required: number;
   min_shortfall: number;
@@ -107,11 +121,13 @@ function lineFor(
   category: Category,
   label: string,
   qty: string,
+  sourceKind?: LineItem["sourceKind"],
+  sourceId?: string,
 ): LineItem {
   const basis = resolveBasis(item, defaults, category);
   const rate = resolveTaxRate(item, defaults, category);
   const { net, tax, gross } = splitNetTaxGross(amount, basis, rate);
-  return { label, qty, amount: gross, net, tax, gross, tax_rate_pct: rate, basis };
+  return { label, qty, amount: gross, net, tax, gross, tax_rate_pct: rate, basis, sourceKind, sourceId };
 }
 
 export function computeTotals(offer: Offer, selection: Selection): Totals {
@@ -122,7 +138,7 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
 
   for (const s of offer.spaces.filter((x) => selection.space_ids.includes(x.id))) {
     const amount = Math.max(s.base_rental_fee, s.min_rental_fee) * mult;
-    lines.push(lineFor(amount, s, defaults, "rental", `Space: ${s.name}`, "1"));
+    lines.push(lineFor(amount, s, defaults, "rental", `Space: ${s.name}`, "1", "space", s.id));
   }
 
   for (const p of offer.packages.filter((x) => selection.package_ids.includes(x.id))) {
@@ -139,6 +155,8 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
         cat,
         `${p.name}`,
         `${guests} guests × ${money(p.price_per_person, cur)} · ${standardHours}h included`,
+        "package",
+        p.id,
       ),
     );
     const overageRate = Number(p.overage_price_per_person_per_hour ?? 0);
@@ -153,6 +171,8 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
           cat,
           `${p.name} — overtime`,
           `${extraHours}h × ${guests} guests × ${money(overageRate, cur)}`,
+          "package_overtime",
+          p.id,
         ),
       );
     }
@@ -173,12 +193,12 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
       amount = e.price;
       qty = "flat";
     }
-    lines.push(lineFor(amount, e, defaults, "extra", `Extra: ${e.name}`, qty));
+    lines.push(lineFor(amount, e, defaults, "extra", `Extra: ${e.name}`, qty, "extra", e.id));
   }
 
   if (offer.fees.cleaning_fee > 0) {
     lines.push(
-      lineFor(offer.fees.cleaning_fee, {}, defaults, "rental", "Cleaning fee", "flat"),
+      lineFor(offer.fees.cleaning_fee, {}, defaults, "rental", "Cleaning fee", "flat", "fee"),
     );
   }
   if (offer.fees.overtime_hours && offer.fees.overtime_fee_per_hour > 0) {
@@ -190,16 +210,55 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
         "rental",
         "Overtime",
         `${offer.fees.overtime_hours}h`,
+        "fee",
       ),
     );
+  }
+
+  // Apply targeted discount inside a specific line (gross), re-derive its net/tax.
+  const rawDiscount = Number(offer.discount ?? 0);
+  const target = offer.discount_target ?? null;
+  let discount_applied_gross = 0;
+  let discount_net = 0;
+  let discount_targeted = false;
+
+  if (rawDiscount > 0 && target) {
+    const idx = lines.findIndex(
+      (l) => l.sourceKind === target.kind && l.sourceId === target.id,
+    );
+    if (idx >= 0) {
+      discount_targeted = true;
+      const line = lines[idx];
+      const origGross = line.gross;
+      const origNet = line.net;
+      const origTax = line.tax;
+      const applied = Math.min(rawDiscount, origGross);
+      const newGross = origGross - applied;
+      // Re-derive net/tax from the line's own tax rate, treating adjusted amount as gross.
+      const { net: newNet, tax: newTax } = splitNetTaxGross(newGross, "gross", line.tax_rate_pct);
+      lines[idx] = {
+        ...line,
+        gross: newGross,
+        amount: newGross,
+        net: newNet,
+        tax: newTax,
+        original_gross: origGross,
+        original_net: origNet,
+        original_tax: origTax,
+        discount_applied: applied,
+      };
+      discount_applied_gross = applied;
+      discount_net = origNet - newNet;
+    }
   }
 
   const net_subtotal = lines.reduce((a, b) => a + b.net, 0);
   const tax_subtotal = lines.reduce((a, b) => a + b.tax, 0);
   const gross_subtotal = lines.reduce((a, b) => a + b.gross, 0);
 
-  const discount = offer.discount ?? 0;
-  const afterDiscount = Math.max(0, gross_subtotal - discount);
+  // Legacy fallback: discount set with no target → flat gross deduction from grand total.
+  const legacyFlatDiscount = rawDiscount > 0 && !discount_targeted ? rawDiscount : 0;
+  const afterDiscount = Math.max(0, gross_subtotal - legacyFlatDiscount);
 
   const gratuity_type: "service_charge" | "tip" = offer.fees.gratuity_type ?? "service_charge";
   const gratuity_pct = Number(offer.fees.service_charge_pct ?? 0);
@@ -229,7 +288,9 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
     gratuity_label,
     gratuity_type,
     tax: combined_tax,
-    discount,
+    discount: discount_targeted ? discount_applied_gross : legacyFlatDiscount,
+    discount_net: discount_targeted ? discount_net : 0,
+    discount_targeted,
     grand_total,
     min_required,
     min_shortfall,
@@ -240,3 +301,4 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
 export function money(n: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(n);
 }
+

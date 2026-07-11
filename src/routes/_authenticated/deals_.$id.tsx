@@ -33,9 +33,11 @@ import {
   type SpaceSel,
   type PackageSel,
   type ExtraSel,
+  type DiscountTarget,
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { Markdown } from "@/components/markdown";
+import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-selection-picker";
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
@@ -98,6 +100,7 @@ function DealDetail() {
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
   const [showDiscount, setShowDiscount] = useState(false);
+  const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
   const [minRevenue, setMinRevenue] = useState(0);
   const [servicePct, setServicePct] = useState<number>(0);
   const [coverTitle, setCoverTitle] = useState("");
@@ -105,6 +108,8 @@ function DealDetail() {
   const [introMarkdown, setIntroMarkdown] = useState("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
+  const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
+  const [menuChoicesByPkg, setMenuChoicesByPkg] = useState<Record<string, Record<string, string[]>>>({});
 
   const [activities, setActivities] = useState<any[]>([]);
   const [existingProposal, setExistingProposal] = useState<any>(null);
@@ -120,7 +125,7 @@ function DealDetail() {
     setDeal(d as Deal);
     const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
       supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url").eq("active", true),
-      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, details_url").eq("active", true),
+      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
@@ -154,9 +159,12 @@ function DealDetail() {
       const savedDiscount = Number(cfg.discount ?? 0);
       setDiscount(savedDiscount);
       setShowDiscount(savedDiscount > 0);
+      setDiscountTarget((cfg.discount_target as DiscountTarget | null) ?? null);
       setCoverTitle(cfg.cover_title ?? "");
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
+      setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
+      setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       const savedService = cfg.service_charge_pct_override;
       const gratDefault =
@@ -266,6 +274,8 @@ function DealDetail() {
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
+  const effectiveDiscountTarget = showDiscount ? discountTarget : null;
+
   const offer: Offer | null = useMemo(() => {
     if (!fees) return null;
     return {
@@ -281,9 +291,10 @@ function DealDetail() {
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
+      discount_target: effectiveDiscountTarget,
       currency,
     };
-  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct, currency]);
+  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency]);
 
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
@@ -297,6 +308,15 @@ function DealDetail() {
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
 
+  // Candidate lines (by sourceKind+sourceId) that the discount can be applied to.
+  const discountTargets = (totals?.lines ?? [])
+    .filter((l) => l.sourceKind === "space" || l.sourceKind === "package" || l.sourceKind === "extra")
+    .map((l) => ({
+      kind: l.sourceKind as DiscountTarget["kind"],
+      id: l.sourceId!,
+      label: l.label,
+      gross: (l.original_gross ?? l.gross),
+    }));
 
   function buildOfferConfig() {
     return {
@@ -307,13 +327,17 @@ function DealDetail() {
       package_hours: packageHours,
       season_id: seasonId,
       discount: effectiveDiscount,
+      discount_target: effectiveDiscountTarget,
       min_revenue_required: minRevenue,
       service_charge_pct_override: servicePct,
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
+      menu_selection_mode_by_pkg: menuModeByPkg,
+      menu_choices_by_pkg: menuChoicesByPkg,
     };
   }
+
 
   function suggestIntroText() {
     if (!deal) return;
@@ -715,6 +739,12 @@ function DealDetail() {
             packageHours={packageHours}
             onHoursChange={setHoursOverride}
             defaultHours={categoryDefaultHours(fees as CategoryDefaults, "food")}
+            menuModeByPkg={menuModeByPkg}
+            onMenuModeChange={(pid, mode) => setMenuModeByPkg((c) => ({ ...c, [pid]: mode }))}
+            menuChoicesByPkg={menuChoicesByPkg}
+            onMenuChoiceChange={(pid, gl, next) =>
+              setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
+            }
           />
           <PackageCard
             title="Beverage packages"
@@ -729,7 +759,14 @@ function DealDetail() {
             packageHours={packageHours}
             onHoursChange={setHoursOverride}
             defaultHours={categoryDefaultHours(fees as CategoryDefaults, "beverage")}
+            menuModeByPkg={menuModeByPkg}
+            onMenuModeChange={(pid, mode) => setMenuModeByPkg((c) => ({ ...c, [pid]: mode }))}
+            menuChoicesByPkg={menuChoicesByPkg}
+            onMenuChoiceChange={(pid, gl, next) =>
+              setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
+            }
           />
+
 
           <Card>
             <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
@@ -976,21 +1013,63 @@ function DealDetail() {
                   <input
                     type="checkbox"
                     checked={showDiscount}
-                    onChange={(e) => setShowDiscount(e.target.checked)}
+                    onChange={(e) => {
+                      setShowDiscount(e.target.checked);
+                      if (e.target.checked && !discountTarget && discountTargets.length > 0) {
+                        setDiscountTarget({ kind: discountTargets[0].kind, id: discountTargets[0].id });
+                      }
+                    }}
                   />
                   Apply a discount (optional)
                 </label>
                 {showDiscount && (
-                  <div className="space-y-1.5">
-                    <Label>Discount (gross)</Label>
-                    <Input
-                      type="number"
-                      value={discount}
-                      onChange={(e) => setDiscount(Number(e.target.value))}
-                    />
+                  <div className="space-y-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Apply discount to</Label>
+                      <Select
+                        value={discountTarget ? `${discountTarget.kind}:${discountTarget.id}` : ""}
+                        onValueChange={(v) => {
+                          const [kind, id] = v.split(":") as [DiscountTarget["kind"], string];
+                          setDiscountTarget({ kind, id });
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Choose a line…" /></SelectTrigger>
+                        <SelectContent>
+                          {discountTargets.length === 0 && (
+                            <div className="px-2 py-1 text-xs text-muted-foreground">Select a space, package, or extra first.</div>
+                          )}
+                          {discountTargets.map((t) => (
+                            <SelectItem key={`${t.kind}:${t.id}`} value={`${t.kind}:${t.id}`}>
+                              {t.label} — {money(t.gross, currency)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Discount amount (gross)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={discount}
+                        onChange={(e) => setDiscount(Math.max(0, Number(e.target.value) || 0))}
+                      />
+                      {discountTarget && (() => {
+                        const t = discountTargets.find((x) => x.kind === discountTarget.kind && x.id === discountTarget.id);
+                        if (!t) return null;
+                        const over = discount > t.gross;
+                        return (
+                          <p className={"text-xs " + (over ? "text-red-600" : "text-muted-foreground")}>
+                            Line gross: {money(t.gross, currency)}
+                            {over && <> — capped at line amount.</>}
+                          </p>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
+
             </CardContent>
           </Card>
 
@@ -1006,10 +1085,22 @@ function DealDetail() {
                 <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
                   <div className="flex justify-between">
                     <span className="font-medium">{l.label}</span>
-                    <span className="tabular-nums">{money(l.gross, currency)}</span>
+                    <span className="tabular-nums">
+                      {l.original_gross != null && l.original_gross !== l.gross && (
+                        <span className="mr-1 text-xs text-muted-foreground line-through">
+                          {money(l.original_gross, currency)}
+                        </span>
+                      )}
+                      {money(l.gross, currency)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>{l.qty} · {l.basis} · tax {l.tax_rate_pct}%</span>
+                    <span>
+                      {l.qty} · {l.basis} · tax {l.tax_rate_pct}%
+                      {l.discount_applied != null && l.discount_applied > 0 && (
+                        <> · discount -{money(l.discount_applied, currency)}</>
+                      )}
+                    </span>
                     <span className="tabular-nums">
                       net {money(l.net, currency)} · tax {money(l.tax, currency)}
                     </span>
@@ -1019,6 +1110,12 @@ function DealDetail() {
 
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
+                {totals.discount_targeted && totals.discount_net > 0 && (
+                  <div className="flex justify-between text-foreground">
+                    <span>Discount (net)</span>
+                    <span className="tabular-nums">-{money(totals.discount_net, currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between"><span>Total tax</span><span className="tabular-nums">{money(totals.tax_subtotal, currency)}</span></div>
                 <div className="flex justify-between"><span>Gross subtotal</span><span className="tabular-nums">{money(totals.gross_subtotal, currency)}</span></div>
               </div>
@@ -1026,11 +1123,12 @@ function DealDetail() {
               <Separator />
 
               <div className="space-y-1 text-sm">
-                {effectiveDiscount > 0 && (
+                {!totals.discount_targeted && effectiveDiscount > 0 && (
                   <div className="flex justify-between"><span>Discount</span><span className="tabular-nums">-{money(effectiveDiscount, currency)}</span></div>
                 )}
                 <div className="flex justify-between"><span>{totals.gratuity_label}</span><span className="tabular-nums">{money(totals.gratuity_gross, currency)}</span></div>
               </div>
+
 
               <div className="mt-3 rounded-lg bg-primary/10 text-foreground border border-primary/20 p-3 flex items-baseline justify-between">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">Grand total</span>
@@ -1171,6 +1269,7 @@ function TextField(props: {
 function PackageCard({
   title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
+  menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
 }: {
   title: string;
   emptyTo: string;
@@ -1184,6 +1283,10 @@ function PackageCard({
   packageHours: Record<string, number>;
   onHoursChange: (id: string, v: number) => void;
   defaultHours: number;
+  menuModeByPkg: Record<string, "manager" | "client">;
+  onMenuModeChange: (pid: string, mode: "manager" | "client") => void;
+  menuChoicesByPkg: Record<string, Record<string, string[]>>;
+  onMenuChoiceChange: (pid: string, groupLabel: string, next: string[]) => void;
 }) {
   return (
     <Card>
@@ -1196,6 +1299,10 @@ function PackageCard({
           const standardHours = p.included_hours != null ? Number(p.included_hours) : defaultHours;
           const hours = packageHours[p.id] ?? standardHours;
           const overRate = Number(p.overage_price_per_person_per_hour ?? 0);
+          const selMode = p.selection_mode ?? "fixed";
+          const groups = (Array.isArray(p.selection_groups) ? p.selection_groups : []) as MenuGroupDef[];
+          const hasSelection = selMode !== "fixed" && groups.length > 0;
+          const pickerMode = menuModeByPkg[p.id] ?? "client";
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -1257,6 +1364,42 @@ function PackageCard({
                   </div>
                 </div>
               )}
+              {checked && hasSelection && (
+                <div className="mt-3 space-y-2 border-t pt-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-medium">Menu selection</span>
+                    <span className="text-muted-foreground">— selected by:</span>
+                    <div className="inline-flex overflow-hidden rounded-md border">
+                      <button
+                        type="button"
+                        className={"px-2 py-0.5 " + (pickerMode === "manager" ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                        onClick={() => onMenuModeChange(p.id, "manager")}
+                      >
+                        Manager
+                      </button>
+                      <button
+                        type="button"
+                        className={"px-2 py-0.5 " + (pickerMode === "client" ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                        onClick={() => onMenuModeChange(p.id, "client")}
+                      >
+                        Client
+                      </button>
+                    </div>
+                  </div>
+                  {pickerMode === "manager" ? (
+                    <MenuSelectionPicker
+                      groups={groups}
+                      totalMax={p.selection_total_max ?? null}
+                      value={menuChoicesByPkg[p.id] ?? {}}
+                      onChange={(gl, next) => onMenuChoiceChange(p.id, gl, next)}
+                    />
+                  ) : (
+                    <div className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+                      Client will pick menu items in the proposal.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -1264,6 +1407,7 @@ function PackageCard({
     </Card>
   );
 }
+
 
 function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: string, v: boolean | "indeterminate") {
   setter((cur) => (v ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)));
