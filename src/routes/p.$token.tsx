@@ -50,6 +50,9 @@ function ClientProposal() {
   const [coverTitle, setCoverTitle] = useState<string>("");
   const [introMarkdown, setIntroMarkdown] = useState<string>("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
+  const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
+  const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
+  const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
