@@ -597,6 +597,7 @@ function formatRuleSpaces(ids: string[] | null | undefined, spaces: SpaceLite[])
 
 function RulesSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Rule[]>([]);
+  const [spaces, setSpaces] = useState<SpaceLite[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
   const currency = useCompanyCurrency();
@@ -608,9 +609,21 @@ function RulesSection({ companyId }: { companyId: string | null }) {
       .order("created_at", { ascending: false });
     setRows((data as Rule[]) ?? []);
   }
+  async function loadSpaces() {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("spaces")
+      .select("id, name")
+      .eq("company_id", companyId)
+      .eq("active", true)
+      .order("name");
+    setSpaces((data as SpaceLite[]) ?? []);
+  }
   useEffect(() => {
     load();
-  }, []);
+    loadSpaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   async function onDelete(id: string) {
     if (!confirm("Delete this rule?")) return;
@@ -644,6 +657,7 @@ function RulesSection({ companyId }: { companyId: string | null }) {
             <RuleForm
               companyId={companyId}
               initial={editing}
+              spaces={spaces}
               onSaved={() => {
                 setOpen(false);
                 setEditing(null);
@@ -671,7 +685,8 @@ function RulesSection({ companyId }: { companyId: string | null }) {
                     <div className="font-medium">{r.notes ?? "Rule"}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatRuleDays(r.days_of_week)} ·{" "}
-                      {formatMonths(r.months)} · min{" "}
+                      {formatMonths(r.months)} ·{" "}
+                      {formatRuleSpaces(r.space_ids, spaces)} · min{" "}
                       {money(Number(r.min_revenue), currency)} ({r.basis})
                     </div>
                   </div>
@@ -699,6 +714,7 @@ function RulesSection({ companyId }: { companyId: string | null }) {
     </section>
   );
 }
+
 
 function RuleForm({
   companyId,
