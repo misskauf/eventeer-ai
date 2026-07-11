@@ -84,6 +84,12 @@ export type LineItem = {
   gross: number;
   tax_rate_pct: number;
   basis: "net" | "gross";
+  sourceKind?: "space" | "package" | "extra" | "package_overtime" | "fee";
+  sourceId?: string;
+  original_gross?: number;
+  original_net?: number;
+  original_tax?: number;
+  discount_applied?: number; // gross discount taken from this line
 };
 
 export type Totals = {
@@ -99,7 +105,9 @@ export type Totals = {
   gratuity_label: string;
   gratuity_type: "service_charge" | "tip";
   tax: number; // = tax_subtotal
-  discount: number;
+  discount: number; // gross discount applied (from a targeted line, or legacy flat)
+  discount_net: number; // net-equivalent discount, for display below net subtotal
+  discount_targeted: boolean;
   grand_total: number;
   min_required: number;
   min_shortfall: number;
