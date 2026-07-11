@@ -111,6 +111,9 @@ export function CrudList<T extends { id: string }>({
             <form className="space-y-3" onSubmit={onSubmit}>
               {fields.map((f) => {
                 const cur = editing ? (editing as any)[f.name] : f.defaultValue ?? "";
+                if (f.type === "custom" && !f.label) {
+                  return <div key={f.name}>{f.render ? f.render(cur, editing) : null}</div>;
+                }
                 return (
                   <div key={f.name} className="space-y-1.5">
                     <Label htmlFor={f.name}>{f.label}</Label>
