@@ -189,6 +189,25 @@ function DealDetail() {
     if (window.location.hash === "#edit") setEditOpen(true);
   }, [id]);
 
+  // Fetch other deals on the same event date within the same company.
+  useEffect(() => {
+    if (!deal?.event_date || !deal?.company_id) {
+      setConflicts([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, client_name, client_company, stage")
+        .eq("company_id", deal.company_id)
+        .eq("event_date", deal.event_date)
+        .neq("id", deal.id);
+      setConflicts(((data as any[]) ?? []).filter((d) => d.stage !== "lost"));
+    })();
+  }, [deal?.id, deal?.event_date, deal?.company_id]);
+
+
+
   // Auto cover title "Your [event type] at [location] on [date]" unless the manager typed something.
   useEffect(() => {
     if (coverTouched) return;
