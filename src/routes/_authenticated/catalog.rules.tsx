@@ -566,9 +566,12 @@ type Rule = {
   notes: string | null;
   days_of_week: number[] | null;
   months: number[] | null;
+  space_ids: string[] | null;
   min_revenue: number;
   basis: Basis;
 };
+
+type SpaceLite = { id: string; name: string };
 
 function formatMonths(months: number[] | null | undefined) {
   if (!months || months.length === 0) return "Any month";
@@ -582,6 +585,15 @@ function formatRuleDays(days: number[] | null | undefined) {
   const sorted = [...days].sort((a, b) => a - b);
   return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
 }
+function formatRuleSpaces(ids: string[] | null | undefined, spaces: SpaceLite[]) {
+  if (!ids || ids.length === 0) return "All spaces";
+  const names = ids
+    .map((id) => spaces.find((s) => s.id === id)?.name)
+    .filter(Boolean) as string[];
+  if (!names.length) return "All spaces";
+  return names.join(", ");
+}
+
 
 function RulesSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Rule[]>([]);
