@@ -719,15 +719,18 @@ function RulesSection({ companyId }: { companyId: string | null }) {
 function RuleForm({
   companyId,
   initial,
+  spaces,
   onSaved,
 }: {
   companyId: string | null;
   initial: Rule | null;
+  spaces: SpaceLite[];
   onSaved: () => void;
 }) {
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
   const [months, setMonths] = useState<number[]>(initial?.months ?? []);
+  const [spaceIds, setSpaceIds] = useState<string[]>(initial?.space_ids ?? []);
   const [minRevenue, setMinRevenue] = useState<string>(
     initial ? String(initial.min_revenue) : "0",
   );
@@ -743,6 +746,9 @@ function RuleForm({
       prev.includes(i) ? prev.filter((m) => m !== i) : [...prev, i].sort((a, b) => a - b),
     );
   }
+  function toggleSpace(id: string) {
+    setSpaceIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -752,6 +758,7 @@ function RuleForm({
       notes: notes || null,
       days_of_week: days,
       months,
+      space_ids: spaceIds,
       day_of_week: null,
       month: null,
       min_revenue: Number(minRevenue),
@@ -764,6 +771,7 @@ function RuleForm({
     toast.success("Saved");
     onSaved();
   }
+
 
   return (
     <form className="space-y-3" onSubmit={onSubmit}>
