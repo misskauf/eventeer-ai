@@ -93,7 +93,7 @@ function ClientProposal() {
 
       setDiscount(Number(offerCfg.discount ?? 0));
       setMinRev(Number(offerCfg.min_revenue_required ?? 0));
-      const fcData: any = fc.data;
+      const fcData: any = (res as any).feeConfig ?? {};
       const gratDefault =
         fcData?.gratuity_mode === "fixed"
           ? Number(fcData?.gratuity_fixed_pct ?? 0)
