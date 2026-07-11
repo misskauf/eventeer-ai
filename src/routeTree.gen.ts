@@ -20,6 +20,7 @@ import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedDealsIndexRouteImport } from './routes/_authenticated/deals.index'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals_.$id'
+import { Route as AuthenticatedDealsCalendarRouteImport } from './routes/_authenticated/deals.calendar'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
 import { Route as AuthenticatedCatalogRulesRouteImport } from './routes/_authenticated/catalog.rules'
 import { Route as AuthenticatedCatalogFoodRouteImport } from './routes/_authenticated/catalog.food'
@@ -80,6 +81,12 @@ const AuthenticatedDealsIdRoute = AuthenticatedDealsIdRouteImport.update({
   path: '/deals/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDealsCalendarRoute =
+  AuthenticatedDealsCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedDealsRoute,
+  } as any)
 const AuthenticatedCatalogSpacesRoute =
   AuthenticatedCatalogSpacesRouteImport.update({
     id: '/spaces',
@@ -125,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
   '/deals/': typeof AuthenticatedDealsIndexRoute
 }
@@ -141,6 +149,7 @@ export interface FileRoutesByTo {
   '/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
   '/deals': typeof AuthenticatedDealsIndexRoute
 }
@@ -160,6 +169,7 @@ export interface FileRoutesById {
   '/_authenticated/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/_authenticated/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/_authenticated/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/_authenticated/deals_/$id': typeof AuthenticatedDealsIdRoute
   '/_authenticated/deals/': typeof AuthenticatedDealsIndexRoute
 }
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/catalog/food'
     | '/catalog/rules'
     | '/catalog/spaces'
+    | '/deals/calendar'
     | '/deals/$id'
     | '/deals/'
   fileRoutesByTo: FileRoutesByTo
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/catalog/food'
     | '/catalog/rules'
     | '/catalog/spaces'
+    | '/deals/calendar'
     | '/deals/$id'
     | '/deals'
   id:
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog/food'
     | '/_authenticated/catalog/rules'
     | '/_authenticated/catalog/spaces'
+    | '/_authenticated/deals/calendar'
     | '/_authenticated/deals_/$id'
     | '/_authenticated/deals/'
   fileRoutesById: FileRoutesById
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDealsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/deals/calendar': {
+      id: '/_authenticated/deals/calendar'
+      path: '/calendar'
+      fullPath: '/deals/calendar'
+      preLoaderRoute: typeof AuthenticatedDealsCalendarRouteImport
+      parentRoute: typeof AuthenticatedDealsRoute
+    }
     '/_authenticated/catalog/spaces': {
       id: '/_authenticated/catalog/spaces'
       path: '/spaces'
@@ -363,10 +383,12 @@ const AuthenticatedCatalogRouteWithChildren =
   AuthenticatedCatalogRoute._addFileChildren(AuthenticatedCatalogRouteChildren)
 
 interface AuthenticatedDealsRouteChildren {
+  AuthenticatedDealsCalendarRoute: typeof AuthenticatedDealsCalendarRoute
   AuthenticatedDealsIndexRoute: typeof AuthenticatedDealsIndexRoute
 }
 
 const AuthenticatedDealsRouteChildren: AuthenticatedDealsRouteChildren = {
+  AuthenticatedDealsCalendarRoute: AuthenticatedDealsCalendarRoute,
   AuthenticatedDealsIndexRoute: AuthenticatedDealsIndexRoute,
 }
 
