@@ -60,6 +60,8 @@ function ClientProposal() {
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
   const [altChoices, setAltChoices] = useState<Record<string, string>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  // menuChoices: { [packageId]: { [groupLabel]: string[] } }
+  const [menuChoices, setMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
   const [openNoteFor, setOpenNoteFor] = useState<Record<string, boolean>>({});
   const [overallMessage, setOverallMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
