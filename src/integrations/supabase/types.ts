@@ -219,6 +219,7 @@ export type Database = {
           company_id: string
           created_at: string
           description: string | null
+          details_url: string | null
           id: string
           included_hours: number | null
           kind: string
@@ -240,6 +241,7 @@ export type Database = {
           company_id: string
           created_at?: string
           description?: string | null
+          details_url?: string | null
           id?: string
           included_hours?: number | null
           kind?: string
@@ -261,6 +263,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           description?: string | null
+          details_url?: string | null
           id?: string
           included_hours?: number | null
           kind?: string
