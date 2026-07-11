@@ -33,9 +33,11 @@ import {
   type SpaceSel,
   type PackageSel,
   type ExtraSel,
+  type DiscountTarget,
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { Markdown } from "@/components/markdown";
+import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-selection-picker";
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
