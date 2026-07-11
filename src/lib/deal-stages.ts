@@ -85,6 +85,56 @@ export function stageToneClass(stage: string): string {
   return STAGE_TONES[stage]?.className ?? "bg-muted text-muted-foreground border-border";
 }
 
+// Calendar-specific tones, per user spec. Kept separate from STAGE_TONES so the
+// table chips don't change.
+export const STAGE_CALENDAR_TONES: Record<string, string> = {
+  new: "bg-white text-slate-800 border-slate-300",
+  contacted: "bg-slate-200 text-slate-800 border-slate-300",
+  meeting_scheduled: "bg-slate-600 text-white border-slate-700",
+  proposal_sent: "bg-blue-500 text-white border-blue-600",
+  signed: "bg-yellow-300 text-yellow-900 border-yellow-400",
+  waiting_payment: "bg-orange-400 text-white border-orange-500",
+  invoice_sent: "bg-orange-400 text-white border-orange-500",
+  downpayment_received: "bg-green-200 text-green-900 border-green-300",
+  paid_in_full: "bg-green-600 text-white border-green-700",
+  payment_delayed: "bg-red-100 text-red-800 border-red-300",
+  lost: "bg-red-600 text-white border-red-700 line-through",
+  // legacy fallbacks
+  inquiry: "bg-white text-slate-800 border-slate-300",
+  proposal_draft: "bg-slate-200 text-slate-800 border-slate-300",
+  client_selected: "bg-blue-500 text-white border-blue-600",
+  manager_review: "bg-blue-500 text-white border-blue-600",
+  accepted: "bg-yellow-300 text-yellow-900 border-yellow-400",
+};
+
+export function stageCalendarToneClass(stage: string): string {
+  return STAGE_CALENDAR_TONES[stage] ?? "bg-muted text-foreground border-border";
+}
+
+// Stages that indicate a booked/committed event — hard conflicts.
+export const HARD_CONFLICT_STAGES: DealStage[] = [
+  "signed",
+  "waiting_payment",
+  "invoice_sent",
+  "downpayment_received",
+  "paid_in_full",
+  "payment_delayed",
+];
+
+// Stages that indicate an in-negotiation deal — soft warning.
+export const SOFT_CONFLICT_STAGES: DealStage[] = [
+  "new",
+  "contacted",
+  "meeting_scheduled",
+  "proposal_sent",
+  // legacy
+  "inquiry",
+  "proposal_draft",
+  "client_selected",
+  "manager_review",
+];
+
+
 export function formatRelative(iso: string): string {
   const then = new Date(iso).getTime();
   const now = Date.now();
