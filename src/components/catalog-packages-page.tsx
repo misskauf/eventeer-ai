@@ -104,6 +104,14 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
           {
+            name: "details_url",
+            label: "Link to package details",
+            type: "url",
+            nullable: true,
+            placeholder: "https://…",
+            hint: "Optional link to a menu, PDF, or product page.",
+          },
+          {
             name: "selection_groups",
             label: "Menu selection",
             type: "custom",
