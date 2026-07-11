@@ -143,6 +143,8 @@ export function CrudList<T extends { id: string }>({
                         name={f.name}
                         defaultValue={Array.isArray(cur) ? cur : []}
                       />
+                    ) : f.type === "custom" ? (
+                      f.render ? f.render(cur, editing) : null
                     ) : (
                       <Input
                         id={f.name}
