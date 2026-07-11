@@ -1,20 +1,14 @@
 ## Problem
 
-In the deal builder, the right-column "Event quote" card uses `sticky top-4`. When the quote grows taller than the viewport, its bottom extends past the visible area, and the "Save draft" / "Send to client" buttons rendered below it in the same column get visually covered / hard to reach — they appear to "scroll under" the totals card.
+The Event quote card is `sticky top-4` with `max-h-[calc(100vh-2rem)]`, so it occupies nearly the full viewport height. The "Save draft" and "Send to client" buttons are separate siblings that come after the card in normal flow — when you scroll, they slide up *behind* the sticky quote card and stay hidden.
 
 ## Fix
 
-Constrain the sticky quote card so it never exceeds the viewport height, and scroll its own contents internally when needed. This keeps the totals pinned while ensuring the action buttons below always remain visible.
+Move the action buttons into the sticky Event quote card itself as a pinned footer, so they are always visible alongside the totals regardless of scroll position.
 
-Change in `src/routes/_authenticated/deals_.$id.tsx` (the Event quote `<Card>` at line 1076):
+- In `src/routes/_authenticated/deals_.$id.tsx` (~line 1076–1161):
+  - Keep the card's header pinned (as today) and the totals area scrollable (`flex-1 min-h-0 overflow-y-auto`).
+  - Add a non-scrolling `CardFooter` (or a `div` with `border-t bg-background/95 p-3`) inside the sticky card containing the Save draft and Send to client buttons, stacked full-width.
+  - Remove the now-redundant standalone `<div className="flex flex-col gap-2">…buttons…</div>` block that currently lives below the card.
 
-- Add `max-h-[calc(100vh-2rem)] flex flex-col` to the Card.
-- Make `<CardContent>` scrollable: add `overflow-y-auto flex-1 min-h-0`.
-- Keep `CardHeader` as the non-scrolling pinned title.
-
-No logic, pricing, or data changes. Purely presentation.
-
-## Out of scope
-
-- No changes to totals math, discount logic, or menu selection features.
-- No layout restructuring of the right column beyond the quote card.
+Result: Grand total + primary actions are always visible in the sticky panel; the middle line-items list scrolls internally when the quote is long.

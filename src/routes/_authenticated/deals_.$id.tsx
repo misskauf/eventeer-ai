@@ -1150,15 +1150,15 @@ function DealDetail() {
                 </div>
               ) : null}
             </CardContent>
+            <div className="border-t bg-background/95 p-3 flex flex-col gap-2">
+              <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">Save draft</Button>
+              <Button onClick={() => saveProposal(true)} className="w-full">
+                <Send className="mr-1 h-4 w-4" /> Send to client
+              </Button>
+            </div>
           </Card>
 
 
-          <div className="flex flex-col gap-2">
-            <Button onClick={() => saveProposal(false)} variant="outline">Save draft</Button>
-            <Button onClick={() => saveProposal(true)}>
-              <Send className="mr-1 h-4 w-4" /> Send to client
-            </Button>
-          </div>
 
           <Card>
             <CardHeader><CardTitle>Activity</CardTitle></CardHeader>
