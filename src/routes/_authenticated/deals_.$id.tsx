@@ -1073,14 +1073,14 @@ function DealDetail() {
             </CardContent>
           </Card>
 
-          <Card className="sticky top-4 border-2 border-primary/30 shadow-xl overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background">
+          <Card className="sticky top-4 flex max-h-[calc(100vh-2rem)] flex-col border-2 border-primary/30 shadow-xl overflow-hidden bg-gradient-to-br from-primary/5 via-background to-background">
             <CardHeader className="border-b bg-primary/5">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Receipt className="h-5 w-5 text-primary" />
                 Event quote
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm pt-4">
+            <CardContent className="flex-1 min-h-0 overflow-y-auto space-y-3 text-sm pt-4">
               {totals.lines.map((l, i) => (
                 <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
                   <div className="flex justify-between">
