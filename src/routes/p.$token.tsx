@@ -433,10 +433,22 @@ function ClientProposal() {
                   <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
                     <div className="flex justify-between">
                       <span className="font-medium">{l.label}</span>
-                      <span className="tabular-nums">{money(l.gross, currency)}</span>
+                      <span className="tabular-nums">
+                        {l.original_gross != null && l.original_gross !== l.gross && (
+                          <span className="mr-1 text-xs text-muted-foreground line-through">
+                            {money(l.original_gross, currency)}
+                          </span>
+                        )}
+                        {money(l.gross, currency)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-[11px] text-muted-foreground">
-                      <span>{l.qty}</span>
+                      <span>
+                        {l.qty}
+                        {l.discount_applied != null && l.discount_applied > 0 && (
+                          <> · discount -{money(l.discount_applied, currency)}</>
+                        )}
+                      </span>
                       <span className="tabular-nums">
                         net {money(l.net, currency)} · tax {money(l.tax, currency)}
                       </span>
@@ -445,9 +457,12 @@ function ClientProposal() {
                 ))}
                 <Separator className="my-2" />
                 <Row label="Net" value={money(totals.net_subtotal, currency)} />
+                {totals.discount_targeted && totals.discount_net > 0 && (
+                  <Row label="Discount (net)" value={"-" + money(totals.discount_net, currency)} />
+                )}
                 <Row label="Tax" value={money(totals.tax_subtotal, currency)} />
                 <Row label="Gross" value={money(totals.gross_subtotal, currency)} />
-                {discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
+                {!totals.discount_targeted && discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
                 {(() => {
                   const fcAny = feesCfg as any;
                   const gMode = fcAny?.gratuity_mode ?? "slider";
