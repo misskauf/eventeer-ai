@@ -85,23 +85,15 @@ function ClientProposal() {
       const pkgIds = [...(offerCfg.package_ids ?? []), ...groups.filter(g => g.category === "food" || g.category === "beverage").flatMap(g => g.item_ids)];
       const extraIds = [...(offerCfg.extra_ids ?? []), ...groups.filter(g => g.category === "extra").flatMap(g => g.item_ids)];
 
-      const [sp, pk, ex, fc, ss] = await Promise.all([
-        supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").in("id", Array.from(new Set(spaceIds))),
-        supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, selection_mode, selection_groups, selection_total_max, details_url").in("id", Array.from(new Set(pkgIds))),
-        supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").in("id", Array.from(new Set(extraIds))),
-        supabase.from("fee_config").select("*").eq("company_id", res.company.id).maybeSingle(),
-        offerCfg.season_id && offerCfg.season_id !== "none"
-          ? supabase.from("pricing_seasons").select("multiplier").eq("id", offerCfg.season_id).maybeSingle()
-          : Promise.resolve({ data: null } as any),
-      ]);
-      setSpaces((sp.data as SpaceSel[]) ?? []);
-      setPackages((pk.data as PackageSel[]) ?? []);
-      setExtras((ex.data as ExtraSel[]) ?? []);
-      setFeesCfg(fc.data);
-      setSeasonMult((ss as any).data?.multiplier ?? 1);
+      setSpaces(((res as any).spaces ?? []) as SpaceSel[]);
+      setPackages(((res as any).packages ?? []) as PackageSel[]);
+      setExtras(((res as any).extras ?? []) as ExtraSel[]);
+      setFeesCfg((res as any).feeConfig ?? {});
+      setSeasonMult(Number((res as any).seasonMultiplier ?? 1));
+
       setDiscount(Number(offerCfg.discount ?? 0));
       setMinRev(Number(offerCfg.min_revenue_required ?? 0));
-      const fcData: any = fc.data;
+      const fcData: any = (res as any).feeConfig ?? {};
       const gratDefault =
         fcData?.gratuity_mode === "fixed"
           ? Number(fcData?.gratuity_fixed_pct ?? 0)

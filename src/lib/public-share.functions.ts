@@ -29,14 +29,53 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
     ]);
 
     if (!proposal || !company || !deal) return { ok: false as const, reason: "not_found" };
+
+    const offerCfg: any = (proposal as any).offer ?? {};
+    const groups: Array<{ id: string; category: string; item_ids: string[]; default_id?: string }> =
+      offerCfg.alternative_groups ?? [];
+    const spaceIds = Array.from(new Set<string>([
+      ...(offerCfg.space_ids ?? []),
+      ...groups.filter((g) => g.category === "space").flatMap((g) => g.item_ids),
+    ]));
+    const pkgIds = Array.from(new Set<string>([
+      ...(offerCfg.package_ids ?? []),
+      ...groups.filter((g) => g.category === "food" || g.category === "beverage").flatMap((g) => g.item_ids),
+    ]));
+    const extraIds = Array.from(new Set<string>([
+      ...(offerCfg.extra_ids ?? []),
+      ...groups.filter((g) => g.category === "extra").flatMap((g) => g.item_ids),
+    ]));
+
+    const [spacesRes, packagesRes, extrasRes, feeCfgRes, seasonRes] = await Promise.all([
+      spaceIds.length
+        ? supabaseAdmin.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").in("id", spaceIds)
+        : Promise.resolve({ data: [] } as any),
+      pkgIds.length
+        ? supabaseAdmin.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, selection_mode, selection_groups, selection_total_max, details_url").in("id", pkgIds)
+        : Promise.resolve({ data: [] } as any),
+      extraIds.length
+        ? supabaseAdmin.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").in("id", extraIds)
+        : Promise.resolve({ data: [] } as any),
+      supabaseAdmin.from("fee_config").select("*").eq("company_id", tok.company_id).maybeSingle(),
+      offerCfg.season_id && offerCfg.season_id !== "none"
+        ? supabaseAdmin.from("pricing_seasons").select("multiplier").eq("id", offerCfg.season_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+    ]);
+
     return {
       ok: true as const,
       proposal,
       company,
       deal,
       preview: (tok.kind as string) === "preview",
+      spaces: spacesRes.data ?? [],
+      packages: packagesRes.data ?? [],
+      extras: extrasRes.data ?? [],
+      feeConfig: feeCfgRes.data ?? {},
+      seasonMultiplier: (seasonRes as any).data?.multiplier ?? 1,
     };
   });
+
 
 export const submitClientSelection = createServerFn({ method: "POST" })
   .inputValidator((data) =>
