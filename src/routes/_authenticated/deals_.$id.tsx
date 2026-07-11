@@ -475,7 +475,57 @@ function DealDetail() {
         onSaved={loadAll}
       />
 
+      {/* CONFLICT BANNER */}
+      {conflicts.length > 0 && (() => {
+        const hard = conflicts.filter((c) => (HARD_CONFLICT_STAGES as string[]).includes(c.stage));
+        const soft = conflicts.filter((c) => (SOFT_CONFLICT_STAGES as string[]).includes(c.stage));
+        if (hard.length === 0 && soft.length === 0) return null;
+        const isHard = hard.length > 0;
+        const list = isHard ? hard : soft;
+        return (
+          <div
+            className={
+              "mb-4 flex items-start gap-3 rounded-md border px-3 py-2 text-sm " +
+              (isHard
+                ? "border-red-300 bg-red-50 text-red-900"
+                : "border-orange-300 bg-orange-50 text-orange-900")
+            }
+          >
+            <span
+              className={
+                "mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full text-xs font-bold " +
+                (isHard ? "bg-red-600 text-white" : "bg-orange-500 text-white")
+              }
+              aria-hidden="true"
+            >
+              {isHard ? "!" : "▲"}
+            </span>
+            <div className="flex-1">
+              <div className="font-medium">
+                {isHard
+                  ? `Conflict: ${hard.length} booked event${hard.length > 1 ? "s" : ""} on this date`
+                  : `Warning: ${soft.length} deal${soft.length > 1 ? "s" : ""} in negotiation for this date`}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                {list.map((c) => (
+                  <Link
+                    key={c.id}
+                    to="/deals/$id"
+                    params={{ id: c.id }}
+                    className="underline underline-offset-2 hover:opacity-80"
+                  >
+                    {c.client_company ? `${c.client_company} · ${c.client_name}` : c.client_name}
+                    <span className="opacity-70"> ({stageLabel(c.stage)})</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* DEAL SECTION */}
+
       <Card
         className="mb-6 cursor-pointer transition hover:border-primary hover:shadow-sm"
         onClick={() => setEditOpen(true)}
