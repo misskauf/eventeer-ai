@@ -208,8 +208,8 @@ function DealDetail() {
   );
 
   const matchedRule = useMemo(
-    () => pickMinRevRule(minRevRules, deal?.event_date),
-    [minRevRules, deal?.event_date],
+    () => pickMinRevRule(minRevRules, deal?.event_date, selectedSpaces),
+    [minRevRules, deal?.event_date, selectedSpaces],
   );
 
   // Filter spaces by day-of-week availability when the deal has an event date.
