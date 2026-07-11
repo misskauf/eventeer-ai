@@ -12,15 +12,18 @@ import { toast } from "sonner";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url";
+  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url" | "custom";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
   defaultValue?: string | number;
-  nullable?: boolean; // empty string -> null (for optional numbers/selects)
+  nullable?: boolean;
   hint?: string;
   rows?: number;
   placeholder?: string;
+  // For type "custom": renders arbitrary UI that must write a JSON string to a
+  // hidden input named `name`. The stored value is JSON.parse'd on submit.
+  render?: (currentValue: any, editingRow: any) => ReactNode;
 };
 
 export function CrudList<T extends { id: string }>({
