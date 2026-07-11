@@ -590,6 +590,17 @@ function PackageGroup({
                 <div className="flex-1">
                   <div className="font-medium">{p.name}</div>
                   <div className="text-xs text-muted-foreground">{money(p.price_per_person, currency)} / guest</div>
+                  {p.details_url && (
+                    <a
+                      href={p.details_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-block text-xs text-primary underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View details ↗
+                    </a>
+                  )}
                   {p.long_description && <Markdown source={p.long_description} className="mt-2" />}
                 </div>
               </label>
