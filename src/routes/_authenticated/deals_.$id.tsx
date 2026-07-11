@@ -739,6 +739,12 @@ function DealDetail() {
             packageHours={packageHours}
             onHoursChange={setHoursOverride}
             defaultHours={categoryDefaultHours(fees as CategoryDefaults, "food")}
+            menuModeByPkg={menuModeByPkg}
+            onMenuModeChange={(pid, mode) => setMenuModeByPkg((c) => ({ ...c, [pid]: mode }))}
+            menuChoicesByPkg={menuChoicesByPkg}
+            onMenuChoiceChange={(pid, gl, next) =>
+              setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
+            }
           />
           <PackageCard
             title="Beverage packages"
@@ -753,7 +759,14 @@ function DealDetail() {
             packageHours={packageHours}
             onHoursChange={setHoursOverride}
             defaultHours={categoryDefaultHours(fees as CategoryDefaults, "beverage")}
+            menuModeByPkg={menuModeByPkg}
+            onMenuModeChange={(pid, mode) => setMenuModeByPkg((c) => ({ ...c, [pid]: mode }))}
+            menuChoicesByPkg={menuChoicesByPkg}
+            onMenuChoiceChange={(pid, gl, next) =>
+              setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
+            }
           />
+
 
           <Card>
             <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
