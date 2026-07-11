@@ -566,9 +566,12 @@ type Rule = {
   notes: string | null;
   days_of_week: number[] | null;
   months: number[] | null;
+  space_ids: string[] | null;
   min_revenue: number;
   basis: Basis;
 };
+
+type SpaceLite = { id: string; name: string };
 
 function formatMonths(months: number[] | null | undefined) {
   if (!months || months.length === 0) return "Any month";
@@ -582,9 +585,19 @@ function formatRuleDays(days: number[] | null | undefined) {
   const sorted = [...days].sort((a, b) => a - b);
   return sorted.map((d) => DAYS[d].slice(0, 3)).join(", ");
 }
+function formatRuleSpaces(ids: string[] | null | undefined, spaces: SpaceLite[]) {
+  if (!ids || ids.length === 0) return "All spaces";
+  const names = ids
+    .map((id) => spaces.find((s) => s.id === id)?.name)
+    .filter(Boolean) as string[];
+  if (!names.length) return "All spaces";
+  return names.join(", ");
+}
+
 
 function RulesSection({ companyId }: { companyId: string | null }) {
   const [rows, setRows] = useState<Rule[]>([]);
+  const [spaces, setSpaces] = useState<SpaceLite[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Rule | null>(null);
   const currency = useCompanyCurrency();
@@ -596,9 +609,21 @@ function RulesSection({ companyId }: { companyId: string | null }) {
       .order("created_at", { ascending: false });
     setRows((data as Rule[]) ?? []);
   }
+  async function loadSpaces() {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("spaces")
+      .select("id, name")
+      .eq("company_id", companyId)
+      .eq("active", true)
+      .order("name");
+    setSpaces((data as SpaceLite[]) ?? []);
+  }
   useEffect(() => {
     load();
-  }, []);
+    loadSpaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   async function onDelete(id: string) {
     if (!confirm("Delete this rule?")) return;
@@ -632,6 +657,7 @@ function RulesSection({ companyId }: { companyId: string | null }) {
             <RuleForm
               companyId={companyId}
               initial={editing}
+              spaces={spaces}
               onSaved={() => {
                 setOpen(false);
                 setEditing(null);
@@ -659,7 +685,8 @@ function RulesSection({ companyId }: { companyId: string | null }) {
                     <div className="font-medium">{r.notes ?? "Rule"}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatRuleDays(r.days_of_week)} ·{" "}
-                      {formatMonths(r.months)} · min{" "}
+                      {formatMonths(r.months)} ·{" "}
+                      {formatRuleSpaces(r.space_ids, spaces)} · min{" "}
                       {money(Number(r.min_revenue), currency)} ({r.basis})
                     </div>
                   </div>
@@ -688,18 +715,22 @@ function RulesSection({ companyId }: { companyId: string | null }) {
   );
 }
 
+
 function RuleForm({
   companyId,
   initial,
+  spaces,
   onSaved,
 }: {
   companyId: string | null;
   initial: Rule | null;
+  spaces: SpaceLite[];
   onSaved: () => void;
 }) {
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [days, setDays] = useState<number[]>(initial?.days_of_week ?? []);
   const [months, setMonths] = useState<number[]>(initial?.months ?? []);
+  const [spaceIds, setSpaceIds] = useState<string[]>(initial?.space_ids ?? []);
   const [minRevenue, setMinRevenue] = useState<string>(
     initial ? String(initial.min_revenue) : "0",
   );
@@ -715,6 +746,9 @@ function RuleForm({
       prev.includes(i) ? prev.filter((m) => m !== i) : [...prev, i].sort((a, b) => a - b),
     );
   }
+  function toggleSpace(id: string) {
+    setSpaceIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -724,6 +758,7 @@ function RuleForm({
       notes: notes || null,
       days_of_week: days,
       months,
+      space_ids: spaceIds,
       day_of_week: null,
       month: null,
       min_revenue: Number(minRevenue),
@@ -736,6 +771,7 @@ function RuleForm({
     toast.success("Saved");
     onSaved();
   }
+
 
   return (
     <form className="space-y-3" onSubmit={onSubmit}>
@@ -789,7 +825,35 @@ function RuleForm({
         </div>
         <p className="text-xs text-muted-foreground">Leave empty for any month.</p>
       </div>
+      <div className="space-y-1.5">
+        <Label>Applies to spaces</Label>
+        {spaces.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No spaces yet. Create spaces in the Spaces tab.</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {spaces.map((s) => {
+              const on = spaceIds.includes(s.id);
+              return (
+                <button
+                  type="button"
+                  key={s.id}
+                  onClick={() => toggleSpace(s.id)}
+                  className={`rounded-md border px-2.5 py-1 text-xs ${
+                    on
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background hover:bg-accent"
+                  }`}
+                >
+                  {s.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">Leave empty to apply to all spaces.</p>
+      </div>
       <div className="grid grid-cols-2 gap-3">
+
         <div className="space-y-1.5">
           <Label htmlFor="min">Minimum revenue required</Label>
           <Input

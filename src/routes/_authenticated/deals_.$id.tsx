@@ -120,7 +120,7 @@ function DealDetail() {
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
-      supabase.from("pricing_rules").select("id, notes, days_of_week, months, min_revenue, basis").eq("company_id", d.company_id),
+      supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
       supabase.from("companies").select("currency").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
@@ -162,7 +162,7 @@ function DealDetail() {
       setServicePct(typeof savedService === "number" ? savedService : gratDefault);
       // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
       const savedMin = Number(cfg.min_revenue_required ?? 0);
-      const matched = pickMinRevRule(rules, d.event_date);
+      const matched = pickMinRevRule(rules, d.event_date, cfg.space_ids ?? []);
       setMinRevenue(savedMin || Number(matched?.min_revenue ?? 0));
     } else {
       const gratDefault =
@@ -170,7 +170,7 @@ function DealDetail() {
           ? Number(feeRow?.gratuity_fixed_pct ?? 0)
           : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
       setServicePct(gratDefault);
-      const matched = pickMinRevRule(rules, d.event_date);
+      const matched = pickMinRevRule(rules, d.event_date, []);
       setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
 
@@ -208,8 +208,8 @@ function DealDetail() {
   );
 
   const matchedRule = useMemo(
-    () => pickMinRevRule(minRevRules, deal?.event_date),
-    [minRevRules, deal?.event_date],
+    () => pickMinRevRule(minRevRules, deal?.event_date, selectedSpaces),
+    [minRevRules, deal?.event_date, selectedSpaces],
   );
 
   // Filter spaces by day-of-week availability when the deal has an event date.
