@@ -630,7 +630,27 @@ function PackageGroup({
                   />
                 </div>
               )}
-              {checked && mode !== "fixed" && groups.length > 0 && (
+              {checked && mode !== "fixed" && groups.length > 0 && (menuModeByPkg[p.id] ?? "client") === "manager" && (
+                <div className="mt-3 space-y-2 border-t pt-3">
+                  <div className="text-xs font-medium">Menu (selected by the event manager)</div>
+                  {groups.map((g) => {
+                    const picks = managerMenuChoices[p.id]?.[g.label] ?? [];
+                    return (
+                      <div key={g.label} className="text-xs">
+                        <div className="font-medium">{g.label}</div>
+                        {picks.length === 0 ? (
+                          <div className="text-muted-foreground">—</div>
+                        ) : (
+                          <ul className="ml-4 list-disc text-muted-foreground">
+                            {picks.map((x) => <li key={x}>{x}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {checked && mode !== "fixed" && groups.length > 0 && (menuModeByPkg[p.id] ?? "client") === "client" && (
                 <div className="mt-3 space-y-3 border-t pt-3">
                   {(() => {
                     const totalMax = (p as any).selection_total_max as number | null | undefined;
