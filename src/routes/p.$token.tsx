@@ -221,6 +221,7 @@ function ClientProposal() {
           overall_message: overallMessage || undefined,
           item_notes: Object.fromEntries(Object.entries(itemNotes).filter(([, v]) => v?.trim())),
           selected_alternatives: altChoices,
+          menu_choices: menuChoices,
         },
       },
     });
