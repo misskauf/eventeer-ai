@@ -1133,6 +1133,17 @@ function PackageCard({
                     {money(p.price_per_person, currency)} per guest · {standardHours}h included
                     {overRate > 0 && <> · +{money(overRate, currency)}/guest/h overtime</>}
                   </div>
+                  {p.details_url && (
+                    <a
+                      href={p.details_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-block text-xs text-primary underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View details ↗
+                    </a>
+                  )}
                 </div>
               </label>
               {checked && (
