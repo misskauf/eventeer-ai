@@ -82,7 +82,6 @@ export const submitClientSelection = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(8),
-        // selection.package_hours accepted at top-level `selection` via z.record above
         selection: z.record(z.string(), z.any()),
         computed_total: z.number().min(0),
         client_response: z
