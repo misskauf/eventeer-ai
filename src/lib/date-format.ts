@@ -31,22 +31,31 @@ export type MinRevRule = {
   notes: string | null;
   days_of_week: number[] | null;
   months: number[] | null;
+  space_ids: string[] | null;
   min_revenue: number;
   basis: "net" | "gross";
 };
 
-// Pick the most specific matching rule for a given event date.
-// Preference: matches both weekday + month > weekday-only > month-only > global.
-export function pickMinRevRule(rules: MinRevRule[], iso: string | null | undefined): MinRevRule | null {
+// Pick the most specific matching rule for a given event date + selected spaces.
+// Preference: space-scoped > weekday > month > global; ties broken by higher min_revenue.
+export function pickMinRevRule(
+  rules: MinRevRule[],
+  iso: string | null | undefined,
+  selectedSpaceIds?: string[],
+): MinRevRule | null {
   if (!rules?.length) return null;
   const wd = weekdayOf(iso);
   const mo = monthOf(iso);
+  const selected = selectedSpaceIds ?? [];
   const dayMatches = (r: MinRevRule) => !r.days_of_week?.length || (wd != null && r.days_of_week.includes(wd));
   const monthMatches = (r: MinRevRule) => !r.months?.length || (mo != null && r.months.includes(mo));
+  const spaceMatches = (r: MinRevRule) =>
+    !r.space_ids?.length || r.space_ids.some((id) => selected.includes(id));
   const specificity = (r: MinRevRule) =>
-    (r.days_of_week?.length ? 2 : 0) + (r.months?.length ? 1 : 0);
-  const eligible = rules.filter((r) => dayMatches(r) && monthMatches(r));
+    (r.space_ids?.length ? 4 : 0) + (r.days_of_week?.length ? 2 : 0) + (r.months?.length ? 1 : 0);
+  const eligible = rules.filter((r) => dayMatches(r) && monthMatches(r) && spaceMatches(r));
   if (eligible.length === 0) return null;
   eligible.sort((a, b) => specificity(b) - specificity(a) || Number(b.min_revenue) - Number(a.min_revenue));
   return eligible[0];
 }
+
