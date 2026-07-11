@@ -227,6 +227,8 @@ export type Database = {
           name: string
           overage_price_per_person_per_hour: number
           price_per_person: number
+          selection_groups: Json
+          selection_mode: string
           tax_rate_pct: number | null
           updated_at: string
         }
@@ -246,6 +248,8 @@ export type Database = {
           name: string
           overage_price_per_person_per_hour?: number
           price_per_person?: number
+          selection_groups?: Json
+          selection_mode?: string
           tax_rate_pct?: number | null
           updated_at?: string
         }
@@ -265,6 +269,8 @@ export type Database = {
           name?: string
           overage_price_per_person_per_hour?: number
           price_per_person?: number
+          selection_groups?: Json
+          selection_mode?: string
           tax_rate_pct?: number | null
           updated_at?: string
         }
@@ -473,6 +479,7 @@ export type Database = {
           company_id: string
           computed_total: number
           id: string
+          menu_choices: Json
           proposal_id: string
           selection: Json
           submitted_at: string
@@ -481,6 +488,7 @@ export type Database = {
           company_id: string
           computed_total?: number
           id?: string
+          menu_choices?: Json
           proposal_id: string
           selection?: Json
           submitted_at?: string
@@ -489,6 +497,7 @@ export type Database = {
           company_id?: string
           computed_total?: number
           id?: string
+          menu_choices?: Json
           proposal_id?: string
           selection?: Json
           submitted_at?: string
