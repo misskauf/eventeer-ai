@@ -159,9 +159,12 @@ function DealDetail() {
       const savedDiscount = Number(cfg.discount ?? 0);
       setDiscount(savedDiscount);
       setShowDiscount(savedDiscount > 0);
+      setDiscountTarget((cfg.discount_target as DiscountTarget | null) ?? null);
       setCoverTitle(cfg.cover_title ?? "");
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
+      setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
+      setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       const savedService = cfg.service_charge_pct_override;
       const gratDefault =
