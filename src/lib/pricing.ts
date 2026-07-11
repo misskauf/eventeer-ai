@@ -21,6 +21,8 @@ export type PackageSel = {
   long_description?: string | null;
   included_hours?: number | null;
   overage_price_per_person_per_hour?: number | null;
+  selection_mode?: "fixed" | "single_group" | "multi_group" | null;
+  selection_groups?: { label: string; max_select: number; options: { label: string; description?: string }[] }[] | null;
 };
 
 export type ExtraSel = {

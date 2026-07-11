@@ -50,6 +50,7 @@ export const submitClientSelection = createServerFn({ method: "POST" })
             overall_message: z.string().optional(),
             item_notes: z.record(z.string(), z.string()).optional(),
             selected_alternatives: z.record(z.string(), z.string()).optional(),
+            menu_choices: z.record(z.string(), z.record(z.string(), z.array(z.string()))).optional(),
           })
           .optional(),
       })
@@ -76,6 +77,7 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       company_id: tok.company_id,
       selection: data.selection,
       computed_total: data.computed_total,
+      menu_choices: data.client_response?.menu_choices ?? {},
     });
 
     // Merge client_response into proposal.constraints so the manager sees it.

@@ -12,15 +12,18 @@ import { toast } from "sonner";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url";
+  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url" | "custom";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
   defaultValue?: string | number;
-  nullable?: boolean; // empty string -> null (for optional numbers/selects)
+  nullable?: boolean;
   hint?: string;
   rows?: number;
   placeholder?: string;
+  // For type "custom": renders arbitrary UI that must write a JSON string to a
+  // hidden input named `name`. The stored value is JSON.parse'd on submit.
+  render?: (currentValue: any, editingRow: any) => ReactNode;
 };
 
 export function CrudList<T extends { id: string }>({
@@ -64,17 +67,11 @@ export function CrudList<T extends { id: string }>({
       const str = raw == null ? "" : String(raw);
       if (f.type === "number") {
         payload[f.name] = str === "" ? (f.nullable ? null : 0) : Number(str);
-      } else if (f.type === "tags") {
+      } else if (f.type === "tags" || f.type === "weekdays" || f.type === "custom") {
         try {
-          payload[f.name] = str === "" ? [] : JSON.parse(str);
+          payload[f.name] = str === "" ? (f.type === "custom" ? null : []) : JSON.parse(str);
         } catch {
-          payload[f.name] = [];
-        }
-      } else if (f.type === "weekdays") {
-        try {
-          payload[f.name] = str === "" ? [] : JSON.parse(str);
-        } catch {
-          payload[f.name] = [];
+          payload[f.name] = f.type === "custom" ? null : [];
         }
       } else if (f.nullable) {
         payload[f.name] = str === "" ? null : str;
@@ -114,6 +111,9 @@ export function CrudList<T extends { id: string }>({
             <form className="space-y-3" onSubmit={onSubmit}>
               {fields.map((f) => {
                 const cur = editing ? (editing as any)[f.name] : f.defaultValue ?? "";
+                if (f.type === "custom" && !f.label) {
+                  return <div key={f.name}>{f.render ? f.render(cur, editing) : null}</div>;
+                }
                 return (
                   <div key={f.name} className="space-y-1.5">
                     <Label htmlFor={f.name}>{f.label}</Label>
@@ -146,6 +146,8 @@ export function CrudList<T extends { id: string }>({
                         name={f.name}
                         defaultValue={Array.isArray(cur) ? cur : []}
                       />
+                    ) : f.type === "custom" ? (
+                      f.render ? f.render(cur, editing) : null
                     ) : (
                       <Input
                         id={f.name}

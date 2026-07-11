@@ -60,6 +60,8 @@ function ClientProposal() {
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
   const [altChoices, setAltChoices] = useState<Record<string, string>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
+  // menuChoices: { [packageId]: { [groupLabel]: string[] } }
+  const [menuChoices, setMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
   const [openNoteFor, setOpenNoteFor] = useState<Record<string, boolean>>({});
   const [overallMessage, setOverallMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -82,7 +84,7 @@ function ClientProposal() {
 
       const [sp, pk, ex, fc, ss] = await Promise.all([
         supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").in("id", Array.from(new Set(spaceIds))),
-        supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour").in("id", Array.from(new Set(pkgIds))),
+        supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, selection_mode, selection_groups").in("id", Array.from(new Set(pkgIds))),
         supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").in("id", Array.from(new Set(extraIds))),
         supabase.from("fee_config").select("*").eq("company_id", res.company.id).maybeSingle(),
         offerCfg.season_id && offerCfg.season_id !== "none"
@@ -219,6 +221,7 @@ function ClientProposal() {
           overall_message: overallMessage || undefined,
           item_notes: Object.fromEntries(Object.entries(itemNotes).filter(([, v]) => v?.trim())),
           selected_alternatives: altChoices,
+          menu_choices: menuChoices,
         },
       },
     });
@@ -350,6 +353,10 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                menuChoices={menuChoices}
+                onMenuChoiceChange={(pkgId, groupLabel, next) =>
+                  setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                }
               />
             )}
             {basePkgBev.length > 0 && (
@@ -366,6 +373,10 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                menuChoices={menuChoices}
+                onMenuChoiceChange={(pkgId, groupLabel, next) =>
+                  setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                }
               />
             )}
             {baseExtraItems.length > 0 && (
@@ -545,6 +556,7 @@ function OptionGroup({
 function PackageGroup({
   title, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
+  menuChoices, onMenuChoiceChange,
 }: {
   title: string;
   items: PackageSel[];
@@ -558,6 +570,8 @@ function PackageGroup({
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
   onNoteChange: (id: string, v: string) => void;
+  menuChoices: Record<string, Record<string, string[]>>;
+  onMenuChoiceChange: (pkgId: string, groupLabel: string, next: string[]) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -567,6 +581,8 @@ function PackageGroup({
         {items.map((p) => {
           const checked = selected.includes(p.id);
           const guests = packageGuests[p.id] ?? dealGuests;
+          const mode = p.selection_mode ?? "fixed";
+          const groups = Array.isArray(p.selection_groups) ? p.selection_groups : [];
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -587,6 +603,57 @@ function PackageGroup({
                     onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
                     className="h-7 w-20"
                   />
+                </div>
+              )}
+              {checked && mode !== "fixed" && groups.length > 0 && (
+                <div className="mt-3 space-y-3 border-t pt-3">
+                  {groups.map((g) => {
+                    const picked = menuChoices[p.id]?.[g.label] ?? [];
+                    const atMax = picked.length >= g.max_select;
+                    return (
+                      <div key={g.label} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium">{g.label}</span>
+                          <span className="text-muted-foreground">
+                            Select up to {g.max_select} · {picked.length}/{g.max_select} chosen
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {g.options.map((o) => {
+                            const isPicked = picked.includes(o.label);
+                            const disabled = !isPicked && atMax;
+                            return (
+                              <label
+                                key={o.label}
+                                className={
+                                  "flex cursor-pointer items-start gap-2 rounded-md border p-2 text-xs " +
+                                  (disabled ? "opacity-50" : "hover:bg-muted/40")
+                                }
+                              >
+                                <Checkbox
+                                  checked={isPicked}
+                                  disabled={disabled}
+                                  onCheckedChange={(v) => {
+                                    const next = v
+                                      ? Array.from(new Set([...picked, o.label]))
+                                      : picked.filter((x) => x !== o.label);
+                                    onMenuChoiceChange(p.id, g.label, next);
+                                  }}
+                                  className="mt-0.5"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium">{o.label}</div>
+                                  {o.description && (
+                                    <div className="text-muted-foreground">{o.description}</div>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               <NoteToggle

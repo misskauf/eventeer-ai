@@ -7,6 +7,7 @@ import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, categoryDefaultHours, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
+import { MenuSelectionEditor, type MenuGroup } from "@/components/menu-selection-editor";
 
 
 export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
@@ -102,6 +103,20 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             rows: 6,
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
+          {
+            name: "selection_groups",
+            label: "Menu selection",
+            type: "custom",
+            render: (cur: any, editing: any) => (
+              <MenuSelectionEditor
+                modeName="selection_mode"
+                groupsName="selection_groups"
+                defaultMode={(editing?.selection_mode as any) ?? "fixed"}
+                defaultGroups={(Array.isArray(cur) ? cur : []) as MenuGroup[]}
+              />
+            ),
+          },
+          { name: "selection_mode", label: "", type: "custom", render: () => null },
         ]}
 
         render={(r: any) => {
