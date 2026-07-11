@@ -84,7 +84,7 @@ function ClientProposal() {
 
       const [sp, pk, ex, fc, ss] = await Promise.all([
         supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").in("id", Array.from(new Set(spaceIds))),
-        supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, selection_mode, selection_groups, details_url").in("id", Array.from(new Set(pkgIds))),
+        supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, selection_mode, selection_groups, selection_total_max, details_url").in("id", Array.from(new Set(pkgIds))),
         supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").in("id", Array.from(new Set(extraIds))),
         supabase.from("fee_config").select("*").eq("company_id", res.company.id).maybeSingle(),
         offerCfg.season_id && offerCfg.season_id !== "none"
