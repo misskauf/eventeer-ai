@@ -119,10 +119,35 @@ function ClientProposal() {
       setBaseSpaces(bSpaces);
       setBasePkgs(bPkgs);
       setBaseExtras(bExtras);
-      setSelSpaces(bSpaces);
-      setSelPkgs(bPkgs);
-      setSelExtras(bExtras);
+
+      // Partition base packages into food vs beverage using the fetched catalog.
+      const pkgList = ((res as any).packages ?? []) as PackageSel[];
+      const groupItemIds = new Set<string>(groups.flatMap((g) => g.item_ids));
+      const bFood = bPkgs.filter((id) => {
+        const p = pkgList.find((x) => x.id === id);
+        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id);
+      });
+      const bBev = bPkgs.filter((id) => {
+        const p = pkgList.find((x) => x.id === id);
+        return p && p.kind === "beverage" && !groupItemIds.has(id);
+      });
+      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id));
+
+      // Single-choice defaults: pick the first item in each category (if any).
+      setSelSpaces(bSpacesNonGroup.length ? [bSpacesNonGroup[0]] : []);
+      setSelFoodPkgs(bFood.length ? [bFood[0]] : []);
+      setSelBevPkgs(bBev.length ? [bBev[0]] : []);
+      // Extras remain multi-select, pre-checked as the manager included them.
+      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id)));
+
       setPackageGuests(offerCfg.package_guests ?? {});
+      // Seed beverage hours from each package's included_hours.
+      const hoursSeed: Record<string, number> = {};
+      for (const id of bBev) {
+        const p = pkgList.find((x) => x.id === id);
+        if (p?.included_hours != null) hoursSeed[id] = Number(p.included_hours);
+      }
+      setPackageHours(hoursSeed);
       const defaults: Record<string, string> = {};
       for (const g of groups) {
         defaults[g.id] = g.default_id && g.item_ids.includes(g.default_id) ? g.default_id : g.item_ids[0] ?? "";
@@ -147,11 +172,12 @@ function ClientProposal() {
     return {
       guest_count: state.deal.guest_count,
       space_ids: Array.from(new Set([...selSpaces, ...spaceExtra])),
-      package_ids: Array.from(new Set([...selPkgs, ...pkgExtra])),
+      package_ids: Array.from(new Set([...selFoodPkgs, ...selBevPkgs, ...pkgExtra])),
       extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
       package_guests: packageGuests,
+      package_hours: packageHours,
     };
-  }, [state, selSpaces, selPkgs, selExtras, packageGuests, altGroups, altChoices]);
+  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, packageGuests, packageHours, altGroups, altChoices]);
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
