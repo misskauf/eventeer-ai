@@ -100,6 +100,7 @@ function DealDetail() {
   const [seasonId, setSeasonId] = useState<string>("none");
   const [discount, setDiscount] = useState(0);
   const [showDiscount, setShowDiscount] = useState(false);
+  const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
   const [minRevenue, setMinRevenue] = useState(0);
   const [servicePct, setServicePct] = useState<number>(0);
   const [coverTitle, setCoverTitle] = useState("");
@@ -107,6 +108,8 @@ function DealDetail() {
   const [introMarkdown, setIntroMarkdown] = useState("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
+  const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
+  const [menuChoicesByPkg, setMenuChoicesByPkg] = useState<Record<string, Record<string, string[]>>>({});
 
   const [activities, setActivities] = useState<any[]>([]);
   const [existingProposal, setExistingProposal] = useState<any>(null);
