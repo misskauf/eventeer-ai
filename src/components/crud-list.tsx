@@ -71,7 +71,8 @@ export function CrudList<T extends { id: string }>({
         try {
           payload[f.name] = str === "" ? (f.type === "custom" ? null : []) : JSON.parse(str);
         } catch {
-          payload[f.name] = f.type === "custom" ? null : [];
+          // For custom fields, fall back to the raw string (e.g. plain enum values).
+          payload[f.name] = f.type === "custom" ? (str === "" ? null : str) : [];
         }
       } else if (f.nullable) {
         payload[f.name] = str === "" ? null : str;
