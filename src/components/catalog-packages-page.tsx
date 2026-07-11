@@ -119,12 +119,15 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
               <MenuSelectionEditor
                 modeName="selection_mode"
                 groupsName="selection_groups"
+                totalName="selection_total_max"
                 defaultMode={(editing?.selection_mode as any) ?? "fixed"}
                 defaultGroups={(Array.isArray(cur) ? cur : []) as MenuGroup[]}
+                defaultTotalMax={(editing?.selection_total_max as number | null) ?? null}
               />
             ),
           },
           { name: "selection_mode", label: "", type: "custom", render: () => null, defaultValue: "fixed" },
+          { name: "selection_total_max", label: "", type: "custom", render: () => null, nullable: true },
         ]}
 
         render={(r: any) => {

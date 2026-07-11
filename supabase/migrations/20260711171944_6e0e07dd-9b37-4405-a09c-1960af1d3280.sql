@@ -1,0 +1,1 @@
+ALTER TABLE public.fb_packages ADD COLUMN IF NOT EXISTS selection_total_max integer;

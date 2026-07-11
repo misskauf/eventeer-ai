@@ -230,6 +230,7 @@ export type Database = {
           price_per_person: number
           selection_groups: Json
           selection_mode: string
+          selection_total_max: number | null
           tax_rate_pct: number | null
           updated_at: string
         }
@@ -252,6 +253,7 @@ export type Database = {
           price_per_person?: number
           selection_groups?: Json
           selection_mode?: string
+          selection_total_max?: number | null
           tax_rate_pct?: number | null
           updated_at?: string
         }
@@ -274,6 +276,7 @@ export type Database = {
           price_per_person?: number
           selection_groups?: Json
           selection_mode?: string
+          selection_total_max?: number | null
           tax_rate_pct?: number | null
           updated_at?: string
         }

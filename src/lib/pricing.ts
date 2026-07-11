@@ -23,6 +23,7 @@ export type PackageSel = {
   overage_price_per_person_per_hour?: number | null;
   selection_mode?: "fixed" | "single_group" | "multi_group" | null;
   selection_groups?: { label: string; max_select: number; options: { label: string; description?: string }[] }[] | null;
+  selection_total_max?: number | null;
   details_url?: string | null;
 };
 

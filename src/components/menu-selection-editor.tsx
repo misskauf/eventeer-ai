@@ -11,19 +11,26 @@ export type MenuGroup = { label: string; max_select: number; options: MenuOption
 export function MenuSelectionEditor({
   modeName,
   groupsName,
+  totalName,
   defaultMode,
   defaultGroups,
+  defaultTotalMax,
 }: {
   modeName: string;
   groupsName: string;
+  totalName?: string;
   defaultMode: "fixed" | "single_group" | "multi_group";
   defaultGroups: MenuGroup[];
+  defaultTotalMax?: number | null;
 }) {
   const [mode, setMode] = useState<"fixed" | "single_group" | "multi_group">(defaultMode);
   const [groups, setGroups] = useState<MenuGroup[]>(
     defaultGroups.length
       ? defaultGroups
       : [{ label: "Choices", max_select: 1, options: [{ label: "" }] }],
+  );
+  const [totalMax, setTotalMax] = useState<string>(
+    defaultTotalMax != null && defaultTotalMax > 0 ? String(defaultTotalMax) : "",
   );
 
   const maxGroups = mode === "single_group" ? 1 : 5;
@@ -66,10 +73,13 @@ export function MenuSelectionEditor({
           }))
           .filter((g) => g.options.length > 0);
 
+  const serializedTotal = mode === "multi_group" && Number(totalMax) > 0 ? String(Math.floor(Number(totalMax))) : "";
+
   return (
     <div className="space-y-3 rounded-md border p-3">
       <input type="hidden" name={modeName} value={mode} />
       <input type="hidden" name={groupsName} value={JSON.stringify(serializedGroups)} />
+      {totalName && <input type="hidden" name={totalName} value={serializedTotal} />}
 
       <div className="space-y-2">
         <Label>Menu selection</Label>
@@ -77,8 +87,8 @@ export function MenuSelectionEditor({
           {(
             [
               { v: "fixed", label: "Fixed menu" },
-              { v: "single_group", label: "Guest chooses (one group)" },
-              { v: "multi_group", label: "Guest chooses (multiple groups)" },
+              { v: "single_group", label: "Menu items (one group)" },
+              { v: "multi_group", label: "Menu items (multiple groups)" },
             ] as const
           ).map((o) => {
             const active = mode === o.v;
@@ -103,10 +113,25 @@ export function MenuSelectionEditor({
           {mode === "fixed"
             ? "The package is served as-is — no guest choice."
             : mode === "single_group"
-              ? "Guests pick from one list of options."
+              ? "Guests pick from one list of menu items."
               : "Add up to 5 groups (e.g. Starters, Mains, Desserts) — guests pick from each."}
         </p>
       </div>
+
+      {mode === "multi_group" && (
+        <div className="flex items-center gap-2 text-xs">
+          <Label className="text-xs font-normal text-muted-foreground">Total items across all groups</Label>
+          <Input
+            type="number"
+            min={0}
+            value={totalMax}
+            onChange={(e) => setTotalMax(e.target.value)}
+            placeholder="No limit"
+            className="h-8 w-24"
+          />
+          <span className="text-muted-foreground">Leave blank for no overall cap.</span>
+        </div>
+      )}
 
       {mode !== "fixed" && (
         <div className="space-y-3">
@@ -142,7 +167,7 @@ export function MenuSelectionEditor({
                       <Input
                         value={o.label}
                         onChange={(e) => updateOption(gi, oi, { label: e.target.value })}
-                        placeholder="Option name"
+                        placeholder="Menu item name"
                       />
                       <Textarea
                         rows={1}
@@ -158,7 +183,7 @@ export function MenuSelectionEditor({
                   </div>
                 ))}
                 <Button type="button" size="sm" variant="outline" onClick={() => addOption(gi)}>
-                  <Plus className="mr-1 h-3 w-3" /> Add option
+                  <Plus className="mr-1 h-3 w-3" /> Add menu item
                 </Button>
               </div>
             </div>
