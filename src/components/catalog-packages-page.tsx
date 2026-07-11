@@ -7,6 +7,7 @@ import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, categoryDefaultHours, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
+import { MenuSelectionEditor, type MenuGroup } from "@/components/menu-selection-editor";
 
 
 export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
