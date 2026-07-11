@@ -77,6 +77,7 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       company_id: tok.company_id,
       selection: data.selection,
       computed_total: data.computed_total,
+      menu_choices: data.client_response?.menu_choices ?? {},
     });
 
     // Merge client_response into proposal.constraints so the manager sees it.
