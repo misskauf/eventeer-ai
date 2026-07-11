@@ -555,6 +555,7 @@ function OptionGroup({
 function PackageGroup({
   title, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
+  menuChoices, onMenuChoiceChange,
 }: {
   title: string;
   items: PackageSel[];
@@ -568,6 +569,8 @@ function PackageGroup({
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
   onNoteChange: (id: string, v: string) => void;
+  menuChoices: Record<string, Record<string, string[]>>;
+  onMenuChoiceChange: (pkgId: string, groupLabel: string, next: string[]) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -577,6 +580,8 @@ function PackageGroup({
         {items.map((p) => {
           const checked = selected.includes(p.id);
           const guests = packageGuests[p.id] ?? dealGuests;
+          const mode = p.selection_mode ?? "fixed";
+          const groups = Array.isArray(p.selection_groups) ? p.selection_groups : [];
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -597,6 +602,57 @@ function PackageGroup({
                     onChange={(e) => onGuestChange(p.id, Math.max(1, Number(e.target.value) || 1))}
                     className="h-7 w-20"
                   />
+                </div>
+              )}
+              {checked && mode !== "fixed" && groups.length > 0 && (
+                <div className="mt-3 space-y-3 border-t pt-3">
+                  {groups.map((g) => {
+                    const picked = menuChoices[p.id]?.[g.label] ?? [];
+                    const atMax = picked.length >= g.max_select;
+                    return (
+                      <div key={g.label} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium">{g.label}</span>
+                          <span className="text-muted-foreground">
+                            Select up to {g.max_select} · {picked.length}/{g.max_select} chosen
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {g.options.map((o) => {
+                            const isPicked = picked.includes(o.label);
+                            const disabled = !isPicked && atMax;
+                            return (
+                              <label
+                                key={o.label}
+                                className={
+                                  "flex cursor-pointer items-start gap-2 rounded-md border p-2 text-xs " +
+                                  (disabled ? "opacity-50" : "hover:bg-muted/40")
+                                }
+                              >
+                                <Checkbox
+                                  checked={isPicked}
+                                  disabled={disabled}
+                                  onCheckedChange={(v) => {
+                                    const next = v
+                                      ? Array.from(new Set([...picked, o.label]))
+                                      : picked.filter((x) => x !== o.label);
+                                    onMenuChoiceChange(p.id, g.label, next);
+                                  }}
+                                  className="mt-0.5"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium">{o.label}</div>
+                                  {o.description && (
+                                    <div className="text-muted-foreground">{o.description}</div>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               <NoteToggle
