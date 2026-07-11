@@ -274,6 +274,8 @@ function DealDetail() {
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
+  const effectiveDiscountTarget = showDiscount ? discountTarget : null;
+
   const offer: Offer | null = useMemo(() => {
     if (!fees) return null;
     return {
@@ -289,9 +291,10 @@ function DealDetail() {
       season_multiplier: seasonMult,
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
+      discount_target: effectiveDiscountTarget,
       currency,
     };
-  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, minRevenue, servicePct, currency]);
+  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency]);
 
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
@@ -305,6 +308,15 @@ function DealDetail() {
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
 
+  // Candidate lines (by sourceKind+sourceId) that the discount can be applied to.
+  const discountTargets = (totals?.lines ?? [])
+    .filter((l) => l.sourceKind === "space" || l.sourceKind === "package" || l.sourceKind === "extra")
+    .map((l) => ({
+      kind: l.sourceKind as DiscountTarget["kind"],
+      id: l.sourceId!,
+      label: l.label,
+      gross: (l.original_gross ?? l.gross),
+    }));
 
   function buildOfferConfig() {
     return {
@@ -315,13 +327,17 @@ function DealDetail() {
       package_hours: packageHours,
       season_id: seasonId,
       discount: effectiveDiscount,
+      discount_target: effectiveDiscountTarget,
       min_revenue_required: minRevenue,
       service_charge_pct_override: servicePct,
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
+      menu_selection_mode_by_pkg: menuModeByPkg,
+      menu_choices_by_pkg: menuChoicesByPkg,
     };
   }
+
 
   function suggestIntroText() {
     if (!deal) return;
