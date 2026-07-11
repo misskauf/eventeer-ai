@@ -1013,21 +1013,63 @@ function DealDetail() {
                   <input
                     type="checkbox"
                     checked={showDiscount}
-                    onChange={(e) => setShowDiscount(e.target.checked)}
+                    onChange={(e) => {
+                      setShowDiscount(e.target.checked);
+                      if (e.target.checked && !discountTarget && discountTargets.length > 0) {
+                        setDiscountTarget({ kind: discountTargets[0].kind, id: discountTargets[0].id });
+                      }
+                    }}
                   />
                   Apply a discount (optional)
                 </label>
                 {showDiscount && (
-                  <div className="space-y-1.5">
-                    <Label>Discount (gross)</Label>
-                    <Input
-                      type="number"
-                      value={discount}
-                      onChange={(e) => setDiscount(Number(e.target.value))}
-                    />
+                  <div className="space-y-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Apply discount to</Label>
+                      <Select
+                        value={discountTarget ? `${discountTarget.kind}:${discountTarget.id}` : ""}
+                        onValueChange={(v) => {
+                          const [kind, id] = v.split(":") as [DiscountTarget["kind"], string];
+                          setDiscountTarget({ kind, id });
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Choose a line…" /></SelectTrigger>
+                        <SelectContent>
+                          {discountTargets.length === 0 && (
+                            <div className="px-2 py-1 text-xs text-muted-foreground">Select a space, package, or extra first.</div>
+                          )}
+                          {discountTargets.map((t) => (
+                            <SelectItem key={`${t.kind}:${t.id}`} value={`${t.kind}:${t.id}`}>
+                              {t.label} — {money(t.gross, currency)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Discount amount (gross)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={discount}
+                        onChange={(e) => setDiscount(Math.max(0, Number(e.target.value) || 0))}
+                      />
+                      {discountTarget && (() => {
+                        const t = discountTargets.find((x) => x.kind === discountTarget.kind && x.id === discountTarget.id);
+                        if (!t) return null;
+                        const over = discount > t.gross;
+                        return (
+                          <p className={"text-xs " + (over ? "text-red-600" : "text-muted-foreground")}>
+                            Line gross: {money(t.gross, currency)}
+                            {over && <> — capped at line amount.</>}
+                          </p>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
+
             </CardContent>
           </Card>
 
