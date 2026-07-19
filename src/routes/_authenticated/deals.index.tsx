@@ -218,6 +218,15 @@ function DealsPage() {
                 onClick={() => setStageFilter(s)}
               />
             ))}
+            {requireApproval && (
+              <StageChip
+                label="Awaiting my approval"
+                count={awaitingMyApprovalCount}
+                active={awaitingMine}
+                tone="bg-amber-100 text-amber-800 border-amber-200"
+                onClick={() => setAwaitingMine((v) => !v)}
+              />
+            )}
           </div>
 
           <Card>
@@ -231,6 +240,7 @@ function DealsPage() {
                       <th className="px-4 py-2 text-left font-medium">Event date</th>
                       <th className="px-4 py-2 text-right font-medium">Guests</th>
                       <th className="px-4 py-2 text-right font-medium">Est. value</th>
+
                       <th className="px-4 py-2 text-left font-medium">Stage</th>
                       <th className="px-4 py-2 text-left font-medium">Updated</th>
                       <th className="px-4 py-2 text-right font-medium">Action</th>
