@@ -384,6 +384,10 @@ function DealDetail() {
 
   async function saveProposal(send: boolean): Promise<{ id: string; version: number } | null> {
     if (!deal || !totals) return null;
+    if (send && requireApproval && deal.approval_status !== "approved") {
+      toast.error("This deal needs internal approval before it can be sent to the client.");
+      return null;
+    }
     const version = existingProposal ? existingProposal.version + 1 : 1;
     const status = send ? "sent" : "draft";
     const { data: newProp, error } = await supabase
@@ -425,12 +429,88 @@ function DealDetail() {
       await navigator.clipboard.writeText(shareUrl).catch(() => {});
       toast.success("Proposal sent · link copied to clipboard");
     } else {
-      await supabase.from("deals").update({ stage: "proposal_draft" as any }).eq("id", deal.id);
+      // Saving a new draft invalidates any prior approval so it must be re-reviewed.
+      const patch: any = { stage: "proposal_draft" };
+      if (requireApproval && deal.approval_status === "approved") {
+        patch.approval_status = "not_required";
+        patch.approved_by = null;
+        patch.approved_at = null;
+      }
+      await supabase.from("deals").update(patch).eq("id", deal.id);
       toast.success(`Draft v${version} saved`);
     }
     await loadAll();
     return { id: newProp.id, version };
   }
+
+  async function sendForApproval() {
+    if (!deal) return;
+    // Persist current draft first so the approver sees the latest content.
+    const saved = await saveProposal(false);
+    if (!saved) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        approval_status: "pending",
+        approval_requested_by: userId,
+        approval_requested_at: new Date().toISOString(),
+        approval_note: null,
+        approved_by: null,
+        approved_at: null,
+      })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
+      kind: "approval_requested",
+    });
+    toast.success("Sent for approval");
+    await loadAll();
+  }
+
+  async function approveDeal() {
+    if (!deal) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        approval_status: "approved",
+        approved_by: userId,
+        approved_at: new Date().toISOString(),
+        approval_note: null,
+      })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
+      kind: "approval_granted",
+    });
+    toast.success("Deal approved");
+    await loadAll();
+  }
+
+  async function requestChanges() {
+    if (!deal) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        approval_status: "changes_requested",
+        approval_note: approvalNoteDraft || null,
+        approved_by: null,
+        approved_at: null,
+      })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
+      kind: "approval_changes_requested", meta: { note: approvalNoteDraft || null },
+    });
+    setApprovalNoteOpen(false);
+    setApprovalNoteDraft("");
+    toast.success("Changes requested");
+    await loadAll();
+  }
+
+
 
   async function previewAsClient() {
     const saved = await saveProposal(false);
