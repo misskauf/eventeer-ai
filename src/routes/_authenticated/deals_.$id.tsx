@@ -603,6 +603,29 @@ function DealDetail() {
         onSaved={loadAll}
       />
 
+      <Dialog open={approvalNoteOpen} onOpenChange={setApprovalNoteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request changes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label htmlFor="approval-note">Note for the deal owner</Label>
+            <Textarea
+              id="approval-note"
+              rows={4}
+              value={approvalNoteDraft}
+              onChange={(e) => setApprovalNoteDraft(e.target.value)}
+              placeholder="What should be adjusted before this goes to the client?"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setApprovalNoteOpen(false)}>Cancel</Button>
+              <Button onClick={requestChanges}>Send back for changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       {/* CONFLICT BANNER */}
       {conflicts.length > 0 && (() => {
         const hard = conflicts.filter((c) => (HARD_CONFLICT_STAGES as string[]).includes(c.stage));
