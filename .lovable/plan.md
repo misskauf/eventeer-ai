@@ -1,43 +1,52 @@
 ## Goal
-In Catalog → Spaces, allow setting a different base/min rental fee per day of the week, instead of only a single flat price. The existing single-price fields remain as the default fallback for days that don't have an override.
+Add an optional "Send for approval" step to the deal flow. Whether approval is required is configured per company in Settings. When required, the deal builder shows a "Send for approval" button instead of "Send to client"; an approver reviews and either approves (unlocking send-to-client) or requests changes.
 
-## UX
-On each space's edit form, below the existing "Base rental fee" and "Minimum rental fee" fields, add a new "Price per weekday" section:
+## Settings
+In `src/routes/_authenticated/settings.tsx`, add a new "Deal workflow" card:
+- Toggle: **Require internal approval before sending to client** (default off).
+- Helper text explaining the flow.
 
-- A compact 7-row editor (Sun–Sat). Each row has two inputs: Base fee and Min fee.
-- Leaving a row blank = use the default fees above for that day.
-- A small hint: "Overrides the default fees for the selected day."
+Persisted on `companies` (new column `require_deal_approval boolean default false`).
 
-In the space card list, if any weekday overrides exist, show a subtle line like "Custom pricing: Fri, Sat" under the fee summary.
+## Deal states
+Add two columns to `public.deals`:
+- `approval_status text` — one of `not_required` | `pending` | `approved` | `changes_requested` (default `not_required`).
+- `approval_note text` (nullable) — approver's comment when requesting changes.
+- `approved_by uuid`, `approved_at timestamptz` (nullable).
 
-## Data model
-Add a JSONB column `weekday_pricing` on `public.spaces`:
+When the setting is on, new/edited deals default to `pending` once the manager clicks "Send for approval". When off, deals stay `not_required` and behave exactly as today.
 
-```
-{ "5": { "base": 2000, "min": 1500 }, "6": { "base": 2500, "min": 2000 } }
-```
+## Deal builder UI (`src/routes/_authenticated/deals_.$id.tsx`)
+In the sticky "Event quote" card, replace the current single send action with logic:
 
-Keys are `0`–`6` (Sun–Sat). Values may include `base`, `min`, or both. Missing days fall back to `base_rental_fee` / `min_rental_fee`. No new table needed; keeps everything colocated with the space.
+- **Approval OFF** → show existing "Send to client" button (no change).
+- **Approval ON**:
+  - `not_required` / `changes_requested` → **Send for approval** button. Sets `approval_status = pending`. If a note exists from a prior review, show it in an alert above.
+  - `pending` → disabled state: "Waiting for approval" + who to ping. Any teammate (with role `owner`/`admin`/`manager` — reuse existing `user_roles`) sees two buttons: **Approve** and **Request changes** (opens a small textarea dialog for the note).
+  - `approved` → **Send to client** button enabled + small "Approved by X" badge. Editing key fields (selections, pricing, date) resets status back to `not_required` so it must be re-approved (show a subtle warning).
 
-## Pricing engine
-Update `src/lib/pricing.ts`:
+A small status chip next to the deal title reflects the current approval state.
 
-- Add optional `weekday_pricing` to `SpaceSel`.
-- Add optional `event_date` (ISO string) to `Selection` (already implicitly known on deals — the deal has a date).
-- In `computeTotals`, when computing a space line, if `event_date` is set and `weekday_pricing[dow]` exists, use those overrides for `base_rental_fee` / `min_rental_fee`; otherwise fall back to the current values.
+## Deals list (`src/routes/_authenticated/deals.index.tsx`)
+- Add an "Approval" column/chip when the setting is on.
+- Add a filter chip: **Awaiting my approval** (shows deals with `approval_status = 'pending'` for approver-role users).
 
-## Deal + proposal wiring
-- `src/routes/_authenticated/deals_.$id.tsx` (deal builder) and `src/routes/p.$token.tsx` (client proposal) already have a deal event date — pass it into `computeTotals` as `selection.event_date`.
-- Catalog preview in `catalog.spaces.tsx` keeps showing the default fees (no date context there).
+## Permissions
+- Any team member of the company can send for approval (existing edit permission).
+- Only users with `owner` or `admin` role in `user_roles` can approve / request changes. Enforced via RLS `UPDATE` policy on the approval columns using `has_role`-style check, plus client-side gating of the buttons.
 
 ## Files touched
-- Migration: add `weekday_pricing jsonb` to `public.spaces` (nullable, default `'{}'::jsonb`).
-- `src/lib/pricing.ts`: type + weekday resolution.
-- `src/routes/_authenticated/catalog.spaces.tsx`: new field type in the `CrudList` (or a small inline editor) + list-card summary.
-- `src/components/crud-list.tsx`: add a `weekday_pricing` field renderer (7-row grid) if we go through CrudList; otherwise render it as a custom section.
-- Deal builder + public proposal: forward `event_date` into pricing calls.
+- Migration: `companies.require_deal_approval`; `deals.approval_status/approval_note/approved_by/approved_at`; RLS update policy for approval fields.
+- `src/routes/_authenticated/settings.tsx`: new toggle in a "Deal workflow" card.
+- `src/routes/_authenticated/deals_.$id.tsx`: approval buttons, status chip, note dialog, edit-resets-approval logic.
+- `src/routes/_authenticated/deals.index.tsx`: approval column + "Awaiting my approval" filter.
+- `src/lib/deal-stages.ts` (or a new `src/lib/deal-approval.ts`): status labels + tone classes.
 
 ## Out of scope
-- Per-weekday pricing for packages/extras (only spaces for now).
-- Time-of-day pricing.
-- Season interaction changes — the existing season multiplier still applies on top of the resolved weekday price.
+- Email/in-app notifications to the approver (surfaced only via the "Awaiting my approval" filter for now).
+- Multi-step / multi-approver chains.
+- Approval history log (only the latest note + approver are stored).
+
+## Open questions
+1. Which roles should be allowed to approve — just `owner`+`admin`, or also a dedicated `manager` role? (Current schema has `owner` from `create_company_workspace`; confirm what other roles exist.)
+2. When an approved deal is edited, should approval auto-reset, or only reset if pricing/selections change (not e.g. renaming the deal)?
