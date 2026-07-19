@@ -311,6 +311,22 @@ function DealsPage() {
                             </SelectContent>
                           </Select>
                         </td>
+                        {requireApproval && (
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            {d.approval_status && d.approval_status !== "not_required" ? (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                                  approvalToneClass(d.approval_status),
+                                )}
+                              >
+                                {approvalLabel(d.approval_status)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {formatRelative(d.updated_at)}
                         </td>
@@ -318,6 +334,7 @@ function DealsPage() {
                           className="px-4 py-3 text-right"
                           onClick={(e) => e.stopPropagation()}
                         >
+
                           <Button
                             type="button"
                             variant="outline"
