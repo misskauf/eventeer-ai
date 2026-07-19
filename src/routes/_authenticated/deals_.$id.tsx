@@ -124,12 +124,19 @@ function DealDetail() {
   const [conflicts, setConflicts] = useState<
     { id: string; client_name: string; client_company: string | null; stage: string }[]
   >([]);
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
+  const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
 
 
   async function loadAll() {
+    const { data: userData } = await supabase.auth.getUser();
+    setUserId(userData.user?.id ?? null);
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
     if (!d) return;
     setDeal(d as Deal);
+
     const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
       supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
