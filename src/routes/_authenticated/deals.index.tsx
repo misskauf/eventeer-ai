@@ -134,10 +134,22 @@ function DealsPage() {
     return c;
   }, [deals]);
 
+  const awaitingMyApprovalCount = useMemo(
+    () =>
+      deals.filter(
+        (d) => d.approval_status === "pending" && d.approval_requested_by !== userId,
+      ).length,
+    [deals, userId],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return deals.filter((d) => {
       if (stageFilter !== "all" && d.stage !== stageFilter) return false;
+      if (awaitingMine) {
+        if (d.approval_status !== "pending") return false;
+        if (d.approval_requested_by === userId) return false;
+      }
       if (!q) return true;
       return (
         d.client_name.toLowerCase().includes(q) ||
@@ -145,7 +157,8 @@ function DealsPage() {
         (d.client_company ?? "").toLowerCase().includes(q)
       );
     });
-  }, [deals, search, stageFilter]);
+  }, [deals, search, stageFilter, awaitingMine, userId]);
+
 
   const openDeal = (dealId: string, edit = false) => {
     navigate({
