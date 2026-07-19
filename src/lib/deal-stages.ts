@@ -68,6 +68,8 @@ export const STAGE_TONES: Record<string, BadgeTone> = {
   contacted: { className: "bg-slate-100 text-slate-700 border-slate-200" },
   meeting_scheduled: { className: "bg-slate-100 text-slate-700 border-slate-200" },
   proposal_sent: { className: "bg-blue-100 text-blue-800 border-blue-200" },
+  client_approved: { className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+
   signed: { className: "bg-amber-100 text-amber-800 border-amber-200" },
   waiting_payment: { className: "bg-amber-100 text-amber-800 border-amber-200" },
   invoice_sent: { className: "bg-amber-100 text-amber-800 border-amber-200" },
