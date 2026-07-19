@@ -1249,11 +1249,75 @@ function DealDetail() {
               ) : null}
             </CardContent>
             <div className="border-t bg-background/95 p-3 flex flex-col gap-2">
-              <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">Save draft</Button>
-              <Button onClick={() => saveProposal(true)} className="w-full">
-                <Send className="mr-1 h-4 w-4" /> Send to client
-              </Button>
+              {requireApproval ? (
+                (() => {
+                  const status = deal.approval_status;
+                  const isPending = status === "pending";
+                  const isApproved = status === "approved";
+                  const canApprove = isPending && userId != null && deal.approval_requested_by !== userId;
+                  const waitingOnOthers = isPending && !canApprove;
+                  return (
+                    <>
+                      {status === "changes_requested" && deal.approval_note && (
+                        <div className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-900">
+                          <div className="font-semibold">Changes requested</div>
+                          <div className="mt-0.5 whitespace-pre-wrap">{deal.approval_note}</div>
+                        </div>
+                      )}
+                      {isApproved && (
+                        <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-900">
+                          <ShieldCheck className="h-4 w-4 shrink-0" />
+                          <span className="font-medium">Approved — ready to send.</span>
+                        </div>
+                      )}
+                      <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">
+                        Save draft
+                      </Button>
+                      {(status === "not_required" || status === "changes_requested") && (
+                        <Button onClick={sendForApproval} className="w-full">
+                          <ShieldCheck className="mr-1 h-4 w-4" /> Send for approval
+                        </Button>
+                      )}
+                      {waitingOnOthers && (
+                        <Button disabled className="w-full">
+                          <Clock className="mr-1 h-4 w-4" /> Waiting for approval
+                        </Button>
+                      )}
+                      {canApprove && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button onClick={approveDeal} className="w-full">
+                            <ShieldCheck className="mr-1 h-4 w-4" /> Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => { setApprovalNoteDraft(""); setApprovalNoteOpen(true); }}
+                            className="w-full"
+                          >
+                            Request changes
+                          </Button>
+                        </div>
+                      )}
+                      <Button
+                        onClick={() => saveProposal(true)}
+                        className="w-full"
+                        disabled={!isApproved}
+                        title={!isApproved ? "Needs internal approval first" : undefined}
+                      >
+                        <Send className="mr-1 h-4 w-4" /> Send to client
+                      </Button>
+                    </>
+                  );
+                })()
+              ) : (
+                <>
+                  <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">Save draft</Button>
+                  <Button onClick={() => saveProposal(true)} className="w-full">
+                    <Send className="mr-1 h-4 w-4" /> Send to client
+                  </Button>
+                </>
+              )}
             </div>
+
           </Card>
 
 
