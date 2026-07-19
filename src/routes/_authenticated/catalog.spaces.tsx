@@ -171,6 +171,17 @@ function SpacesPage() {
                   · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
                   {money(Number(r.min_rental_fee), currency)} · {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
                 </div>
+                {(() => {
+                  const wp: WeekdayPricing | null = r.weekday_pricing ?? null;
+                  if (!wp) return null;
+                  const custom = WEEKDAYS.filter((w) => wp[String(w.d) as keyof WeekdayPricing]);
+                  if (custom.length === 0) return null;
+                  return (
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      Custom pricing: {custom.map((w) => w.s).join(", ")}
+                    </div>
+                  );
+                })()}
                 {r.details_url && (
                   <div className="mt-1 text-xs">
                     <a
