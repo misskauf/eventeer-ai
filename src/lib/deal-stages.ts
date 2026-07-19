@@ -3,6 +3,7 @@ export type DealStage =
   | "contacted"
   | "meeting_scheduled"
   | "proposal_sent"
+  | "client_approved"
   | "signed"
   | "waiting_payment"
   | "invoice_sent"
@@ -16,6 +17,7 @@ export type DealStage =
   | "client_selected"
   | "manager_review"
   | "accepted";
+
 
 export const STAGE_LABELS: Record<string, string> = {
   new: "New",
