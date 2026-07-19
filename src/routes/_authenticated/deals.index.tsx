@@ -52,7 +52,10 @@ type Deal = {
   stage: string;
   estimated_value: number;
   updated_at: string;
+  approval_status: string;
+  approval_requested_by: string | null;
 };
+
 
 function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
