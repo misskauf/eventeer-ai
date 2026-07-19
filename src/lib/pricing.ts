@@ -158,7 +158,8 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
   const lines: LineItem[] = [];
 
   for (const s of offer.spaces.filter((x) => selection.space_ids.includes(x.id))) {
-    const amount = Math.max(s.base_rental_fee, s.min_rental_fee) * mult;
+    const fees = resolveSpaceFees(s, selection.event_date);
+    const amount = Math.max(fees.base, fees.min) * mult;
     lines.push(lineFor(amount, s, defaults, "rental", `Space: ${s.name}`, "1", "space", s.id));
   }
 
