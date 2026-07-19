@@ -23,6 +23,7 @@ export type Database = {
           logo_url: string | null
           name: string
           primary_color: string
+          require_deal_approval: boolean
           timezone: string
           updated_at: string
         }
@@ -34,6 +35,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           primary_color?: string
+          require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
         }
@@ -45,6 +47,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           primary_color?: string
+          require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
         }
@@ -97,6 +100,12 @@ export type Database = {
       }
       deals: {
         Row: {
+          approval_note: string | null
+          approval_requested_at: string | null
+          approval_requested_by: string | null
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           client_company: string | null
           client_email: string
           client_name: string
@@ -113,6 +122,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_note?: string | null
+          approval_requested_at?: string | null
+          approval_requested_by?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           client_company?: string | null
           client_email: string
           client_name: string
@@ -129,6 +144,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_note?: string | null
+          approval_requested_at?: string | null
+          approval_requested_by?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           client_company?: string | null
           client_email?: string
           client_name?: string

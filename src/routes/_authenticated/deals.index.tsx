@@ -34,7 +34,9 @@ import {
   stageToneClass,
 } from "@/lib/deal-stages";
 import { formatEventDate } from "@/lib/date-format";
+import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/deals/")({
   component: DealsPage,
@@ -50,26 +52,41 @@ type Deal = {
   stage: string;
   estimated_value: number;
   updated_at: string;
+  approval_status: string;
+  approval_requested_by: string | null;
 };
+
 
 function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [awaitingMine, setAwaitingMine] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
 
   async function refresh() {
+    const { data: userData } = await supabase.auth.getUser();
+    setUserId(userData.user?.id ?? null);
+    const { data: co } = await supabase
+      .from("companies")
+      .select("require_deal_approval")
+      .limit(1)
+      .maybeSingle();
+    setRequireApproval(!!(co as any)?.require_deal_approval);
     const { data } = await supabase
       .from("deals")
       .select(
-        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at",
+        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by",
       )
       .order("updated_at", { ascending: false });
     setDeals((data as Deal[]) ?? []);
     setLoading(false);
   }
+
 
   useEffect(() => {
     refresh();
@@ -117,10 +134,22 @@ function DealsPage() {
     return c;
   }, [deals]);
 
+  const awaitingMyApprovalCount = useMemo(
+    () =>
+      deals.filter(
+        (d) => d.approval_status === "pending" && d.approval_requested_by !== userId,
+      ).length,
+    [deals, userId],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return deals.filter((d) => {
       if (stageFilter !== "all" && d.stage !== stageFilter) return false;
+      if (awaitingMine) {
+        if (d.approval_status !== "pending") return false;
+        if (d.approval_requested_by === userId) return false;
+      }
       if (!q) return true;
       return (
         d.client_name.toLowerCase().includes(q) ||
@@ -128,7 +157,8 @@ function DealsPage() {
         (d.client_company ?? "").toLowerCase().includes(q)
       );
     });
-  }, [deals, search, stageFilter]);
+  }, [deals, search, stageFilter, awaitingMine, userId]);
+
 
   const openDeal = (dealId: string, edit = false) => {
     navigate({
@@ -188,6 +218,15 @@ function DealsPage() {
                 onClick={() => setStageFilter(s)}
               />
             ))}
+            {requireApproval && (
+              <StageChip
+                label="Awaiting my approval"
+                count={awaitingMyApprovalCount}
+                active={awaitingMine}
+                tone="bg-amber-100 text-amber-800 border-amber-200"
+                onClick={() => setAwaitingMine((v) => !v)}
+              />
+            )}
           </div>
 
           <Card>
@@ -201,10 +240,15 @@ function DealsPage() {
                       <th className="px-4 py-2 text-left font-medium">Event date</th>
                       <th className="px-4 py-2 text-right font-medium">Guests</th>
                       <th className="px-4 py-2 text-right font-medium">Est. value</th>
+
                       <th className="px-4 py-2 text-left font-medium">Stage</th>
+                      {requireApproval && (
+                        <th className="px-4 py-2 text-left font-medium">Approval</th>
+                      )}
                       <th className="px-4 py-2 text-left font-medium">Updated</th>
                       <th className="px-4 py-2 text-right font-medium">Action</th>
                     </tr>
+
                   </thead>
                   <tbody className="divide-y">
                     {filtered.map((d) => (
@@ -267,6 +311,22 @@ function DealsPage() {
                             </SelectContent>
                           </Select>
                         </td>
+                        {requireApproval && (
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            {d.approval_status && d.approval_status !== "not_required" ? (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                                  approvalToneClass(d.approval_status),
+                                )}
+                              >
+                                {approvalLabel(d.approval_status)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {formatRelative(d.updated_at)}
                         </td>
@@ -274,6 +334,7 @@ function DealsPage() {
                           className="px-4 py-3 text-right"
                           onClick={(e) => e.stopPropagation()}
                         >
+
                           <Button
                             type="button"
                             variant="outline"
@@ -288,7 +349,7 @@ function DealsPage() {
                     {filtered.length === 0 && (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={requireApproval ? 9 : 8}
                           className="px-4 py-8 text-center text-sm text-muted-foreground"
                         >
                           No deals match your filters.

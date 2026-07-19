@@ -41,9 +41,11 @@ import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-select
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock } from "lucide-react";
 import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
+import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
+
 
 export const Route = createFileRoute("/_authenticated/deals_/$id")({
   component: DealDetail,
@@ -61,7 +63,12 @@ type Deal = {
   stage: string;
   estimated_value: number;
   notes: string | null;
+  approval_status: ApprovalStatus;
+  approval_note: string | null;
+  approval_requested_by: string | null;
+  approved_by: string | null;
 };
+
 
 type Season = { id: string; name: string; multiplier: number };
 type SpaceRow = SpaceSel & { available_days?: number[] | null; details_url?: string | null };
@@ -117,12 +124,19 @@ function DealDetail() {
   const [conflicts, setConflicts] = useState<
     { id: string; client_name: string; client_company: string | null; stage: string }[]
   >([]);
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
+  const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
 
 
   async function loadAll() {
+    const { data: userData } = await supabase.auth.getUser();
+    setUserId(userData.user?.id ?? null);
     const { data: d } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
     if (!d) return;
     setDeal(d as Deal);
+
     const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
       supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
@@ -130,8 +144,9 @@ function DealDetail() {
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
-      supabase.from("companies").select("currency").eq("id", d.company_id).maybeSingle(),
+      supabase.from("companies").select("currency, require_deal_approval").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
+
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
     ]);
     setSpaces((sp.data as SpaceRow[]) ?? []);
@@ -145,6 +160,8 @@ function DealDetail() {
     const rules = (mr.data as MinRevRule[]) ?? [];
     setMinRevRules(rules);
     if (co.data?.currency) setCurrency(co.data.currency);
+    setRequireApproval(!!(co.data as any)?.require_deal_approval);
+
     setActivities(ac.data ?? []);
     if (pr.data) {
       setExistingProposal(pr.data);
@@ -367,6 +384,10 @@ function DealDetail() {
 
   async function saveProposal(send: boolean): Promise<{ id: string; version: number } | null> {
     if (!deal || !totals) return null;
+    if (send && requireApproval && deal.approval_status !== "approved") {
+      toast.error("This deal needs internal approval before it can be sent to the client.");
+      return null;
+    }
     const version = existingProposal ? existingProposal.version + 1 : 1;
     const status = send ? "sent" : "draft";
     const { data: newProp, error } = await supabase
@@ -408,12 +429,88 @@ function DealDetail() {
       await navigator.clipboard.writeText(shareUrl).catch(() => {});
       toast.success("Proposal sent · link copied to clipboard");
     } else {
-      await supabase.from("deals").update({ stage: "proposal_draft" as any }).eq("id", deal.id);
+      // Saving a new draft invalidates any prior approval so it must be re-reviewed.
+      const patch: any = { stage: "proposal_draft" };
+      if (requireApproval && deal.approval_status === "approved") {
+        patch.approval_status = "not_required";
+        patch.approved_by = null;
+        patch.approved_at = null;
+      }
+      await supabase.from("deals").update(patch).eq("id", deal.id);
       toast.success(`Draft v${version} saved`);
     }
     await loadAll();
     return { id: newProp.id, version };
   }
+
+  async function sendForApproval() {
+    if (!deal) return;
+    // Persist current draft first so the approver sees the latest content.
+    const saved = await saveProposal(false);
+    if (!saved) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        approval_status: "pending",
+        approval_requested_by: userId,
+        approval_requested_at: new Date().toISOString(),
+        approval_note: null,
+        approved_by: null,
+        approved_at: null,
+      })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
+      kind: "approval_requested",
+    });
+    toast.success("Sent for approval");
+    await loadAll();
+  }
+
+  async function approveDeal() {
+    if (!deal) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        approval_status: "approved",
+        approved_by: userId,
+        approved_at: new Date().toISOString(),
+        approval_note: null,
+      })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
+      kind: "approval_granted",
+    });
+    toast.success("Deal approved");
+    await loadAll();
+  }
+
+  async function requestChanges() {
+    if (!deal) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({
+        approval_status: "changes_requested",
+        approval_note: approvalNoteDraft || null,
+        approved_by: null,
+        approved_at: null,
+      })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    await supabase.from("deal_activities").insert({
+      deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
+      kind: "approval_changes_requested", meta: { note: approvalNoteDraft || null },
+    });
+    setApprovalNoteOpen(false);
+    setApprovalNoteDraft("");
+    toast.success("Changes requested");
+    await loadAll();
+  }
+
+
 
   async function previewAsClient() {
     const saved = await saveProposal(false);
@@ -489,9 +586,15 @@ function DealDetail() {
             <Badge variant="secondary" className="self-center">
               {stageLabel(deal.stage)}
             </Badge>
+            {requireApproval && (
+              <Badge className={"self-center border " + approvalToneClass(deal.approval_status)}>
+                {approvalLabel(deal.approval_status)}
+              </Badge>
+            )}
           </div>
         }
       />
+
 
       <EditDealDialog
         open={editOpen}
@@ -499,6 +602,29 @@ function DealDetail() {
         deal={deal}
         onSaved={loadAll}
       />
+
+      <Dialog open={approvalNoteOpen} onOpenChange={setApprovalNoteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request changes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label htmlFor="approval-note">Note for the deal owner</Label>
+            <Textarea
+              id="approval-note"
+              rows={4}
+              value={approvalNoteDraft}
+              onChange={(e) => setApprovalNoteDraft(e.target.value)}
+              placeholder="What should be adjusted before this goes to the client?"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setApprovalNoteOpen(false)}>Cancel</Button>
+              <Button onClick={requestChanges}>Send back for changes</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* CONFLICT BANNER */}
       {conflicts.length > 0 && (() => {
@@ -1152,11 +1278,75 @@ function DealDetail() {
               ) : null}
             </CardContent>
             <div className="border-t bg-background/95 p-3 flex flex-col gap-2">
-              <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">Save draft</Button>
-              <Button onClick={() => saveProposal(true)} className="w-full">
-                <Send className="mr-1 h-4 w-4" /> Send to client
-              </Button>
+              {requireApproval ? (
+                (() => {
+                  const status = deal.approval_status;
+                  const isPending = status === "pending";
+                  const isApproved = status === "approved";
+                  const canApprove = isPending && userId != null && deal.approval_requested_by !== userId;
+                  const waitingOnOthers = isPending && !canApprove;
+                  return (
+                    <>
+                      {status === "changes_requested" && deal.approval_note && (
+                        <div className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-900">
+                          <div className="font-semibold">Changes requested</div>
+                          <div className="mt-0.5 whitespace-pre-wrap">{deal.approval_note}</div>
+                        </div>
+                      )}
+                      {isApproved && (
+                        <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-900">
+                          <ShieldCheck className="h-4 w-4 shrink-0" />
+                          <span className="font-medium">Approved — ready to send.</span>
+                        </div>
+                      )}
+                      <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">
+                        Save draft
+                      </Button>
+                      {(status === "not_required" || status === "changes_requested") && (
+                        <Button onClick={sendForApproval} className="w-full">
+                          <ShieldCheck className="mr-1 h-4 w-4" /> Send for approval
+                        </Button>
+                      )}
+                      {waitingOnOthers && (
+                        <Button disabled className="w-full">
+                          <Clock className="mr-1 h-4 w-4" /> Waiting for approval
+                        </Button>
+                      )}
+                      {canApprove && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button onClick={approveDeal} className="w-full">
+                            <ShieldCheck className="mr-1 h-4 w-4" /> Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => { setApprovalNoteDraft(""); setApprovalNoteOpen(true); }}
+                            className="w-full"
+                          >
+                            Request changes
+                          </Button>
+                        </div>
+                      )}
+                      <Button
+                        onClick={() => saveProposal(true)}
+                        className="w-full"
+                        disabled={!isApproved}
+                        title={!isApproved ? "Needs internal approval first" : undefined}
+                      >
+                        <Send className="mr-1 h-4 w-4" /> Send to client
+                      </Button>
+                    </>
+                  );
+                })()
+              ) : (
+                <>
+                  <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">Save draft</Button>
+                  <Button onClick={() => saveProposal(true)} className="w-full">
+                    <Send className="mr-1 h-4 w-4" /> Send to client
+                  </Button>
+                </>
+              )}
             </div>
+
           </Card>
 
 
