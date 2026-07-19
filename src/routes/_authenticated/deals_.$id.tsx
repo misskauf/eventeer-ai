@@ -45,6 +45,8 @@ import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, Messag
 import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
+import { ContractsPanel } from "@/components/contracts-panel";
+
 
 
 export const Route = createFileRoute("/_authenticated/deals_/$id")({
