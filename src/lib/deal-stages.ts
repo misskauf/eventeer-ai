@@ -123,6 +123,8 @@ export function stageCalendarToneClass(stage: string): string {
 
 // Stages that indicate a booked/committed event — hard conflicts.
 export const HARD_CONFLICT_STAGES: DealStage[] = [
+  "client_approved",
+
   "signed",
   "waiting_payment",
   "invoice_sent",
