@@ -2,7 +2,7 @@
 // Values are stringified plainly; unknown placeholders are left as-is so the
 // manager can spot and fix typos.
 
-import { money } from "@/hooks/use-company-currency";
+import { money } from "@/lib/pricing";
 import { formatEventDate } from "@/lib/date-format";
 
 export type ContractContext = {
