@@ -63,7 +63,12 @@ type Deal = {
   stage: string;
   estimated_value: number;
   notes: string | null;
+  approval_status: ApprovalStatus;
+  approval_note: string | null;
+  approval_requested_by: string | null;
+  approved_by: string | null;
 };
+
 
 type Season = { id: string; name: string; multiplier: number };
 type SpaceRow = SpaceSel & { available_days?: number[] | null; details_url?: string | null };
