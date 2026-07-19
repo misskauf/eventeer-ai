@@ -236,3 +236,63 @@ function SpacesPage() {
     </div>
   );
 }
+
+function WeekdayPricingEditor({
+  name,
+  defaultValue,
+  currency,
+}: {
+  name: string;
+  defaultValue: WeekdayPricing;
+  currency: string;
+}) {
+  const [val, setVal] = useState<WeekdayPricing>(defaultValue ?? {});
+  function update(day: number, field: "base" | "min", raw: string) {
+    const key = String(day) as keyof WeekdayPricing;
+    setVal((prev) => {
+      const next: WeekdayPricing = { ...prev };
+      const row = { ...(next[key] ?? {}) };
+      if (raw === "") delete (row as any)[field];
+      else (row as any)[field] = Number(raw);
+      if (row.base == null && row.min == null) delete next[key];
+      else next[key] = row;
+      return next;
+    });
+  }
+  const sym = (() => {
+    try { return (0).toLocaleString("en-US", { style: "currency", currency }).replace(/[\d.,\s]/g, ""); } catch { return currency; }
+  })();
+  return (
+    <div className="space-y-1.5">
+      <input type="hidden" name={name} value={JSON.stringify(val)} />
+      <div className="grid grid-cols-[auto_1fr_1fr] gap-2 text-xs">
+        <div />
+        <div className="text-muted-foreground">Base fee ({sym})</div>
+        <div className="text-muted-foreground">Min fee ({sym})</div>
+        {WEEKDAYS.map((w) => {
+          const key = String(w.d) as keyof WeekdayPricing;
+          const row = val[key] ?? {};
+          return (
+            <React.Fragment key={w.d}>
+              <div className="flex items-center text-sm">{w.s}</div>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="default"
+                defaultValue={row.base ?? ""}
+                onChange={(e) => update(w.d, "base", e.target.value)}
+              />
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="default"
+                defaultValue={row.min ?? ""}
+                onChange={(e) => update(w.d, "min", e.target.value)}
+              />
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
