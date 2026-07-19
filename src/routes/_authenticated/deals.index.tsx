@@ -349,7 +349,7 @@ function DealsPage() {
                     {filtered.length === 0 && (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={requireApproval ? 9 : 8}
                           className="px-4 py-8 text-center text-sm text-muted-foreground"
                         >
                           No deals match your filters.
