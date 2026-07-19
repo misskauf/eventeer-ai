@@ -36,12 +36,14 @@ function SettingsPage() {
         primary_color: fd.get("primary_color") as string,
         currency: fd.get("currency") as string,
         logo_url: (fd.get("logo_url") as string) || null,
+        require_deal_approval: fd.get("require_deal_approval") === "on",
       })
       .eq("id", company.id);
     if (error) return toast.error(error.message);
     toast.success("Brand saved");
     load();
   }
+
 
   async function saveFees(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
