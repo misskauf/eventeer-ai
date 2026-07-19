@@ -586,9 +586,15 @@ function DealDetail() {
             <Badge variant="secondary" className="self-center">
               {stageLabel(deal.stage)}
             </Badge>
+            {requireApproval && (
+              <Badge className={"self-center border " + approvalToneClass(deal.approval_status)}>
+                {approvalLabel(deal.approval_status)}
+              </Badge>
+            )}
           </div>
         }
       />
+
 
       <EditDealDialog
         open={editOpen}
