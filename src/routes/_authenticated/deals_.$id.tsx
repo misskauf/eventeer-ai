@@ -160,6 +160,8 @@ function DealDetail() {
     const rules = (mr.data as MinRevRule[]) ?? [];
     setMinRevRules(rules);
     if (co.data?.currency) setCurrency(co.data.currency);
+    setRequireApproval(!!(co.data as any)?.require_deal_approval);
+
     setActivities(ac.data ?? []);
     if (pr.data) {
       setExistingProposal(pr.data);
