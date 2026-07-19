@@ -64,6 +64,19 @@ function SpacesPage() {
           { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01" },
           { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
           {
+            name: "weekday_pricing",
+            label: "Price per weekday",
+            type: "custom",
+            hint: "Optional. Overrides the default fees above for the selected day. Leave a row blank to use the defaults.",
+            render: (cur, row) => (
+              <WeekdayPricingEditor
+                name="weekday_pricing"
+                defaultValue={cur ?? row?.weekday_pricing ?? {}}
+                currency={currency}
+              />
+            ),
+          },
+          {
             name: "basis",
             label: "Price basis",
             type: "select",
