@@ -242,9 +242,13 @@ function DealsPage() {
                       <th className="px-4 py-2 text-right font-medium">Est. value</th>
 
                       <th className="px-4 py-2 text-left font-medium">Stage</th>
+                      {requireApproval && (
+                        <th className="px-4 py-2 text-left font-medium">Approval</th>
+                      )}
                       <th className="px-4 py-2 text-left font-medium">Updated</th>
                       <th className="px-4 py-2 text-right font-medium">Action</th>
                     </tr>
+
                   </thead>
                   <tbody className="divide-y">
                     {filtered.map((d) => (
