@@ -1,48 +1,43 @@
 ## Goal
+In Catalog → Spaces, allow setting a different base/min rental fee per day of the week, instead of only a single flat price. The existing single-price fields remain as the default fallback for days that don't have an override.
 
-Change the client-facing proposal page (`/p/:token`) so that the manager's base picks drive the client's choice UI:
+## UX
+On each space's edit form, below the existing "Base rental fee" and "Minimum rental fee" fields, add a new "Price per weekday" section:
 
-- **Spaces**: if the manager included several, the client picks exactly one (radio). If only one, it is shown as included with no choice. At least one must be selected — no "opt out".
-- **Food packages**: same as spaces (single choice / required).
-- **Beverage packages**: same as spaces (single choice / required).
-- **Extras**: multi-choice (checkboxes) — client picks zero, one, or many. Unchanged.
-- **Beverage package hours**: the client can bump the number of hours on the chosen beverage package; extra hours flow into the existing overtime line in the quote.
+- A compact 7-row editor (Sun–Sat). Each row has two inputs: Base fee and Min fee.
+- Leaving a row blank = use the default fees above for that day.
+- A small hint: "Overrides the default fees for the selected day."
 
-The manager-side deal builder is not changed. What they already do (adding one or several items per category) becomes the source of truth for how the client sees it.
+In the space card list, if any weekday overrides exist, show a subtle line like "Custom pricing: Fri, Sat" under the fee summary.
 
-## Changes
+## Data model
+Add a JSONB column `weekday_pricing` on `public.spaces`:
 
-### 1. `src/routes/p.$token.tsx` — client proposal view
+```
+{ "5": { "base": 2000, "min": 1500 }, "6": { "base": 2500, "min": 2000 } }
+```
 
-- Replace the "base multi-select" sections for **Spaces**, **Food**, and **Beverages** with single-choice logic:
-  - If the manager provided 1 item → render it as an "included" card (no toggle), and force it into the selection.
-  - If the manager provided >1 → render a radio group; default to the first item; client must keep exactly one selected.
-- Keep the existing "Alternative groups" section as-is (already single-choice) so proposals built with explicit alt-groups still work.
-- Keep **Extras** as multi-choice checkboxes.
-- On the selected beverage package card, add a small "Event hours" numeric input (min = `included_hours`, defaults to `included_hours`). Store the value in `packageHours` state, pass it into the `Selection.package_hours` map, and it will flow through `computeTotals` (already supports per-package overtime).
-- Update `submitClientSelection` payload to include `package_hours`.
+Keys are `0`–`6` (Sun–Sat). Values may include `base`, `min`, or both. Missing days fall back to `base_rental_fee` / `min_rental_fee`. No new table needed; keeps everything colocated with the space.
 
-### 2. `src/lib/public-share.functions.ts` — token submit
+## Pricing engine
+Update `src/lib/pricing.ts`:
 
-- Extend the Zod schema for `submitClientSelection.selection` to accept `package_hours: z.record(z.string(), z.number()).optional()` and pass it through when writing `proposal_selections.selection`.
+- Add optional `weekday_pricing` to `SpaceSel`.
+- Add optional `event_date` (ISO string) to `Selection` (already implicitly known on deals — the deal has a date).
+- In `computeTotals`, when computing a space line, if `event_date` is set and `weekday_pricing[dow]` exists, use those overrides for `base_rental_fee` / `min_rental_fee`; otherwise fall back to the current values.
 
-### 3. No schema, RLS, or manager-side changes
+## Deal + proposal wiring
+- `src/routes/_authenticated/deals_.$id.tsx` (deal builder) and `src/routes/p.$token.tsx` (client proposal) already have a deal event date — pass it into `computeTotals` as `selection.event_date`.
+- Catalog preview in `catalog.spaces.tsx` keeps showing the default fees (no date context there).
 
-- `Selection.package_hours` already exists in `src/lib/pricing.ts`.
-- `PackageSel.included_hours` and `overage_price_per_person_per_hour` already exist and are already fetched server-side.
+## Files touched
+- Migration: add `weekday_pricing jsonb` to `public.spaces` (nullable, default `'{}'::jsonb`).
+- `src/lib/pricing.ts`: type + weekday resolution.
+- `src/routes/_authenticated/catalog.spaces.tsx`: new field type in the `CrudList` (or a small inline editor) + list-card summary.
+- `src/components/crud-list.tsx`: add a `weekday_pricing` field renderer (7-row grid) if we go through CrudList; otherwise render it as a custom section.
+- Deal builder + public proposal: forward `event_date` into pricing calls.
 
 ## Out of scope
-
-- Deal builder UI (manager side).
-- Any new backend tables or migrations.
-- Persisting the client's `package_hours` back onto the deal record beyond what's already stored in `proposal_selections.selection`.
-
-## Verify
-
-1. Manager creates a proposal with 2 spaces, 2 food packages, 1 beverage package, 2 extras → open "Preview as client":
-   - Spaces show as radio (pick one, required).
-   - Food shows as radio (pick one, required).
-   - Beverage shows as included card + "Event hours" input.
-   - Extras show as checkboxes (any subset).
-2. Increase beverage hours above `included_hours` → quote shows an overtime line and grand total updates.
-3. Manager creates a proposal with 1 space / 1 food / 1 beverage → each shows as an included card, all in the quote.
+- Per-weekday pricing for packages/extras (only spaces for now).
+- Time-of-day pricing.
+- Season interaction changes — the existing season multiplier still applies on top of the resolved weekday price.

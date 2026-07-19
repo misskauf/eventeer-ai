@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
-import { money } from "@/lib/pricing";
+import { money, type WeekdayPricing } from "@/lib/pricing";
 import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
@@ -62,6 +63,19 @@ function SpacesPage() {
           { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true },
           { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01" },
           { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
+          {
+            name: "weekday_pricing",
+            label: "Price per weekday",
+            type: "custom",
+            hint: "Optional. Overrides the default fees above for the selected day. Leave a row blank to use the defaults.",
+            render: (cur, row) => (
+              <WeekdayPricingEditor
+                name="weekday_pricing"
+                defaultValue={cur ?? row?.weekday_pricing ?? {}}
+                currency={currency}
+              />
+            ),
+          },
           {
             name: "basis",
             label: "Price basis",
@@ -157,6 +171,17 @@ function SpacesPage() {
                   · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
                   {money(Number(r.min_rental_fee), currency)} · {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
                 </div>
+                {(() => {
+                  const wp: WeekdayPricing | null = r.weekday_pricing ?? null;
+                  if (!wp) return null;
+                  const custom = WEEKDAYS.filter((w) => wp[String(w.d) as keyof WeekdayPricing]);
+                  if (custom.length === 0) return null;
+                  return (
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      Custom pricing: {custom.map((w) => w.s).join(", ")}
+                    </div>
+                  );
+                })()}
                 {r.details_url && (
                   <div className="mt-1 text-xs">
                     <a
@@ -208,6 +233,66 @@ function SpacesPage() {
           );
         }}
       />
+    </div>
+  );
+}
+
+function WeekdayPricingEditor({
+  name,
+  defaultValue,
+  currency,
+}: {
+  name: string;
+  defaultValue: WeekdayPricing;
+  currency: string;
+}) {
+  const [val, setVal] = useState<WeekdayPricing>(defaultValue ?? {});
+  function update(day: number, field: "base" | "min", raw: string) {
+    const key = String(day) as keyof WeekdayPricing;
+    setVal((prev) => {
+      const next: WeekdayPricing = { ...prev };
+      const row = { ...(next[key] ?? {}) };
+      if (raw === "") delete (row as any)[field];
+      else (row as any)[field] = Number(raw);
+      if (row.base == null && row.min == null) delete next[key];
+      else next[key] = row;
+      return next;
+    });
+  }
+  const sym = (() => {
+    try { return (0).toLocaleString("en-US", { style: "currency", currency }).replace(/[\d.,\s]/g, ""); } catch { return currency; }
+  })();
+  return (
+    <div className="space-y-1.5">
+      <input type="hidden" name={name} value={JSON.stringify(val)} />
+      <div className="grid grid-cols-[auto_1fr_1fr] gap-2 text-xs">
+        <div />
+        <div className="text-muted-foreground">Base fee ({sym})</div>
+        <div className="text-muted-foreground">Min fee ({sym})</div>
+        {WEEKDAYS.map((w) => {
+          const key = String(w.d) as keyof WeekdayPricing;
+          const row = val[key] ?? {};
+          return (
+            <React.Fragment key={w.d}>
+              <div className="flex items-center text-sm">{w.s}</div>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="default"
+                defaultValue={row.base ?? ""}
+                onChange={(e) => update(w.d, "base", e.target.value)}
+              />
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="default"
+                defaultValue={row.min ?? ""}
+                onChange={(e) => update(w.d, "min", e.target.value)}
+              />
+            </React.Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { categoryDefaultHours, resolveBasis, resolveTaxRate, splitNetTaxGross, type CategoryDefaults, type Category } from "./tax";
 
+export type WeekdayPricing = Partial<Record<"0" | "1" | "2" | "3" | "4" | "5" | "6", { base?: number | null; min?: number | null }>>;
+
 export type SpaceSel = {
   id: string;
   name: string;
@@ -10,7 +12,25 @@ export type SpaceSel = {
   basis?: "net" | "gross" | null;
   tax_rate_pct?: number | null;
   long_description?: string | null;
+  weekday_pricing?: WeekdayPricing | null;
 };
+
+export function resolveSpaceFees(
+  space: Pick<SpaceSel, "base_rental_fee" | "min_rental_fee" | "weekday_pricing">,
+  eventDate?: string | null,
+): { base: number; min: number; overridden: boolean } {
+  const base0 = Number(space.base_rental_fee ?? 0);
+  const min0 = Number(space.min_rental_fee ?? 0);
+  if (!eventDate || !space.weekday_pricing) return { base: base0, min: min0, overridden: false };
+  const d = new Date(eventDate);
+  if (isNaN(d.getTime())) return { base: base0, min: min0, overridden: false };
+  const key = String(d.getUTCDay()) as keyof WeekdayPricing;
+  const wd = space.weekday_pricing[key];
+  if (!wd) return { base: base0, min: min0, overridden: false };
+  const base = wd.base != null && wd.base !== undefined ? Number(wd.base) : base0;
+  const min = wd.min != null && wd.min !== undefined ? Number(wd.min) : min0;
+  return { base, min, overridden: true };
+}
 export type PackageSel = {
   id: string;
   name: string;
@@ -72,6 +92,7 @@ export type Selection = {
   extra_ids: string[];
   package_guests?: Record<string, number>; // override per package
   package_hours?: Record<string, number>; // override event hours per package
+  event_date?: string | null; // ISO date, used for weekday-based pricing
 };
 
 
@@ -137,7 +158,8 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
   const lines: LineItem[] = [];
 
   for (const s of offer.spaces.filter((x) => selection.space_ids.includes(x.id))) {
-    const amount = Math.max(s.base_rental_fee, s.min_rental_fee) * mult;
+    const fees = resolveSpaceFees(s, selection.event_date);
+    const amount = Math.max(fees.base, fees.min) * mult;
     lines.push(lineFor(amount, s, defaults, "rental", `Space: ${s.name}`, "1", "space", s.id));
   }
 

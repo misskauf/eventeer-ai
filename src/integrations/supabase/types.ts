@@ -652,6 +652,7 @@ export type Database = {
           photo_url: string | null
           tax_rate_pct: number | null
           updated_at: string
+          weekday_pricing: Json
         }
         Insert: {
           active?: boolean
@@ -673,6 +674,7 @@ export type Database = {
           photo_url?: string | null
           tax_rate_pct?: number | null
           updated_at?: string
+          weekday_pricing?: Json
         }
         Update: {
           active?: boolean
@@ -694,6 +696,7 @@ export type Database = {
           photo_url?: string | null
           tax_rate_pct?: number | null
           updated_at?: string
+          weekday_pricing?: Json
         }
         Relationships: [
           {

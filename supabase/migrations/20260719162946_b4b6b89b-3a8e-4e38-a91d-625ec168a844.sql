@@ -1,0 +1,1 @@
+ALTER TABLE public.spaces ADD COLUMN IF NOT EXISTS weekday_pricing jsonb NOT NULL DEFAULT '{}'::jsonb;

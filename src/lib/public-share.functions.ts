@@ -48,7 +48,7 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
 
     const [spacesRes, packagesRes, extrasRes, feeCfgRes, seasonRes] = await Promise.all([
       spaceIds.length
-        ? supabaseAdmin.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description").in("id", spaceIds)
+        ? supabaseAdmin.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, weekday_pricing").in("id", spaceIds)
         : Promise.resolve({ data: [] } as any),
       pkgIds.length
         ? supabaseAdmin.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, selection_mode, selection_groups, selection_total_max, details_url").in("id", pkgIds)
