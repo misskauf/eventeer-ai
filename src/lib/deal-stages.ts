@@ -47,6 +47,8 @@ export const STAGE_ORDER: DealStage[] = [
   "contacted",
   "meeting_scheduled",
   "proposal_sent",
+  "client_approved",
+
   "signed",
   "waiting_payment",
   "invoice_sent",
