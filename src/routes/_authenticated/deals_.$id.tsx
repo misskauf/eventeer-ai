@@ -269,6 +269,7 @@ function DealDetail() {
       extra_ids: Array.from(new Set([...selectedExtras, ...extraExtras])),
       package_guests: packageGuests,
       package_hours: packageHours,
+      event_date: deal?.event_date ?? null,
     } as Selection;
   }, [deal, selectedSpaces, selectedPackages, selectedExtras, packageGuests, packageHours, altGroups]);
 
