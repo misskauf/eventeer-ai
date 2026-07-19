@@ -143,10 +143,19 @@ function SettingsPage() {
             </CardContent>
           </Card>
         )}
+        {company?.id && (
+          <Card>
+            <CardHeader><CardTitle>Contract templates</CardTitle></CardHeader>
+            <CardContent>
+              <ContractTemplatesEditor companyId={company.id} />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppShell>
   );
 }
+
 
 function CategoryRow({ cat, label, fees }: { cat: string; label: string; fees: any }) {
   return (
