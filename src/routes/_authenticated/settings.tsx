@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ContractTemplatesEditor } from "@/components/contracts-panel";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
