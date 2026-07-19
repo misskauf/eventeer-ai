@@ -34,7 +34,9 @@ import {
   stageToneClass,
 } from "@/lib/deal-stages";
 import { formatEventDate } from "@/lib/date-format";
+import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/deals/")({
   component: DealsPage,
