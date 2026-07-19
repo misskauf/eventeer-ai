@@ -142,19 +142,31 @@ export const submitClientSelection = createServerFn({ method: "POST" })
         .eq("id", tok.proposal_id);
     }
 
-    await supabaseAdmin
+    // Only advance the stage forward — don't downgrade a signed / paid deal.
+    const { data: currentDeal } = await supabaseAdmin
       .from("deals")
-      .update({ stage: "client_selected", estimated_value: data.computed_total })
-      .eq("id", tok.deal_id);
+      .select("stage")
+      .eq("id", tok.deal_id)
+      .maybeSingle();
+    const preApprovalStages = new Set([
+      "new", "contacted", "meeting_scheduled", "proposal_sent",
+      "inquiry", "proposal_draft", "manager_review", "client_selected",
+    ]);
+    const shouldAdvance = !currentDeal?.stage || preApprovalStages.has(currentDeal.stage as string);
+    const updatePayload: { estimated_value: number; stage?: any } = { estimated_value: data.computed_total };
+    if (shouldAdvance) updatePayload.stage = "client_approved";
+    await supabaseAdmin.from("deals").update(updatePayload as any).eq("id", tok.deal_id);
+
     await supabaseAdmin.from("deal_activities").insert({
       deal_id: tok.deal_id,
       company_id: tok.company_id,
-      kind: "client_submitted_selection",
+      kind: "client_approved_selection",
       meta: {
         computed_total: data.computed_total,
         has_message: !!data.client_response?.overall_message,
       },
     });
+
 
     return { ok: true as const };
   });

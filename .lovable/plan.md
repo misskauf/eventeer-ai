@@ -1,52 +1,66 @@
 ## Goal
-Add an optional "Send for approval" step to the deal flow. Whether approval is required is configured per company in Settings. When required, the deal builder shows a "Send for approval" button instead of "Send to client"; an approver reviews and either approves (unlocking send-to-client) or requests changes.
+Two connected changes:
+1. When the client confirms their selection on the public proposal, notify the event manager by email AND flip the deal to a new "Client approved" stage.
+2. In the deal view, add a "Create contract" action that lets the manager pick from pre-uploaded contract templates and generates a filled contract with event details substituted for placeholders.
 
-## Settings
-In `src/routes/_authenticated/settings.tsx`, add a new "Deal workflow" card:
-- Toggle: **Require internal approval before sending to client** (default off).
-- Helper text explaining the flow.
+## Part 1 — Client approval
 
-Persisted on `companies` (new column `require_deal_approval boolean default false`).
+**New deal stage**: add `client_approved` to `src/lib/deal-stages.ts` between `proposal_sent` and `signed`, with green tone in both table + calendar palettes. Treated as a soft-committed stage (still pre-signature).
 
-## Deal states
-Add two columns to `public.deals`:
-- `approval_status text` — one of `not_required` | `pending` | `approved` | `changes_requested` (default `not_required`).
-- `approval_note text` (nullable) — approver's comment when requesting changes.
-- `approved_by uuid`, `approved_at timestamptz` (nullable).
+**On client submit** (`src/lib/public-share.functions.ts`, `submitClientSelection`):
+- After saving `proposal_selections`, set `deals.stage = 'client_approved'` (only if current stage is `proposal_sent` or earlier — don't downgrade a signed deal).
+- Insert a `deal_activities` row: "Client confirmed selection".
+- Send email to the deal owner. This needs email infrastructure.
 
-When the setting is on, new/edited deals default to `pending` once the manager clicks "Send for approval". When off, deals stay `not_required` and behave exactly as today.
+**Email**: uses Lovable's managed email API + a scaffolded transactional template `client-selection-confirmed`. Requires the email domain to be set up first — I'll trigger the setup dialog if it isn't. Template shows client name, event date, chosen spaces/packages, total, and a link to `/deals/:id`.
 
-## Deal builder UI (`src/routes/_authenticated/deals_.$id.tsx`)
-In the sticky "Event quote" card, replace the current single send action with logic:
+## Part 2 — Contract templates
 
-- **Approval OFF** → show existing "Send to client" button (no change).
-- **Approval ON**:
-  - `not_required` / `changes_requested` → **Send for approval** button. Sets `approval_status = pending`. If a note exists from a prior review, show it in an alert above.
-  - `pending` → disabled state: "Waiting for approval" + who to ping. Any teammate (with role `owner`/`admin`/`manager` — reuse existing `user_roles`) sees two buttons: **Approve** and **Request changes** (opens a small textarea dialog for the note).
-  - `approved` → **Send to client** button enabled + small "Approved by X" badge. Editing key fields (selections, pricing, date) resets status back to `not_required` so it must be re-approved (show a subtle warning).
+**Storage + data model**:
+- New Storage bucket `contract-templates` (private) for uploaded `.docx` / `.md` / `.txt` files. Managers upload templates from a new Settings → Contracts tab.
+- New table `public.contract_templates` (per company): `name`, `body` (text — the template body with `{{placeholders}}`), `file_url` (optional reference to original upload), `is_default`.
+- New table `public.contracts` (per deal): `deal_id`, `template_id`, `rendered_body`, `status` (`draft` / `sent` / `signed`), `pdf_url` (nullable, future).
 
-A small status chip next to the deal title reflects the current approval state.
+**Template placeholders** — a fixed set the manager can drop into a template:
+```
+{{client_name}} {{client_company}} {{client_email}}
+{{event_date}} {{guest_count}} {{event_hours}}
+{{venue}}            — selected space names
+{{food_package}}     — selected food package + menu selections
+{{drinks_package}}   — selected beverage package
+{{extras}}           — bulleted list
+{{subtotal}} {{tax}} {{total}} {{currency}}
+{{company_name}} {{today}}
+```
+Substitution happens server-side via a `renderContract(template, deal)` helper that pulls the same computed totals used by the deal builder, so the numbers always match the proposal.
 
-## Deals list (`src/routes/_authenticated/deals.index.tsx`)
-- Add an "Approval" column/chip when the setting is on.
-- Add a filter chip: **Awaiting my approval** (shows deals with `approval_status = 'pending'` for approver-role users).
+**Deal view UI** (`src/routes/_authenticated/deals_.$id.tsx`):
+- New "Create contract" button in the sticky action card (visible from `client_approved` onward — the point where a contract makes sense).
+- Opens a dialog: dropdown of available templates + preview of the rendered contract (markdown-rendered). Buttons: "Save as draft" and "Save & mark signed".
+- Saved contracts listed below the action card with re-open / regenerate / download options.
 
-## Permissions
-- Any team member of the company can send for approval (existing edit permission).
-- Only users with `owner` or `admin` role in `user_roles` can approve / request changes. Enforced via RLS `UPDATE` policy on the approval columns using `has_role`-style check, plus client-side gating of the buttons.
+**Settings → Contracts tab**: upload a file OR paste template text, name it, mark one as default. Uses `contract_templates` table + storage bucket.
+
+## Out of scope (for now)
+- Actual e-signature integration (DocuSign etc.) — the "signed" state is a manual toggle.
+- PDF export — contracts render as markdown/HTML for now; can add PDF later.
+- Rich template editor — plain textarea with placeholder autocomplete, no WYSIWYG.
+- Sending the contract to the client through the portal — this plan only creates it inside the deal.
+
+## Migrations
+1. `contract_templates` table + RLS scoped to `is_member_of(auth.uid(), company_id)` + grants.
+2. `contracts` table + RLS via deal → company membership + grants.
+3. Storage bucket `contract-templates` (private) with policies for members.
+4. No schema change needed for the new deal stage — `stage` is free text; adding it to the enum in `deal-stages.ts` is enough.
 
 ## Files touched
-- Migration: `companies.require_deal_approval`; `deals.approval_status/approval_note/approved_by/approved_at`; RLS update policy for approval fields.
-- `src/routes/_authenticated/settings.tsx`: new toggle in a "Deal workflow" card.
-- `src/routes/_authenticated/deals_.$id.tsx`: approval buttons, status chip, note dialog, edit-resets-approval logic.
-- `src/routes/_authenticated/deals.index.tsx`: approval column + "Awaiting my approval" filter.
-- `src/lib/deal-stages.ts` (or a new `src/lib/deal-approval.ts`): status labels + tone classes.
+- `src/lib/deal-stages.ts` — add `client_approved`.
+- `src/lib/public-share.functions.ts` — stage transition + activity + email.
+- `src/lib/email-templates/client-selection-confirmed.tsx` — new template (after scaffold).
+- `src/routes/_authenticated/settings.tsx` — new Contracts card (upload + list templates).
+- `src/routes/_authenticated/deals_.$id.tsx` — "Create contract" button + dialog + contracts list.
+- `src/lib/contracts.ts` — `renderContract` helper (placeholder substitution).
+- New: `src/components/contract-dialog.tsx`, `src/components/contract-template-editor.tsx`.
 
-## Out of scope
-- Email/in-app notifications to the approver (surfaced only via the "Awaiting my approval" filter for now).
-- Multi-step / multi-approver chains.
-- Approval history log (only the latest note + approver are stored).
-
-## Open questions
-1. Which roles should be allowed to approve — just `owner`+`admin`, or also a dedicated `manager` role? (Current schema has `owner` from `create_company_workspace`; confirm what other roles exist.)
-2. When an approved deal is edited, should approval auto-reset, or only reset if pricing/selections change (not e.g. renaming the deal)?
+## One decision I need from you
+For the email to the event manager: do you want it to go to (a) the specific user who created the deal, or (b) every owner/admin of the company workspace? I'll default to (a) unless you say otherwise.

@@ -45,6 +45,8 @@ import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, Messag
 import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
+import { ContractsPanel } from "@/components/contracts-panel";
+
 
 
 export const Route = createFileRoute("/_authenticated/deals_/$id")({
@@ -1346,8 +1348,30 @@ function DealDetail() {
                 </>
               )}
             </div>
+            <div className="border-t bg-background/95 p-3">
+              <ContractsPanel
+                companyId={deal.company_id}
+                ctx={{
+                  deal,
+                  company: { name: undefined, currency },
+                  spaces: spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => ({ name: s.name })),
+                  foodPackages: foodPackages.filter((p) => selectedPackages.includes(p.id)).map((p) => ({ name: p.name })),
+                  beveragePackages: beveragePackages
+                    .filter((p) => selectedPackages.includes(p.id))
+                    .map((p) => ({ name: p.name, included_hours: p.included_hours })),
+                  extras: extras
+                    .filter((e) => selectedExtras.includes(e.id))
+                    .map((e) => ({ name: e.name })),
+                  totals: totals
+                    ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
+                    : undefined,
+                  event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+                }}
+              />
+            </div>
 
           </Card>
+
 
 
 
