@@ -62,19 +62,31 @@ function DealsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [awaitingMine, setAwaitingMine] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
 
   async function refresh() {
+    const { data: userData } = await supabase.auth.getUser();
+    setUserId(userData.user?.id ?? null);
+    const { data: co } = await supabase
+      .from("companies")
+      .select("require_deal_approval")
+      .limit(1)
+      .maybeSingle();
+    setRequireApproval(!!(co as any)?.require_deal_approval);
     const { data } = await supabase
       .from("deals")
       .select(
-        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at",
+        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by",
       )
       .order("updated_at", { ascending: false });
     setDeals((data as Deal[]) ?? []);
     setLoading(false);
   }
+
 
   useEffect(() => {
     refresh();
