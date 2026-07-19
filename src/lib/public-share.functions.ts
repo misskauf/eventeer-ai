@@ -153,9 +153,10 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       "inquiry", "proposal_draft", "manager_review", "client_selected",
     ]);
     const shouldAdvance = !currentDeal?.stage || preApprovalStages.has(currentDeal.stage as string);
-    const updatePayload: Record<string, unknown> = { estimated_value: data.computed_total };
+    const updatePayload: { estimated_value: number; stage?: any } = { estimated_value: data.computed_total };
     if (shouldAdvance) updatePayload.stage = "client_approved";
-    await supabaseAdmin.from("deals").update(updatePayload).eq("id", tok.deal_id);
+    await supabaseAdmin.from("deals").update(updatePayload as any).eq("id", tok.deal_id);
+
     await supabaseAdmin.from("deal_activities").insert({
       deal_id: tok.deal_id,
       company_id: tok.company_id,
