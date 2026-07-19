@@ -92,6 +92,7 @@ export type Selection = {
   extra_ids: string[];
   package_guests?: Record<string, number>; // override per package
   package_hours?: Record<string, number>; // override event hours per package
+  event_date?: string | null; // ISO date, used for weekday-based pricing
 };
 
 
