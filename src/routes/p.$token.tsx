@@ -188,6 +188,7 @@ function ClientProposal() {
       extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
       package_guests: packageGuests,
       package_hours: packageHours,
+      event_date: state.deal.event_date ?? null,
     };
   }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, packageGuests, packageHours, altGroups, altChoices]);
 
