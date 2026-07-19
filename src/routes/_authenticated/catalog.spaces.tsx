@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
