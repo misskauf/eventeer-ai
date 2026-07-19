@@ -91,8 +91,23 @@ function SettingsPage() {
                 <Field name="primary_color" label="Brand color" type="color" defaultValue={company.primary_color} />
                 <Field name="currency" label="Currency" defaultValue={company.currency} />
               </div>
+              <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  name="require_deal_approval"
+                  defaultChecked={!!company.require_deal_approval}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium">Require internal approval before sending to client</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    When on, deals must be approved by another team member before the proposal can be sent to the client.
+                  </span>
+                </span>
+              </label>
               <Button className="w-full">Save brand</Button>
             </form>
+
           </CardContent>
         </Card>
         {fees && (
