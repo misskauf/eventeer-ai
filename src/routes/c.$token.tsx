@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatEventDate } from "@/lib/date-format";
 import { toast } from "sonner";
 import { CheckCircle2, FileText } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
+import { ensureHtml } from "@/lib/contracts";
 
 export const Route = createFileRoute("/c/$token")({
   ssr: false,
