@@ -21,6 +21,7 @@ import {
   Pilcrow,
   LayoutTemplate,
   PenLine,
+  Variable,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -232,16 +233,27 @@ function Toolbar({ editor }: { editor: Editor }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
         <Select
           value=""
           onValueChange={(key) => {
             if (!key) return;
-            editor.chain().focus().insertContent(`{{${key}}}`).run();
+            const { from, to, empty } = editor.state.selection;
+            if (!empty && from !== to) {
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(`{{${key}}}`)
+                .run();
+            } else {
+              editor.chain().focus().insertContent(`{{${key}}}`).run();
+            }
           }}
         >
-          <SelectTrigger className="h-8 w-[190px] text-xs">
-            <SelectValue placeholder="Insert placeholder…" />
+          <SelectTrigger className="h-8 w-[190px] text-xs" title="Insert placeholder, or replace selected text with a placeholder">
+            <Variable className="mr-1 h-3.5 w-3.5" />
+            <SelectValue placeholder="Insert / replace with…" />
           </SelectTrigger>
           <SelectContent>
             <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
