@@ -20,12 +20,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("companies")
-      .select("id, name, logo_url, primary_color, currency")
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setCompany(data as Company | null));
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data: role } = await supabase
+        .from("user_roles")
+        .select("company_id")
+        .eq("user_id", uid)
+        .limit(1)
+        .maybeSingle();
+      if (!role?.company_id) return;
+      const { data } = await supabase
+        .from("companies")
+        .select("id, name, logo_url, primary_color, currency")
+        .eq("id", role.company_id)
+        .maybeSingle();
+      setCompany(data as Company | null);
+    })();
   }, []);
 
   async function signOut() {
