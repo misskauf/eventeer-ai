@@ -510,9 +510,12 @@ export function ContractsPanel({ companyId, ctx }: Props) {
               {viewer.signed_by_email && <> · {viewer.signed_by_email}</>}
             </div>
           )}
-          <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs">
-            {viewer?.rendered_body}
-          </pre>
+          <div
+            className="prose prose-sm max-w-none rounded-md border bg-background p-4 dark:prose-invert"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(ensureHtml(viewer?.rendered_body ?? "")),
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>
