@@ -127,9 +127,12 @@ function ClientSigning() {
           <CardTitle className="text-base">Contract</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-4 font-mono text-xs">
-            {contract.rendered_body}
-          </pre>
+          <div
+            className="prose prose-sm max-h-[60vh] max-w-none overflow-y-auto rounded-md border bg-background p-4 dark:prose-invert"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(ensureHtml(contract.rendered_body ?? "")),
+            }}
+          />
         </CardContent>
       </Card>
 
