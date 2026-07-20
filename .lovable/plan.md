@@ -1,46 +1,47 @@
-## Changes to the contract template editor
+## Goal
 
-### 1. New templates start empty
-In `ContractTemplatesEditor.openNew()` (`src/components/contracts-panel.tsx`), set `body` to `""` instead of `SAMPLE_TEMPLATE`. The `RichTextEditor` already shows the "Start typing…" placeholder in that state. `SAMPLE_TEMPLATE` and its unused import are removed.
+Let event managers upload an existing contract file (.docx, .pdf, .txt/.md) in Settings → Contract templates, convert it to editable rich text in the existing TipTap editor, and turn any text into `{{placeholder}}` variables — both via auto-detection on upload and via a "Replace selection with placeholder" action.
 
-### 2. "Insert placeholder" stays
-No change — the dropdown in `src/components/rich-text-editor.tsx` keeps its Company + Deal groups exactly as today.
+## Where it lives
 
-### 3. New "Insert" menu on the toolbar (header, two-column, logo top-right)
-Add a single **Insert** dropdown to the toolbar (next to the image button) with three ready-made blocks. Each one calls `editor.chain().focus().insertContent(html).run()` so it drops into the document at the cursor and stays fully editable afterwards.
+Settings → Contract templates → **New template** dropdown gains an **Upload document…** option (next to existing "New / Duplicate"). Upload happens client-side; the resulting HTML is written into the same `contract_templates.body` field the editor already saves. No new tables, no storage bucket — the original file isn't retained.
 
-- **Header (single column)** — a title band using company details:
-  ```html
-  <div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px">
-    <h1 style="margin:0">{{company_name}}</h1>
-    <p style="margin:4px 0 0;font-size:12px;color:#555">
-      {{company_address}} · {{company_email}} · {{company_phone}}
-    </p>
-  </div>
-  ```
-- **Two-column header** — company details left, logo right, using a CSS flex row so it renders the same in the editor, the manager preview and the client signing view:
-  ```html
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px">
-    <div>
-      <h1 style="margin:0">{{company_name}}</h1>
-      <p style="margin:4px 0 0;font-size:12px;color:#555">
-        {{company_address}}<br/>{{company_email}} · {{company_phone}}
-      </p>
-    </div>
-    <div style="text-align:right">{{company_logo}}</div>
-  </div>
-  ```
-- **Logo top-right** — just the logo, floated to the top-right of whatever follows:
-  ```html
-  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">{{company_logo}}</div>
-  ```
+## Conversion (client-side)
 
-All three use existing placeholders from `CONTRACT_PLACEHOLDERS`, so `renderContract` fills them from the company profile at contract-creation time — the manager doesn't have to retype anything, and blank profile fields render as empty strings (already handled in `buildPlaceholderValues`).
+- **.docx** → HTML with [`mammoth`](https://www.npmjs.com/package/mammoth) (`mammoth.convertToHtml`). Preserves headings, bold/italic, lists, tables.
+- **.pdf** → text with `pdfjs-dist` (already in the TanStack ecosystem-friendly; pure JS, works in browser). Each page's text lines become `<p>` blocks; blank lines split paragraphs. Formatting is intentionally simplified — users are warned in the upload dialog.
+- **.txt / .md** → for `.md`, run through `marked`; for `.txt`, wrap paragraphs in `<p>`.
 
-### 4. Where the UI lives
-- Toolbar dropdown added inside `Toolbar` in `src/components/rich-text-editor.tsx` (shadcn `DropdownMenu`, label "Insert block", icon `LayoutTemplate` from `lucide-react`). Positioned right before the placeholder select so the toolbar layout stays balanced.
-- No change to how templates are saved or rendered — the blocks are plain HTML that already round-trips through TipTap, DOMPurify sanitisation, and the `.prose` viewer.
+Max file size 5 MB, enforced client-side with a toast on reject.
 
-## Out of scope
-- No new placeholders, no schema change, no changes to the manager preview or client signing view.
-- The earlier "wrong company_id on Settings" bug is separate; I'll address it in a follow-up if you still hit "row violates row-level security policy" after these edits.
+## Placeholder replacement
+
+Two mechanisms, both operating on the TipTap editor:
+
+1. **Auto-detect on upload.** After conversion, scan the HTML text for common patterns and open a "Map detected fields" dialog:
+   - `[CLIENT NAME]`, `{CLIENT_NAME}`, `<<client name>>`, `___________` labelled lines (e.g. "Name: __________")
+   - Fuzzy label match against known placeholders (client name/email, event date, guest count, venue, total, company name/address/etc. from `CONTRACT_PLACEHOLDERS`)
+   - Dialog shows each detected token with a dropdown of placeholders + "Skip". Confirmed selections replace all occurrences with `{{key}}` before the body is loaded into the editor.
+
+2. **Manual: select → replace.** New toolbar button in `rich-text-editor.tsx` labelled **Make placeholder** (only enabled when there's a non-empty selection). Opens a small popover listing `CONTRACT_PLACEHOLDERS` grouped Company / Deal (same grouping as the existing Insert placeholder dropdown). Picking one replaces the selected text with `{{key}}`. Works on any text, uploaded or hand-typed.
+
+## UX flow
+
+1. User opens Settings → Contract templates, clicks **Upload document**.
+2. File picker (accepts `.docx,.pdf,.txt,.md`). On select, a modal shows: filename, detected format, and a "Convert" button; PDF shows a note that formatting will be simplified.
+3. On convert: parse → HTML → auto-detect dialog with mapping table → user confirms.
+4. Template editor opens pre-filled with the converted HTML, name defaulted to the filename (without extension). User can further edit, use manual "Make placeholder", then Save — exactly the same save path as today.
+
+## Files touched
+
+- `package.json` — add `mammoth`, `pdfjs-dist`, `marked` (all pure JS, browser-safe).
+- `src/lib/contract-import.ts` (new) — `parseDocx(file)`, `parsePdf(file)`, `parseText(file)`, `parseMarkdown(file)`, `detectPlaceholderCandidates(html)`, `applyPlaceholderMap(html, map)`.
+- `src/components/contract-upload-dialog.tsx` (new) — file picker + convert + auto-detect mapping UI.
+- `src/components/contracts-panel.tsx` and `src/components/contract-templates-editor.tsx` (whichever hosts the templates list in Settings) — wire the "Upload document" action into the template creation flow, opening the new dialog then the existing editor.
+- `src/components/rich-text-editor.tsx` — add **Make placeholder** toolbar button + popover; reuses the existing `CONTRACT_PLACEHOLDERS` list.
+
+## Non-goals (this pass)
+
+- Storing the original uploaded file. Only the converted HTML is persisted.
+- Preserving PDF layout (columns, images embedded in PDFs). Text-only extraction; users can re-add images via the existing image toolbar.
+- Server-side conversion. Everything runs in the browser, so no new server function or bucket is needed.
