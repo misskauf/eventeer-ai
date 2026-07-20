@@ -233,7 +233,53 @@ function Toolbar({ editor }: { editor: Editor }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        <Select
+          value=""
+          onValueChange={(key) => {
+            if (!key) return;
+            const { from, to, empty } = editor.state.selection;
+            if (!empty && from !== to) {
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(`{{${key}}}`)
+                .run();
+            } else {
+              editor.chain().focus().insertContent(`{{${key}}}`).run();
+            }
+          }}
+        >
+          <SelectTrigger className="h-8 w-[190px] text-xs" title="Insert placeholder, or replace selected text with a placeholder">
+            <Variable className="mr-1 h-3.5 w-3.5" />
+            <SelectValue placeholder="Insert / replace with…" />
+          </SelectTrigger>
+          <SelectContent>
+            <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
+              Company
+            </div>
+            {CONTRACT_PLACEHOLDERS.filter((p) => p.key.startsWith("company_")).map((p) => (
+              <SelectItem key={p.key} value={p.key}>
+                <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
+                <span className="ml-2 text-muted-foreground">{p.label}</span>
+              </SelectItem>
+            ))}
+            <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
+              Deal
+            </div>
+            {CONTRACT_PLACEHOLDERS.filter((p) => !p.key.startsWith("company_")).map((p) => (
+              <SelectItem key={p.key} value={p.key}>
+                <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
+                <span className="ml-2 text-muted-foreground">{p.label}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div style={{ display: "none" }}>
+        <Select
+          value=""
         <Select
           value=""
           onValueChange={(key) => {
