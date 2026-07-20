@@ -636,12 +636,26 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
                     </Badge>
                   )}
                 </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {t.body.slice(0, 100)}
-                </div>
+                <div
+                  className="truncate text-xs text-muted-foreground"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(ensureHtml(t.body), { ALLOWED_TAGS: [] }).slice(
+                      0,
+                      120,
+                    ),
+                  }}
+                />
               </div>
               <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
                 Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openDuplicate(t)}
+                title="Duplicate"
+              >
+                <Copy className="mr-1 h-3.5 w-3.5" /> Duplicate
               </Button>
               <Button
                 variant="ghost"
