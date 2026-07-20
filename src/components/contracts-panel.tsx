@@ -716,31 +716,44 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
   );
 }
 
-const SAMPLE_TEMPLATE = `EVENT CONTRACT
+const SAMPLE_TEMPLATE = `<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+  <div>{{company_logo}}</div>
+  <div>
+    <p><strong>{{company_name}}</strong></p>
+    <p>{{company_address}}</p>
+    <p>{{company_email}} · {{company_phone}}</p>
+  </div>
+</div>
+<hr />
+<h1>Event Contract</h1>
+<p>This agreement is between <strong>{{company_name}}</strong> and <strong>{{client_name}}</strong> ({{client_company}}, {{client_email}}).</p>
 
-Between {{company_name}} and {{client_name}} ({{client_company}}, {{client_email}}).
+<h2>Event details</h2>
+<ul>
+  <li><strong>Date:</strong> {{event_date}}</li>
+  <li><strong>Guests:</strong> {{guest_count}}</li>
+  <li><strong>Duration:</strong> {{event_hours}} hours</li>
+  <li><strong>Venue:</strong> {{venue}}</li>
+</ul>
 
-Event date: {{event_date}}
-Guests: {{guest_count}}
-Duration: {{event_hours}} hours
-Venue: {{venue}}
-
-Food package: {{food_package}}
-Drinks package: {{drinks_package}}
-
-Menu selections:
+<h2>Food &amp; beverage</h2>
+<p><strong>Food package:</strong> {{food_package}}</p>
+<p><strong>Drinks package:</strong> {{drinks_package}}</p>
+<p><strong>Menu selections:</strong></p>
 {{menu_selections}}
 
-Extras:
+<h2>Extras</h2>
 {{extras}}
 
-Pricing
-Subtotal: {{subtotal}}
-Tax: {{tax}}
-Total: {{total}}
+<h2>Pricing</h2>
+<ul>
+  <li>Subtotal: {{subtotal}}</li>
+  <li>Tax: {{tax}}</li>
+  <li><strong>Total: {{total}}</strong></li>
+</ul>
 
-Signed on {{today}}.
-
-Client: ______________________
-{{company_name}}: ______________________
+<h2>Signatures</h2>
+<p>Signed on {{today}}.</p>
+<p>Client: ______________________</p>
+<p>{{company_name}}: ______________________</p>
 `;
