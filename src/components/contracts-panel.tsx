@@ -147,14 +147,14 @@ export function ContractsPanel({ companyId, ctx }: Props) {
     }
     const def = templates.find((t) => t.is_default) ?? templates[0];
     setSelectedTplId(def.id);
-    setEditedBody(renderContract(def.body, ctx));
+    setEditedBody(renderContract(ensureHtml(def.body), ctx));
     setOpen(true);
   }
 
   useEffect(() => {
     if (!open) return;
     const tpl = templates.find((t) => t.id === selectedTplId);
-    if (tpl) setEditedBody(renderContract(tpl.body, ctx));
+    if (tpl) setEditedBody(renderContract(ensureHtml(tpl.body), ctx));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTplId]);
 
