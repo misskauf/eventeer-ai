@@ -535,6 +535,7 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [editing, setEditing] = useState<Template | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [isDefault, setIsDefault] = useState(false);
@@ -558,6 +559,14 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
     setEditing(null);
     setName("");
     setBody("");
+    setIsDefault(templates.length === 0);
+    setDialogOpen(true);
+  }
+
+  function openFromUpload(result: { name: string; html: string }) {
+    setEditing(null);
+    setName(result.name);
+    setBody(result.html);
     setIsDefault(templates.length === 0);
     setDialogOpen(true);
   }
