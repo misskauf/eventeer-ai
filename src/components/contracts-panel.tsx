@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +29,12 @@ import {
   CheckCircle2,
   Ban,
   RefreshCw,
+  Copy,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
   renderContract,
+  ensureHtml,
   CONTRACT_PLACEHOLDERS,
   type ContractContext,
 } from "@/lib/contracts";
@@ -43,6 +44,8 @@ import {
   voidContract,
 } from "@/lib/contracts.functions";
 import { formatRelative } from "@/lib/deal-stages";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import DOMPurify from "isomorphic-dompurify";
 
 type Template = {
   id: string;
