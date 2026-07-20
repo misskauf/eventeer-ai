@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as DTokenRouteImport } from './routes/d.$token'
+import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/deals'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
@@ -54,6 +55,11 @@ const PTokenRoute = PTokenRouteImport.update({
 const DTokenRoute = DTokenRouteImport.update({
   id: '/d/$token',
   path: '/d/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CTokenRoute = CTokenRouteImport.update({
+  id: '/c/$token',
+  path: '/c/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
   '/_authenticated/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/deals'
     | '/settings'
+    | '/c/$token'
     | '/d/$token'
     | '/p/$token'
     | '/catalog/beverages'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/catalog'
     | '/settings'
+    | '/c/$token'
     | '/d/$token'
     | '/p/$token'
     | '/catalog/beverages'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog'
     | '/_authenticated/deals'
     | '/_authenticated/settings'
+    | '/c/$token'
     | '/d/$token'
     | '/p/$token'
     | '/_authenticated/catalog/beverages'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
+  CTokenRoute: typeof CTokenRoute
   DTokenRoute: typeof DTokenRoute
   PTokenRoute: typeof PTokenRoute
 }
@@ -281,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/d/$token'
       fullPath: '/d/$token'
       preLoaderRoute: typeof DTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$token': {
+      id: '/c/$token'
+      path: '/c/$token'
+      fullPath: '/c/$token'
+      preLoaderRoute: typeof CTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
@@ -417,19 +437,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
+  CTokenRoute: CTokenRoute,
   DTokenRoute: DTokenRoute,
   PTokenRoute: PTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,15 +17,31 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FileText, Plus, Trash2, Eye } from "lucide-react";
+import {
+  FileText,
+  Plus,
+  Trash2,
+  Eye,
+  Send,
+  Link2,
+  CheckCircle2,
+  Ban,
+  RefreshCw,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
   renderContract,
   CONTRACT_PLACEHOLDERS,
   type ContractContext,
 } from "@/lib/contracts";
+import {
+  sendContractToClient,
+  markContractSignedManually,
+  voidContract,
+} from "@/lib/contracts.functions";
 import { formatRelative } from "@/lib/deal-stages";
 
 type Template = {
@@ -39,7 +56,14 @@ type Contract = {
   template_id: string | null;
   template_name: string;
   rendered_body: string;
-  status: string;
+  status: "draft" | "sent" | "signed" | "voided" | string;
+  sent_at: string | null;
+  sent_to_email: string | null;
+  signing_token: string | null;
+  signing_token_expires_at: string | null;
+  signed_at: string | null;
+  signed_by_name: string | null;
+  signed_by_email: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -49,7 +73,23 @@ type Props = {
   ctx: ContractContext;
 };
 
+const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
+  draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
+  sent: { label: "Sent", className: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  signed: { label: "Signed", className: "bg-green-500/15 text-green-700 dark:text-green-300" },
+  voided: { label: "Voided", className: "bg-destructive/15 text-destructive" },
+};
+
+function signingUrl(token: string) {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/c/${token}`;
+}
+
 export function ContractsPanel({ companyId, ctx }: Props) {
+  const sendFn = useServerFn(sendContractToClient);
+  const markSignedFn = useServerFn(markContractSignedManually);
+  const voidFn = useServerFn(voidContract);
+
   const [templates, setTemplates] = useState<Template[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [open, setOpen] = useState(false);
@@ -57,6 +97,15 @@ export function ContractsPanel({ companyId, ctx }: Props) {
   const [editedBody, setEditedBody] = useState<string>("");
   const [viewer, setViewer] = useState<Contract | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Send dialog state
+  const [sendTarget, setSendTarget] = useState<Contract | null>(null);
+  const [sendEmail, setSendEmail] = useState("");
+  const [sendBusy, setSendBusy] = useState(false);
+
+  // Manual sign dialog state
+  const [manualTarget, setManualTarget] = useState<Contract | null>(null);
+  const [manualName, setManualName] = useState("");
 
   async function refresh() {
     const [tplRes, cRes] = await Promise.all([
@@ -68,7 +117,9 @@ export function ContractsPanel({ companyId, ctx }: Props) {
         .order("name"),
       supabase
         .from("contracts" as any)
-        .select("id, template_id, template_name, rendered_body, status, created_at, updated_at")
+        .select(
+          "id, template_id, template_name, rendered_body, status, sent_at, sent_to_email, signing_token, signing_token_expires_at, signed_at, signed_by_name, signed_by_email, created_at, updated_at",
+        )
         .eq("deal_id", ctx.deal?.id)
         .order("created_at", { ascending: false }),
     ]);
@@ -97,7 +148,6 @@ export function ContractsPanel({ companyId, ctx }: Props) {
     setOpen(true);
   }
 
-  // Re-render when template changes
   useEffect(() => {
     if (!open) return;
     const tpl = templates.find((t) => t.id === selectedTplId);
@@ -105,7 +155,7 @@ export function ContractsPanel({ companyId, ctx }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTplId]);
 
-  async function saveContract(status: "draft" | "signed") {
+  async function saveDraft() {
     if (!ctx.deal?.id || !selectedTpl) return;
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
@@ -115,12 +165,12 @@ export function ContractsPanel({ companyId, ctx }: Props) {
       template_id: selectedTpl.id,
       template_name: selectedTpl.name,
       rendered_body: editedBody,
-      status,
+      status: "draft",
       created_by: userData.user?.id ?? null,
     } as any);
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success(status === "signed" ? "Contract saved and marked signed" : "Contract saved");
+    toast.success("Draft saved");
     setOpen(false);
     refresh();
   }
@@ -130,6 +180,72 @@ export function ContractsPanel({ companyId, ctx }: Props) {
     const { error } = await supabase.from("contracts" as any).delete().eq("id", id);
     if (error) return toast.error(error.message);
     refresh();
+  }
+
+  function openSend(c: Contract) {
+    setSendTarget(c);
+    setSendEmail(c.sent_to_email ?? ctx.deal?.client_email ?? "");
+  }
+
+  async function doSend() {
+    if (!sendTarget) return;
+    setSendBusy(true);
+    try {
+      const r: any = await sendFn({
+        data: { contract_id: sendTarget.id, to_email: sendEmail.trim(), expires_in_days: 30 },
+      });
+      const url = signingUrl(r.token);
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Signing link copied to clipboard", {
+          description: "Email delivery isn't set up yet — send this link to the client.",
+        });
+      } catch {
+        toast.success("Signing link ready", { description: url });
+      }
+      setSendTarget(null);
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to send");
+    } finally {
+      setSendBusy(false);
+    }
+  }
+
+  async function copyLink(c: Contract) {
+    if (!c.signing_token) return;
+    try {
+      await navigator.clipboard.writeText(signingUrl(c.signing_token));
+      toast.success("Signing link copied");
+    } catch {
+      toast.error("Could not copy");
+    }
+  }
+
+  async function doMarkSigned() {
+    if (!manualTarget || !manualName.trim()) return;
+    try {
+      await markSignedFn({
+        data: { contract_id: manualTarget.id, signed_by_name: manualName.trim() },
+      });
+      toast.success("Contract marked as signed");
+      setManualTarget(null);
+      setManualName("");
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    }
+  }
+
+  async function doVoid(c: Contract) {
+    if (!confirm("Void this contract? It stays in the history but can no longer be signed.")) return;
+    try {
+      await voidFn({ data: { contract_id: c.id } });
+      toast.success("Contract voided");
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    }
   }
 
   return (
@@ -153,31 +269,124 @@ export function ContractsPanel({ companyId, ctx }: Props) {
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Contracts
           </div>
-          {contracts.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center justify-between gap-2 rounded-md border bg-background px-2 py-1.5 text-xs"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium">{c.template_name || "Contract"}</div>
-                <div className="text-muted-foreground">{formatRelative(c.updated_at)}</div>
-              </div>
-              <Badge variant="secondary" className="text-[10px]">
-                {c.status}
-              </Badge>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewer(c)}>
-                <Eye className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive"
-                onClick={() => deleteContract(c.id)}
+          {contracts.map((c) => {
+            const s = STATUS_VARIANTS[c.status] ?? {
+              label: c.status,
+              className: "bg-muted text-muted-foreground",
+            };
+            return (
+              <div
+                key={c.id}
+                className="space-y-1 rounded-md border bg-background px-2 py-1.5 text-xs"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))}
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{c.template_name || "Contract"}</div>
+                    <div className="text-muted-foreground">
+                      {c.status === "signed" && c.signed_at
+                        ? `Signed by ${c.signed_by_name ?? "client"} · ${formatRelative(c.signed_at)}`
+                        : c.status === "sent" && c.sent_at
+                          ? `Sent to ${c.sent_to_email ?? "client"} · ${formatRelative(c.sent_at)}`
+                          : formatRelative(c.updated_at)}
+                    </div>
+                  </div>
+                  <Badge className={`text-[10px] ${s.className}`}>{s.label}</Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewer(c)}
+                    title="View"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {c.status === "draft" && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => openSend(c)}
+                      >
+                        <Send className="mr-1 h-3 w-3" /> Send to client
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs text-destructive"
+                        onClick={() => deleteContract(c.id)}
+                      >
+                        <Trash2 className="mr-1 h-3 w-3" /> Delete
+                      </Button>
+                    </>
+                  )}
+                  {c.status === "sent" && (
+                    <>
+                      {c.signing_token && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => copyLink(c)}
+                        >
+                          <Link2 className="mr-1 h-3 w-3" /> Copy link
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => openSend(c)}
+                      >
+                        <RefreshCw className="mr-1 h-3 w-3" /> Resend
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          setManualTarget(c);
+                          setManualName(ctx.deal?.client_name ?? "");
+                        }}
+                      >
+                        <CheckCircle2 className="mr-1 h-3 w-3" /> Mark signed
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs text-destructive"
+                        onClick={() => doVoid(c)}
+                      >
+                        <Ban className="mr-1 h-3 w-3" /> Void
+                      </Button>
+                    </>
+                  )}
+                  {c.status === "signed" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-destructive"
+                      onClick={() => doVoid(c)}
+                    >
+                      <Ban className="mr-1 h-3 w-3" /> Void
+                    </Button>
+                  )}
+                  {c.status === "voided" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-destructive"
+                      onClick={() => deleteContract(c.id)}
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" /> Delete
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -218,15 +427,69 @@ export function ContractsPanel({ companyId, ctx }: Props) {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => saveContract("signed")}
-                disabled={loading}
-              >
-                Save & mark signed
-              </Button>
-              <Button onClick={() => saveContract("draft")} disabled={loading}>
+              <Button onClick={saveDraft} disabled={loading}>
                 Save draft
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!sendTarget} onOpenChange={(o) => !o && setSendTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send contract to client</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Client email</Label>
+              <Input
+                type="email"
+                value={sendEmail}
+                onChange={(e) => setSendEmail(e.target.value)}
+                placeholder="client@example.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                We'll generate a secure signing link (valid 30 days). Email delivery isn't set up
+                yet, so the link will be copied to your clipboard for you to send.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSendTarget(null)}>
+                Cancel
+              </Button>
+              <Button onClick={doSend} disabled={sendBusy || !sendEmail.trim()}>
+                {sendBusy ? "Generating…" : "Generate signing link"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!manualTarget} onOpenChange={(o) => !o && setManualTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark contract signed</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Signer name</Label>
+              <Input
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="Full name of the signer"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use this when the contract was signed offline (e.g. countersigned PDF returned by
+                email).
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setManualTarget(null)}>
+                Cancel
+              </Button>
+              <Button onClick={doMarkSigned} disabled={!manualName.trim()}>
+                Mark signed
               </Button>
             </div>
           </div>
@@ -238,6 +501,13 @@ export function ContractsPanel({ companyId, ctx }: Props) {
           <DialogHeader>
             <DialogTitle>{viewer?.template_name || "Contract"}</DialogTitle>
           </DialogHeader>
+          {viewer?.status === "signed" && (
+            <div className="rounded-md border border-green-600/40 bg-green-50 p-2 text-xs dark:bg-green-950/20">
+              Signed by <strong>{viewer.signed_by_name ?? "client"}</strong>
+              {viewer.signed_at && <> on {new Date(viewer.signed_at).toLocaleString()}</>}
+              {viewer.signed_by_email && <> · {viewer.signed_by_email}</>}
+            </div>
+          )}
           <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs">
             {viewer?.rendered_body}
           </pre>
@@ -246,6 +516,7 @@ export function ContractsPanel({ companyId, ctx }: Props) {
     </div>
   );
 }
+
 
 export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
   const [templates, setTemplates] = useState<Template[]>([]);
