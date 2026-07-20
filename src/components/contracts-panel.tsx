@@ -628,9 +628,14 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
           Reusable contracts with placeholders. Insert deal details automatically when creating a
           contract.
         </p>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="mr-1 h-4 w-4" /> New template
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+            <Upload className="mr-1 h-4 w-4" /> Upload document
+          </Button>
+          <Button size="sm" onClick={openNew}>
+            <Plus className="mr-1 h-4 w-4" /> New template
+          </Button>
+        </div>
       </div>
 
       {templates.length === 0 ? (
