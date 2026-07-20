@@ -35,7 +35,6 @@ import { Link } from "@tanstack/react-router";
 import {
   renderContract,
   ensureHtml,
-  CONTRACT_PLACEHOLDERS,
   type ContractContext,
 } from "@/lib/contracts";
 import {
