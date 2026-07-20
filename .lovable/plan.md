@@ -1,66 +1,58 @@
 ## Goal
-Two connected changes:
-1. When the client confirms their selection on the public proposal, notify the event manager by email AND flip the deal to a new "Client approved" stage.
-2. In the deal view, add a "Create contract" action that lets the manager pick from pre-uploaded contract templates and generates a filled contract with event details substituted for placeholders.
+Turn contracts into a real signing flow with clear statuses and audit fields, plus a client-facing signing page reached via email.
 
-## Part 1 — Client approval
+## Statuses
+Extend the `contracts.status` values to a strict set: `draft` → `sent` → `signed` (plus a soft `voided`). Add signer fields to `contracts`:
+- `sent_at`, `sent_to_email`
+- `signing_token` (unique, opaque) + `signing_token_expires_at`
+- `signed_at`, `signed_by_name`, `signed_by_email`, `signed_ip`, `signature_data` (typed name; PNG data URL kept optional for a future drawn signature)
+- `voided_at`, `voided_by`
+- `created_by` already exists — keep as "prepared by".
 
-**New deal stage**: add `client_approved` to `src/lib/deal-stages.ts` between `proposal_sent` and `signed`, with green tone in both table + calendar palettes. Treated as a soft-committed stage (still pre-signature).
+Existing `draft`/`signed` rows are preserved; `sent` is new.
 
-**On client submit** (`src/lib/public-share.functions.ts`, `submitClientSelection`):
-- After saving `proposal_selections`, set `deals.stage = 'client_approved'` (only if current stage is `proposal_sent` or earlier — don't downgrade a signed deal).
-- Insert a `deal_activities` row: "Client confirmed selection".
-- Send email to the deal owner. This needs email infrastructure.
+## Deal view (manager)
+Replace the current "Save draft / Save & mark signed" pair on the contract dialog with the real lifecycle:
+- **Save draft** — unchanged.
+- **Send to client** (from a draft) — generates the signing token, sets `sent_at`, sends the email, moves status to `sent`. A "Copy signing link" button is shown as a fallback.
+- **Mark signed manually** — for offline signatures; records manager as signer, `signed_at = now()`, no IP.
+- **Void** — soft-cancels a sent/signed contract (keeps the row for history).
 
-**Email**: uses Lovable's managed email API + a scaffolded transactional template `client-selection-confirmed`. Requires the email domain to be set up first — I'll trigger the setup dialog if it isn't. Template shows client name, event date, chosen spaces/packages, total, and a link to `/deals/:id`.
+The contracts list on the deal view shows the status badge plus who signed and when (`Signed by <name> · <relative time>`), and offers Resend, Copy link, View, Void, Delete appropriate to the current status.
 
-## Part 2 — Contract templates
+## Client signing page
+New public route `src/routes/c.$token.tsx` (mirrors `p.$token.tsx`):
+- Server fn `getContractByToken(token)` — returns the rendered contract body + company name + deal summary; 404 if token unknown, expired, or contract not in `sent`.
+- Renders the contract body (monospaced), a typed-name field, an "I agree to the terms above" checkbox, and a **Sign contract** button.
+- Server fn `signContract({ token, typed_name })` — validates state is `sent`, stamps `signed_at`, `signed_by_name`, `signed_by_email` (from `sent_to_email`), `signed_ip` (from request header), `signature_data` (the typed name), flips status to `signed`, logs a `deal_activities` row ("Contract signed by <name>"), and clears the token so the link can't be reused.
+- After signing, shows a confirmation view with the signed contract and timestamp.
 
-**Storage + data model**:
-- New Storage bucket `contract-templates` (private) for uploaded `.docx` / `.md` / `.txt` files. Managers upload templates from a new Settings → Contracts tab.
-- New table `public.contract_templates` (per company): `name`, `body` (text — the template body with `{{placeholders}}`), `file_url` (optional reference to original upload), `is_default`.
-- New table `public.contracts` (per deal): `deal_id`, `template_id`, `rendered_body`, `status` (`draft` / `sent` / `signed`), `pdf_url` (nullable, future).
+Both server fns are unauthenticated (public), read/write through `supabaseAdmin` scoped by the signing token — same pattern already used by `public-share.functions.ts`.
 
-**Template placeholders** — a fixed set the manager can drop into a template:
-```
-{{client_name}} {{client_company}} {{client_email}}
-{{event_date}} {{guest_count}} {{event_hours}}
-{{venue}}            — selected space names
-{{food_package}}     — selected food package + menu selections
-{{drinks_package}}   — selected beverage package
-{{extras}}           — bulleted list
-{{subtotal}} {{tax}} {{total}} {{currency}}
-{{company_name}} {{today}}
-```
-Substitution happens server-side via a `renderContract(template, deal)` helper that pulls the same computed totals used by the deal builder, so the numbers always match the proposal.
-
-**Deal view UI** (`src/routes/_authenticated/deals_.$id.tsx`):
-- New "Create contract" button in the sticky action card (visible from `client_approved` onward — the point where a contract makes sense).
-- Opens a dialog: dropdown of available templates + preview of the rendered contract (markdown-rendered). Buttons: "Save as draft" and "Save & mark signed".
-- Saved contracts listed below the action card with re-open / regenerate / download options.
-
-**Settings → Contracts tab**: upload a file OR paste template text, name it, mark one as default. Uses `contract_templates` table + storage bucket.
-
-## Out of scope (for now)
-- Actual e-signature integration (DocuSign etc.) — the "signed" state is a manual toggle.
-- PDF export — contracts render as markdown/HTML for now; can add PDF later.
-- Rich template editor — plain textarea with placeholder autocomplete, no WYSIWYG.
-- Sending the contract to the client through the portal — this plan only creates it inside the deal.
-
-## Migrations
-1. `contract_templates` table + RLS scoped to `is_member_of(auth.uid(), company_id)` + grants.
-2. `contracts` table + RLS via deal → company membership + grants.
-3. Storage bucket `contract-templates` (private) with policies for members.
-4. No schema change needed for the new deal stage — `stage` is free text; adding it to the enum in `deal-stages.ts` is enough.
+## Email
+Requires setting up a sender domain first (none configured). The plan triggers the email setup dialog before scaffolding. Once set up:
+- Scaffold the transactional template system.
+- New template `contract-ready-to-sign` with: company name, client name, event date, "Review and sign" button linking to `${origin}/c/${signing_token}`, plain-text fallback.
+- Sending happens inside the "Send to client" server fn; if the send fails, the status still moves to `sent` and the manager can use "Copy signing link" / "Resend".
 
 ## Files touched
-- `src/lib/deal-stages.ts` — add `client_approved`.
-- `src/lib/public-share.functions.ts` — stage transition + activity + email.
-- `src/lib/email-templates/client-selection-confirmed.tsx` — new template (after scaffold).
-- `src/routes/_authenticated/settings.tsx` — new Contracts card (upload + list templates).
-- `src/routes/_authenticated/deals_.$id.tsx` — "Create contract" button + dialog + contracts list.
-- `src/lib/contracts.ts` — `renderContract` helper (placeholder substitution).
-- New: `src/components/contract-dialog.tsx`, `src/components/contract-template-editor.tsx`.
+- Migration: add columns to `contracts`, add `sent`/`voided` to the allowed status set (currently free text — enforce with a CHECK), add unique index on `signing_token`.
+- `src/components/contracts-panel.tsx` — new action buttons, status badges, signer metadata, resend/copy/void handlers.
+- `src/routes/c.$token.tsx` (new) — client signing page.
+- `src/lib/contracts.functions.ts` (new) — `getContractByToken`, `signContract`, `sendContractToClient`, `voidContract` server functions.
+- `src/lib/email-templates/contract-ready-to-sign.tsx` (new) — after email scaffold runs.
+- `src/routes/_authenticated/deals_.$id.tsx` — no structural change; picks up the richer panel.
 
-## One decision I need from you
-For the email to the event manager: do you want it to go to (a) the specific user who created the deal, or (b) every owner/admin of the company workspace? I'll default to (a) unless you say otherwise.
+## Out of scope
+- Drawn/uploaded signature image (typed name + checkbox is the signature for now; column is there for a later upgrade).
+- Countersignature by the manager, multi-signer flows, sequential signing.
+- PDF export of the signed contract.
+- Automatic reminders / expiring links beyond the stored `signing_token_expires_at`.
+- Legal e-sign compliance certification (ESIGN/eIDAS) — this is a lightweight audit trail, not a certified e-signature service.
+
+## One prerequisite before I start building
+Setting up your sender domain, so the "Send to client" email can go out from your brand.
+
+<presentation-actions>
+<presentation-open-email-setup>Set up email domain</presentation-open-email-setup>
+</presentation-actions>
