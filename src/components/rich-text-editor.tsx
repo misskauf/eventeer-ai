@@ -179,7 +179,58 @@ function Toolbar({ editor }: { editor: Editor }) {
       <ToolBtn title="Redo" onClick={() => editor.chain().focus().redo().run()}>
         <Redo className="h-4 w-4" />
       </ToolBtn>
+      <span className="mx-1 h-5 w-px bg-border" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" title="Insert block">
+            <LayoutTemplate className="h-4 w-4" />
+            Insert block
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuItem
+            onSelect={() =>
+              editor
+                .chain()
+                .focus()
+                .insertContent(
+                  `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">{{company_name}}</h1><p style="margin:4px 0 0;font-size:12px;color:#555">{{company_address}} · {{company_email}} · {{company_phone}}</p></div><p></p>`,
+                )
+                .run()
+            }
+          >
+            Header
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              editor
+                .chain()
+                .focus()
+                .insertContent(
+                  `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">{{company_name}}</h1><p style="margin:4px 0 0;font-size:12px;color:#555">{{company_address}}<br/>{{company_email}} · {{company_phone}}</p></div><div style="text-align:right">{{company_logo}}</div></div><p></p>`,
+                )
+                .run()
+            }
+          >
+            Two-column header (with logo)
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              editor
+                .chain()
+                .focus()
+                .insertContent(
+                  `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">{{company_logo}}</div><p></p>`,
+                )
+                .run()
+            }
+          >
+            Logo (top right)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <div className="ml-auto">
+
         <Select
           value=""
           onValueChange={(key) => {
