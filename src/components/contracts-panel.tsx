@@ -557,8 +557,16 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
   function openEdit(t: Template) {
     setEditing(t);
     setName(t.name);
-    setBody(t.body);
+    setBody(ensureHtml(t.body));
     setIsDefault(t.is_default);
+    setDialogOpen(true);
+  }
+
+  function openDuplicate(t: Template) {
+    setEditing(null);
+    setName(`${t.name} (copy)`);
+    setBody(ensureHtml(t.body));
+    setIsDefault(false);
     setDialogOpen(true);
   }
 
