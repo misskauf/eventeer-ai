@@ -416,14 +416,13 @@ export function ContractsPanel({ companyId, ctx }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Contract body</Label>
-              <Textarea
+              <RichTextEditor
                 value={editedBody}
-                onChange={(e) => setEditedBody(e.target.value)}
-                rows={18}
-                className="font-mono text-xs"
+                onChange={setEditedBody}
+                minHeight={360}
               />
               <p className="text-xs text-muted-foreground">
-                Placeholders were filled from the deal. You can still edit before saving.
+                Placeholders were filled from the deal. You can still format and edit before saving.
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
