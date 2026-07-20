@@ -19,7 +19,21 @@ function SettingsPage() {
   const [fees, setFees] = useState<any>(null);
 
   async function load() {
-    const { data: c } = await supabase.from("companies").select("*").limit(1).maybeSingle();
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) return;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("company_id")
+      .eq("user_id", uid)
+      .limit(1)
+      .maybeSingle();
+    if (!role?.company_id) return;
+    const { data: c } = await supabase
+      .from("companies")
+      .select("*")
+      .eq("id", role.company_id)
+      .maybeSingle();
     setCompany(c);
     if (c) {
       const { data: f } = await supabase.from("fee_config").select("*").eq("company_id", c.id).maybeSingle();
