@@ -697,28 +697,12 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
             </div>
             <div className="space-y-1.5">
               <Label>Body</Label>
-              <Textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={18}
-                className="font-mono text-xs"
-              />
-            </div>
-            <div className="rounded-md border bg-muted/40 p-3">
-              <div className="text-xs font-medium">Available placeholders</div>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {CONTRACT_PLACEHOLDERS.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => setBody((b) => b + `{{${p.key}}}`)}
-                    className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px] hover:bg-muted"
-                    title={p.label}
-                  >
-                    {`{{${p.key}}}`}
-                  </button>
-                ))}
-              </div>
+              <RichTextEditor value={body} onChange={setBody} minHeight={360} />
+              <p className="text-xs text-muted-foreground">
+                Use the toolbar to add headings, bold, lists, dividers and images. Insert deal /
+                company placeholders from the toolbar dropdown — they're filled in automatically
+                when a contract is created.
+              </p>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
