@@ -105,10 +105,21 @@ export type Database = {
           deal_id: string
           id: string
           rendered_body: string
+          sent_at: string | null
+          sent_to_email: string | null
+          signature_data: string | null
+          signed_at: string | null
+          signed_by_email: string | null
+          signed_by_name: string | null
+          signed_ip: string | null
+          signing_token: string | null
+          signing_token_expires_at: string | null
           status: string
           template_id: string | null
           template_name: string
           updated_at: string
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           company_id: string
@@ -117,10 +128,21 @@ export type Database = {
           deal_id: string
           id?: string
           rendered_body?: string
+          sent_at?: string | null
+          sent_to_email?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
+          signed_ip?: string | null
+          signing_token?: string | null
+          signing_token_expires_at?: string | null
           status?: string
           template_id?: string | null
           template_name?: string
           updated_at?: string
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           company_id?: string
@@ -129,10 +151,21 @@ export type Database = {
           deal_id?: string
           id?: string
           rendered_body?: string
+          sent_at?: string | null
+          sent_to_email?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          signed_by_email?: string | null
+          signed_by_name?: string | null
+          signed_ip?: string | null
+          signing_token?: string | null
+          signing_token_expires_at?: string | null
           status?: string
           template_id?: string | null
           template_name?: string
           updated_at?: string
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
