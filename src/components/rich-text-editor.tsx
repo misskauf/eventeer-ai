@@ -21,6 +21,7 @@ import {
   Pilcrow,
   LayoutTemplate,
   PenLine,
+  Variable,
 } from "lucide-react";
 import {
   DropdownMenu,
