@@ -97,6 +97,29 @@ function SettingsPage() {
                 <Field name="primary_color" label="Brand color" type="color" defaultValue={company.primary_color} />
                 <Field name="currency" label="Currency" defaultValue={company.currency} />
               </div>
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="text-sm font-medium">Company details for contracts</div>
+                <p className="text-xs text-muted-foreground">
+                  Used by the {`{{company_logo}}`}, {`{{company_address}}`}, {`{{company_email}}`},{" "}
+                  {`{{company_phone}}`} and {`{{company_website}}`} placeholders in contract
+                  templates.
+                </p>
+                <Field name="address" label="Address" defaultValue={company.address ?? ""} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    name="contact_email"
+                    label="Contact email"
+                    type="email"
+                    defaultValue={company.contact_email ?? ""}
+                  />
+                  <Field
+                    name="contact_phone"
+                    label="Contact phone"
+                    defaultValue={company.contact_phone ?? ""}
+                  />
+                </div>
+                <Field name="website" label="Website" defaultValue={company.website ?? ""} />
+              </div>
               <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
                 <input
                   type="checkbox"
