@@ -38,8 +38,12 @@ function SettingsPage() {
         primary_color: fd.get("primary_color") as string,
         currency: fd.get("currency") as string,
         logo_url: (fd.get("logo_url") as string) || null,
+        address: (fd.get("address") as string) || null,
+        contact_email: (fd.get("contact_email") as string) || null,
+        contact_phone: (fd.get("contact_phone") as string) || null,
+        website: (fd.get("website") as string) || null,
         require_deal_approval: fd.get("require_deal_approval") === "on",
-      })
+      } as any)
       .eq("id", company.id);
     if (error) return toast.error(error.message);
     toast.success("Brand saved");
