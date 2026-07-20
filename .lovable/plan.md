@@ -1,47 +1,24 @@
-## Goal
+## Problem
 
-Let event managers upload an existing contract file (.docx, .pdf, .txt/.md) in Settings → Contract templates, convert it to editable rich text in the existing TipTap editor, and turn any text into `{{placeholder}}` variables — both via auto-detection on upload and via a "Replace selection with placeholder" action.
+Save fails with `403: new row violates row-level security policy for table "contract_templates"`.
 
-## Where it lives
+Root cause confirmed from network logs: Settings loads the company via `companies?select=*&limit=1`, which returns company `0818a815-…` — but the signed-in user's `user_roles` row points at a different company `999d919e-…`. The user is not a member of `0818a815-…`, so the RLS policy on `contract_templates` (which requires membership via `is_member_of`) rejects the insert.
 
-Settings → Contract templates → **New template** dropdown gains an **Upload document…** option (next to existing "New / Duplicate"). Upload happens client-side; the resulting HTML is written into the same `contract_templates.body` field the editor already saves. No new tables, no storage bucket — the original file isn't retained.
+In other words, `src/routes/_authenticated/settings.tsx` picks "any company" instead of "the user's company", and the wrong `company_id` gets stamped onto the insert.
 
-## Conversion (client-side)
+## Fix
 
-- **.docx** → HTML with [`mammoth`](https://www.npmjs.com/package/mammoth) (`mammoth.convertToHtml`). Preserves headings, bold/italic, lists, tables.
-- **.pdf** → text with `pdfjs-dist` (already in the TanStack ecosystem-friendly; pure JS, works in browser). Each page's text lines become `<p>` blocks; blank lines split paragraphs. Formatting is intentionally simplified — users are warned in the upload dialog.
-- **.txt / .md** → for `.md`, run through `marked`; for `.txt`, wrap paragraphs in `<p>`.
+Scope company loading in Settings to the user's actual company.
 
-Max file size 5 MB, enforced client-side with a toast on reject.
+1. In `src/routes/_authenticated/settings.tsx` `load()`:
+   - Get `user_roles.company_id` for `auth.uid()` first.
+   - Then `companies.select('*').eq('id', <that id>).maybeSingle()`.
+   - If the user has no `user_roles` row, redirect to `/onboarding` (existing flow) instead of loading a stray company.
+2. Same-turn: audit other places that do `companies…limit(1)` without a user filter (`app-shell`, currency hook, contracts panel loads) and switch them to the `user_roles`-scoped lookup so brand/currency/templates all agree on one company.
 
-## Placeholder replacement
+No schema/RLS changes — policies are correct; the client was just sending the wrong `company_id`.
 
-Two mechanisms, both operating on the TipTap editor:
+## Verification
 
-1. **Auto-detect on upload.** After conversion, scan the HTML text for common patterns and open a "Map detected fields" dialog:
-   - `[CLIENT NAME]`, `{CLIENT_NAME}`, `<<client name>>`, `___________` labelled lines (e.g. "Name: __________")
-   - Fuzzy label match against known placeholders (client name/email, event date, guest count, venue, total, company name/address/etc. from `CONTRACT_PLACEHOLDERS`)
-   - Dialog shows each detected token with a dropdown of placeholders + "Skip". Confirmed selections replace all occurrences with `{{key}}` before the body is loaded into the editor.
-
-2. **Manual: select → replace.** New toolbar button in `rich-text-editor.tsx` labelled **Make placeholder** (only enabled when there's a non-empty selection). Opens a small popover listing `CONTRACT_PLACEHOLDERS` grouped Company / Deal (same grouping as the existing Insert placeholder dropdown). Picking one replaces the selected text with `{{key}}`. Works on any text, uploaded or hand-typed.
-
-## UX flow
-
-1. User opens Settings → Contract templates, clicks **Upload document**.
-2. File picker (accepts `.docx,.pdf,.txt,.md`). On select, a modal shows: filename, detected format, and a "Convert" button; PDF shows a note that formatting will be simplified.
-3. On convert: parse → HTML → auto-detect dialog with mapping table → user confirms.
-4. Template editor opens pre-filled with the converted HTML, name defaulted to the filename (without extension). User can further edit, use manual "Make placeholder", then Save — exactly the same save path as today.
-
-## Files touched
-
-- `package.json` — add `mammoth`, `pdfjs-dist`, `marked` (all pure JS, browser-safe).
-- `src/lib/contract-import.ts` (new) — `parseDocx(file)`, `parsePdf(file)`, `parseText(file)`, `parseMarkdown(file)`, `detectPlaceholderCandidates(html)`, `applyPlaceholderMap(html, map)`.
-- `src/components/contract-upload-dialog.tsx` (new) — file picker + convert + auto-detect mapping UI.
-- `src/components/contracts-panel.tsx` and `src/components/contract-templates-editor.tsx` (whichever hosts the templates list in Settings) — wire the "Upload document" action into the template creation flow, opening the new dialog then the existing editor.
-- `src/components/rich-text-editor.tsx` — add **Make placeholder** toolbar button + popover; reuses the existing `CONTRACT_PLACEHOLDERS` list.
-
-## Non-goals (this pass)
-
-- Storing the original uploaded file. Only the converted HTML is persisted.
-- Preserving PDF layout (columns, images embedded in PDFs). Text-only extraction; users can re-add images via the existing image toolbar.
-- Server-side conversion. Everything runs in the browser, so no new server function or bucket is needed.
+- Reload Settings → confirm the loaded company id equals the `user_roles.company_id` (`999d919e-…`).
+- Create/save a contract template → expect `201`, not `403`.
