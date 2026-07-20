@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          address: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string
           currency: string
@@ -26,8 +29,12 @@ export type Database = {
           require_deal_approval: boolean
           timezone: string
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by: string
           currency?: string
@@ -38,8 +45,12 @@ export type Database = {
           require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string
           currency?: string
@@ -50,6 +61,7 @@ export type Database = {
           require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,11 +29,12 @@ import {
   CheckCircle2,
   Ban,
   RefreshCw,
+  Copy,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
   renderContract,
-  CONTRACT_PLACEHOLDERS,
+  ensureHtml,
   type ContractContext,
 } from "@/lib/contracts";
 import {
@@ -43,6 +43,8 @@ import {
   voidContract,
 } from "@/lib/contracts.functions";
 import { formatRelative } from "@/lib/deal-stages";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import DOMPurify from "isomorphic-dompurify";
 
 type Template = {
   id: string;
@@ -144,14 +146,14 @@ export function ContractsPanel({ companyId, ctx }: Props) {
     }
     const def = templates.find((t) => t.is_default) ?? templates[0];
     setSelectedTplId(def.id);
-    setEditedBody(renderContract(def.body, ctx));
+    setEditedBody(renderContract(ensureHtml(def.body), ctx));
     setOpen(true);
   }
 
   useEffect(() => {
     if (!open) return;
     const tpl = templates.find((t) => t.id === selectedTplId);
-    if (tpl) setEditedBody(renderContract(tpl.body, ctx));
+    if (tpl) setEditedBody(renderContract(ensureHtml(tpl.body), ctx));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTplId]);
 
@@ -413,14 +415,13 @@ export function ContractsPanel({ companyId, ctx }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Contract body</Label>
-              <Textarea
+              <RichTextEditor
                 value={editedBody}
-                onChange={(e) => setEditedBody(e.target.value)}
-                rows={18}
-                className="font-mono text-xs"
+                onChange={setEditedBody}
+                minHeight={360}
               />
               <p className="text-xs text-muted-foreground">
-                Placeholders were filled from the deal. You can still edit before saving.
+                Placeholders were filled from the deal. You can still format and edit before saving.
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -508,9 +509,12 @@ export function ContractsPanel({ companyId, ctx }: Props) {
               {viewer.signed_by_email && <> · {viewer.signed_by_email}</>}
             </div>
           )}
-          <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs">
-            {viewer?.rendered_body}
-          </pre>
+          <div
+            className="prose prose-sm max-w-none rounded-md border bg-background p-4 dark:prose-invert"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(ensureHtml(viewer?.rendered_body ?? "")),
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>
@@ -552,8 +556,16 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
   function openEdit(t: Template) {
     setEditing(t);
     setName(t.name);
-    setBody(t.body);
+    setBody(ensureHtml(t.body));
     setIsDefault(t.is_default);
+    setDialogOpen(true);
+  }
+
+  function openDuplicate(t: Template) {
+    setEditing(null);
+    setName(`${t.name} (copy)`);
+    setBody(ensureHtml(t.body));
+    setIsDefault(false);
     setDialogOpen(true);
   }
 
@@ -623,12 +635,26 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
                     </Badge>
                   )}
                 </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {t.body.slice(0, 100)}
-                </div>
+                <div
+                  className="truncate text-xs text-muted-foreground"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(ensureHtml(t.body), { ALLOWED_TAGS: [] }).slice(
+                      0,
+                      120,
+                    ),
+                  }}
+                />
               </div>
               <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
                 Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openDuplicate(t)}
+                title="Duplicate"
+              >
+                <Copy className="mr-1 h-3.5 w-3.5" /> Duplicate
               </Button>
               <Button
                 variant="ghost"
@@ -670,28 +696,12 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
             </div>
             <div className="space-y-1.5">
               <Label>Body</Label>
-              <Textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={18}
-                className="font-mono text-xs"
-              />
-            </div>
-            <div className="rounded-md border bg-muted/40 p-3">
-              <div className="text-xs font-medium">Available placeholders</div>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {CONTRACT_PLACEHOLDERS.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => setBody((b) => b + `{{${p.key}}}`)}
-                    className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px] hover:bg-muted"
-                    title={p.label}
-                  >
-                    {`{{${p.key}}}`}
-                  </button>
-                ))}
-              </div>
+              <RichTextEditor value={body} onChange={setBody} minHeight={360} />
+              <p className="text-xs text-muted-foreground">
+                Use the toolbar to add headings, bold, lists, dividers and images. Insert deal /
+                company placeholders from the toolbar dropdown — they're filled in automatically
+                when a contract is created.
+              </p>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -706,31 +716,44 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
   );
 }
 
-const SAMPLE_TEMPLATE = `EVENT CONTRACT
+const SAMPLE_TEMPLATE = `<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+  <div>{{company_logo}}</div>
+  <div>
+    <p><strong>{{company_name}}</strong></p>
+    <p>{{company_address}}</p>
+    <p>{{company_email}} · {{company_phone}}</p>
+  </div>
+</div>
+<hr />
+<h1>Event Contract</h1>
+<p>This agreement is between <strong>{{company_name}}</strong> and <strong>{{client_name}}</strong> ({{client_company}}, {{client_email}}).</p>
 
-Between {{company_name}} and {{client_name}} ({{client_company}}, {{client_email}}).
+<h2>Event details</h2>
+<ul>
+  <li><strong>Date:</strong> {{event_date}}</li>
+  <li><strong>Guests:</strong> {{guest_count}}</li>
+  <li><strong>Duration:</strong> {{event_hours}} hours</li>
+  <li><strong>Venue:</strong> {{venue}}</li>
+</ul>
 
-Event date: {{event_date}}
-Guests: {{guest_count}}
-Duration: {{event_hours}} hours
-Venue: {{venue}}
-
-Food package: {{food_package}}
-Drinks package: {{drinks_package}}
-
-Menu selections:
+<h2>Food &amp; beverage</h2>
+<p><strong>Food package:</strong> {{food_package}}</p>
+<p><strong>Drinks package:</strong> {{drinks_package}}</p>
+<p><strong>Menu selections:</strong></p>
 {{menu_selections}}
 
-Extras:
+<h2>Extras</h2>
 {{extras}}
 
-Pricing
-Subtotal: {{subtotal}}
-Tax: {{tax}}
-Total: {{total}}
+<h2>Pricing</h2>
+<ul>
+  <li>Subtotal: {{subtotal}}</li>
+  <li>Tax: {{tax}}</li>
+  <li><strong>Total: {{total}}</strong></li>
+</ul>
 
-Signed on {{today}}.
-
-Client: ______________________
-{{company_name}}: ______________________
+<h2>Signatures</h2>
+<p>Signed on {{today}}.</p>
+<p>Client: ______________________</p>
+<p>{{company_name}}: ______________________</p>
 `;

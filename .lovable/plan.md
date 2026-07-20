@@ -1,58 +1,49 @@
 ## Goal
-Turn contracts into a real signing flow with clear statuses and audit fields, plus a client-facing signing page reached via email.
+Replace the plain-text contract editor with a proper rich-text editor (headings, bold/italic, lists, sections, logo/image), let the company's logo + contact details flow into the template automatically, and allow duplicating an existing template as a starting point for a variant. Deal placeholders keep working exactly as they do today.
 
-## Statuses
-Extend the `contracts.status` values to a strict set: `draft` → `sent` → `signed` (plus a soft `voided`). Add signer fields to `contracts`:
-- `sent_at`, `sent_to_email`
-- `signing_token` (unique, opaque) + `signing_token_expires_at`
-- `signed_at`, `signed_by_name`, `signed_by_email`, `signed_ip`, `signature_data` (typed name; PNG data URL kept optional for a future drawn signature)
-- `voided_at`, `voided_by`
-- `created_by` already exists — keep as "prepared by".
+## Rich-text editor
+Introduce TipTap (`@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-placeholder`) and wrap it in a new `src/components/rich-text-editor.tsx`. Toolbar covers what event contracts actually need:
 
-Existing `draft`/`signed` rows are preserved; `sent` is new.
+- Paragraph / Heading 1–3
+- Bold, italic, underline
+- Bulleted and numbered lists
+- Horizontal rule (for section dividers)
+- Link
+- Image (URL — used for the company logo and any inline images)
+- "Insert placeholder" dropdown built from `CONTRACT_PLACEHOLDERS` — inserts `{{key}}` at the cursor as plain text so `renderContract` still substitutes it
 
-## Deal view (manager)
-Replace the current "Save draft / Save & mark signed" pair on the contract dialog with the real lifecycle:
-- **Save draft** — unchanged.
-- **Send to client** (from a draft) — generates the signing token, sets `sent_at`, sends the email, moves status to `sent`. A "Copy signing link" button is shown as a fallback.
-- **Mark signed manually** — for offline signatures; records manager as signer, `signed_at = now()`, no IP.
-- **Void** — soft-cancels a sent/signed contract (keeps the row for history).
+The template body switches to **HTML** stored in the existing `contract_templates.body` and `contracts.rendered_body` columns. Sanitisation uses the existing `isomorphic-dompurify` dependency; placeholder substitution stays string-based, so `{{event_date}}`, `{{extras}}`, `{{total}}` etc. keep working inside any element.
 
-The contracts list on the deal view shows the status badge plus who signed and when (`Signed by <name> · <relative time>`), and offers Resend, Copy link, View, Void, Delete appropriate to the current status.
+**Backward compatibility for existing plain-text templates**: on load, if the body doesn't start with an HTML tag, wrap it in `<pre>…</pre>` so it still renders. Managers can then re-edit and switch to formatted content whenever.
 
-## Client signing page
-New public route `src/routes/c.$token.tsx` (mirrors `p.$token.tsx`):
-- Server fn `getContractByToken(token)` — returns the rendered contract body + company name + deal summary; 404 if token unknown, expired, or contract not in `sent`.
-- Renders the contract body (monospaced), a typed-name field, an "I agree to the terms above" checkbox, and a **Sign contract** button.
-- Server fn `signContract({ token, typed_name })` — validates state is `sent`, stamps `signed_at`, `signed_by_name`, `signed_by_email` (from `sent_to_email`), `signed_ip` (from request header), `signature_data` (the typed name), flips status to `signed`, logs a `deal_activities` row ("Contract signed by <name>"), and clears the token so the link can't be reused.
-- After signing, shows a confirmation view with the signed contract and timestamp.
+## Company logo & details in templates
+Add company profile fields so a template can reference them:
 
-Both server fns are unauthenticated (public), read/write through `supabaseAdmin` scoped by the signing token — same pattern already used by `public-share.functions.ts`.
+- Migration: add `address text`, `contact_email text`, `contact_phone text`, `website text` to `public.companies`.
+- **Settings → Brand**: add inputs for those fields alongside the existing logo URL / name / colour / currency.
+- New placeholders in `CONTRACT_PLACEHOLDERS` (populated by `buildPlaceholderValues`):
+  - `{{company_logo}}` → `<img src="…" alt="{{company_name}}" style="max-height:64px" />` when a logo URL exists, empty string otherwise
+  - `{{company_address}}`, `{{company_email}}`, `{{company_phone}}`, `{{company_website}}`
+- The toolbar's "Insert placeholder" dropdown groups these under a **Company** section (deal fields stay under **Deal**).
+- The default sample template gets a header block using `{{company_logo}}` + company details so new templates ship with a branded header out of the box.
 
-## Email
-Requires setting up a sender domain first (none configured). The plan triggers the email setup dialog before scaffolding. Once set up:
-- Scaffold the transactional template system.
-- New template `contract-ready-to-sign` with: company name, client name, event date, "Review and sign" button linking to `${origin}/c/${signing_token}`, plain-text fallback.
-- Sending happens inside the "Send to client" server fn; if the send fails, the status still moves to `sent` and the manager can use "Copy signing link" / "Resend".
+## Duplicate template
+In `ContractTemplatesEditor` (Settings → Contract templates), add a **Duplicate** action next to Edit/Delete. It copies the source template's `body` verbatim, names it `"<Original> (copy)"`, sets `is_default: false`, and opens the edit dialog on the new row so the manager can rename and tweak it before saving. Placeholders — including deal fields and the new company fields — carry over unchanged because they live inside `body`.
 
-## Files touched
-- Migration: add columns to `contracts`, add `sent`/`voided` to the allowed status set (currently free text — enforce with a CHECK), add unique index on `signing_token`.
-- `src/components/contracts-panel.tsx` — new action buttons, status badges, signer metadata, resend/copy/void handlers.
-- `src/routes/c.$token.tsx` (new) — client signing page.
-- `src/lib/contracts.functions.ts` (new) — `getContractByToken`, `signContract`, `sendContractToClient`, `voidContract` server functions.
-- `src/lib/email-templates/contract-ready-to-sign.tsx` (new) — after email scaffold runs.
-- `src/routes/_authenticated/deals_.$id.tsx` — no structural change; picks up the richer panel.
+## Contract creation & signing views
+- `ContractsPanel` "Create contract" dialog: swap the plain `<Textarea>` for the rich-text editor. Save behaviour is unchanged (still writes `rendered_body`).
+- Manager viewer (`viewer` dialog): render sanitised HTML instead of `<pre>`.
+- Client signing page `src/routes/c.$token.tsx`: render the contract body via sanitised HTML in a styled `.prose` container instead of the current `<pre>` block. Signing UX and audit fields are untouched.
+
+## Technical section
+- New dependency: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-link`, `@tiptap/extension-placeholder`, `@tiptap/extension-underline`.
+- New file: `src/components/rich-text-editor.tsx` (client-only component; safe under SSR because it's used inside dialogs / `ssr: false` routes).
+- Edits: `src/lib/contracts.ts` (add company placeholders + logo `<img>`), `src/components/contracts-panel.tsx` (rich editor in create dialog + template editor + Duplicate action + HTML viewer), `src/routes/c.$token.tsx` (HTML render), `src/routes/_authenticated/settings.tsx` (company profile fields).
+- Migration: `alter table public.companies add column address text, add column contact_email text, add column contact_phone text, add column website text`.
+- No schema change to `contract_templates` / `contracts`; content stored as HTML strings in the existing text columns.
 
 ## Out of scope
-- Drawn/uploaded signature image (typed name + checkbox is the signature for now; column is there for a later upgrade).
-- Countersignature by the manager, multi-signer flows, sequential signing.
-- PDF export of the signed contract.
-- Automatic reminders / expiring links beyond the stored `signing_token_expires_at`.
-- Legal e-sign compliance certification (ESIGN/eIDAS) — this is a lightweight audit trail, not a certified e-signature service.
-
-## One prerequisite before I start building
-Setting up your sender domain, so the "Send to client" email can go out from your brand.
-
-<presentation-actions>
-<presentation-open-email-setup>Set up email domain</presentation-open-email-setup>
-</presentation-actions>
+- Uploading logo/images to storage (still URL-based, matching today's logo field).
+- Signature image / drawn signature (typed name stays as-is).
+- Versioning of templates or contracts.
+- PDF export.

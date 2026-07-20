@@ -1,6 +1,6 @@
-// Substitute {{placeholders}} in a contract template body with deal details.
-// Values are stringified plainly; unknown placeholders are left as-is so the
-// manager can spot and fix typos.
+// Substitute {{placeholders}} in a contract template body with deal and
+// company details. Template bodies are HTML; list-style values render as
+// <ul>/<img> fragments so they slot into the rich-text layout cleanly.
 
 import { money } from "@/lib/pricing";
 import { formatEventDate } from "@/lib/date-format";
@@ -33,20 +33,45 @@ export const CONTRACT_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   { key: "tax", label: "Tax" },
   { key: "total", label: "Total" },
   { key: "currency", label: "Currency" },
-  { key: "company_name", label: "Company name" },
   { key: "today", label: "Today's date" },
+  { key: "company_name", label: "Company name" },
+  { key: "company_logo", label: "Company logo" },
+  { key: "company_address", label: "Company address" },
+  { key: "company_email", label: "Company email" },
+  { key: "company_phone", label: "Company phone" },
+  { key: "company_website", label: "Company website" },
 ];
+
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function joinNames(items?: Array<{ name: string }>): string {
   if (!items || items.length === 0) return "—";
   return items.map((i) => i.name).join(", ");
 }
 
-function extrasList(items?: Array<{ name: string; qty?: number }>): string {
+function htmlList(items: string[]): string {
+  if (items.length === 0) return "—";
+  return `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
+}
+
+function extrasHtml(items?: Array<{ name: string; qty?: number }>): string {
   if (!items || items.length === 0) return "—";
-  return items
-    .map((i) => (i.qty && i.qty > 1 ? `- ${i.name} × ${i.qty}` : `- ${i.name}`))
-    .join("\n");
+  return htmlList(
+    items.map((i) => (i.qty && i.qty > 1 ? `${i.name} × ${i.qty}` : i.name)),
+  );
+}
+
+function companyLogoHtml(company: any): string {
+  const url = company?.logo_url;
+  if (!url) return "";
+  const alt = esc(company?.name ?? "");
+  return `<img src="${esc(url)}" alt="${alt}" style="max-height:64px" />`;
 }
 
 export function buildPlaceholderValues(ctx: ContractContext): Record<string, string> {
@@ -62,16 +87,20 @@ export function buildPlaceholderValues(ctx: ContractContext): Record<string, str
     venue: joinNames(ctx.spaces),
     food_package: joinNames(ctx.foodPackages),
     drinks_package: joinNames(ctx.beveragePackages),
-    menu_selections: ctx.menu_selections && ctx.menu_selections.length
-      ? ctx.menu_selections.map((l) => `- ${l}`).join("\n")
-      : "—",
-    extras: extrasList(ctx.extras),
+    menu_selections:
+      ctx.menu_selections && ctx.menu_selections.length ? htmlList(ctx.menu_selections) : "—",
+    extras: extrasHtml(ctx.extras),
     subtotal: t.subtotal != null ? money(t.subtotal, currency) : "—",
     tax: t.tax != null ? money(t.tax, currency) : "—",
     total: t.total != null ? money(t.total, currency) : "—",
     currency,
-    company_name: ctx.company?.name ?? "",
     today: new Date().toLocaleDateString(),
+    company_name: ctx.company?.name ?? "",
+    company_logo: companyLogoHtml(ctx.company),
+    company_address: ctx.company?.address ?? "",
+    company_email: ctx.company?.contact_email ?? "",
+    company_phone: ctx.company?.contact_phone ?? "",
+    company_website: ctx.company?.website ?? "",
   };
 }
 
@@ -81,4 +110,12 @@ export function renderContract(body: string, ctx: ContractContext): string {
     const v = values[key.toLowerCase()];
     return v == null ? m : v;
   });
+}
+
+// Old templates stored as plain text — wrap so they render in the HTML editor.
+export function ensureHtml(body: string | null | undefined): string {
+  const b = (body ?? "").trim();
+  if (!b) return "";
+  if (b.startsWith("<")) return b;
+  return `<pre>${esc(b)}</pre>`;
 }

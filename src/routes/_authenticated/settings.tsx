@@ -38,8 +38,12 @@ function SettingsPage() {
         primary_color: fd.get("primary_color") as string,
         currency: fd.get("currency") as string,
         logo_url: (fd.get("logo_url") as string) || null,
+        address: (fd.get("address") as string) || null,
+        contact_email: (fd.get("contact_email") as string) || null,
+        contact_phone: (fd.get("contact_phone") as string) || null,
+        website: (fd.get("website") as string) || null,
         require_deal_approval: fd.get("require_deal_approval") === "on",
-      })
+      } as any)
       .eq("id", company.id);
     if (error) return toast.error(error.message);
     toast.success("Brand saved");
@@ -92,6 +96,29 @@ function SettingsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field name="primary_color" label="Brand color" type="color" defaultValue={company.primary_color} />
                 <Field name="currency" label="Currency" defaultValue={company.currency} />
+              </div>
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="text-sm font-medium">Company details for contracts</div>
+                <p className="text-xs text-muted-foreground">
+                  Used by the {`{{company_logo}}`}, {`{{company_address}}`}, {`{{company_email}}`},{" "}
+                  {`{{company_phone}}`} and {`{{company_website}}`} placeholders in contract
+                  templates.
+                </p>
+                <Field name="address" label="Address" defaultValue={company.address ?? ""} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    name="contact_email"
+                    label="Contact email"
+                    type="email"
+                    defaultValue={company.contact_email ?? ""}
+                  />
+                  <Field
+                    name="contact_phone"
+                    label="Contact phone"
+                    defaultValue={company.contact_phone ?? ""}
+                  />
+                </div>
+                <Field name="website" label="Website" defaultValue={company.website ?? ""} />
               </div>
               <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
                 <input
