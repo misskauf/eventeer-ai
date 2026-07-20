@@ -277,41 +277,6 @@ function Toolbar({ editor }: { editor: Editor }) {
           </SelectContent>
         </Select>
       </div>
-      <div style={{ display: "none" }}>
-        <Select
-          value=""
-        <Select
-          value=""
-          onValueChange={(key) => {
-            if (!key) return;
-            editor.chain().focus().insertContent(`{{${key}}}`).run();
-          }}
-        >
-          <SelectTrigger className="h-8 w-[190px] text-xs">
-            <SelectValue placeholder="Insert placeholder…" />
-          </SelectTrigger>
-          <SelectContent>
-            <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
-              Company
-            </div>
-            {CONTRACT_PLACEHOLDERS.filter((p) => p.key.startsWith("company_")).map((p) => (
-              <SelectItem key={p.key} value={p.key}>
-                <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
-                <span className="ml-2 text-muted-foreground">{p.label}</span>
-              </SelectItem>
-            ))}
-            <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
-              Deal
-            </div>
-            {CONTRACT_PLACEHOLDERS.filter((p) => !p.key.startsWith("company_")).map((p) => (
-              <SelectItem key={p.key} value={p.key}>
-                <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
-                <span className="ml-2 text-muted-foreground">{p.label}</span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
     </div>
   );
 }
