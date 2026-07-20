@@ -1,8 +1,6 @@
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
-import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +20,7 @@ import {
   Redo,
   Pilcrow,
   LayoutTemplate,
+  PenLine,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -64,6 +63,7 @@ function ToolBtn({
       variant={active ? "secondary" : "ghost"}
       size="icon"
       className="h-8 w-8"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       disabled={disabled}
       title={title}
@@ -73,7 +73,16 @@ function ToolBtn({
   );
 }
 
+const HEADER_BLOCK = `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address · email · phone</p></div><p></p>`;
+
+const TWO_COL_HEADER_BLOCK = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address<br/>Email · Phone</p></div><div style="text-align:right"><em style="color:#999">Logo</em></div></div><p></p>`;
+
+const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><em style="color:#999">Logo</em></div><p></p>`;
+
+const SIGNATURE_BLOCK = `<hr/><h3>Signatures</h3><table style="width:100%;border-collapse:collapse;margin-top:12px"><tbody><tr><td style="width:50%;vertical-align:top;padding:8px 12px 8px 0"><p style="margin:0 0 4px;font-size:12px;color:#555">Client</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td><td style="width:50%;vertical-align:top;padding:8px 0 8px 12px"><p style="margin:0 0 4px;font-size:12px;color:#555">Company representative</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td></tr></tbody></table><p></p>`;
+
 function Toolbar({ editor }: { editor: Editor }) {
+  const insert = (html: string) => editor.chain().focus().insertContent(html).run();
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/30 px-1 py-1">
       <ToolBtn
@@ -151,10 +160,11 @@ function Toolbar({ editor }: { editor: Editor }) {
       <ToolBtn
         title="Add link"
         onClick={() => {
-          const url = window.prompt("URL", editor.getAttributes("link").href ?? "https://");
+          const prev = editor.getAttributes("link").href ?? "https://";
+          const url = window.prompt("URL", prev);
           if (url === null) return;
           if (url === "") {
-            editor.chain().focus().unsetLink().run();
+            editor.chain().focus().extendMarkRange("link").unsetLink().run();
           } else {
             editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
           }
@@ -182,55 +192,47 @@ function Toolbar({ editor }: { editor: Editor }) {
       <span className="mx-1 h-5 w-px bg-border" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs" title="Insert block">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 px-2 text-xs"
+            title="Insert block"
+            onMouseDown={(e) => e.preventDefault()}
+          >
             <LayoutTemplate className="h-4 w-4" />
             Insert block
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem
-            onSelect={() =>
-              editor
-                .chain()
-                .focus()
-                .insertContent(
-                  `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">{{company_name}}</h1><p style="margin:4px 0 0;font-size:12px;color:#555">{{company_address}} · {{company_email}} · {{company_phone}}</p></div><p></p>`,
-                )
-                .run()
-            }
-          >
-            Header
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() =>
-              editor
-                .chain()
-                .focus()
-                .insertContent(
-                  `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">{{company_name}}</h1><p style="margin:4px 0 0;font-size:12px;color:#555">{{company_address}}<br/>{{company_email}} · {{company_phone}}</p></div><div style="text-align:right">{{company_logo}}</div></div><p></p>`,
-                )
-                .run()
-            }
-          >
+          <DropdownMenuItem onSelect={() => insert(HEADER_BLOCK)}>Header</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => insert(TWO_COL_HEADER_BLOCK)}>
             Two-column header (with logo)
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => insert(LOGO_RIGHT_BLOCK)}>
+            Logo (top right)
+          </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() =>
-              editor
-                .chain()
-                .focus()
-                .insertContent(
-                  `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">{{company_logo}}</div><p></p>`,
-                )
-                .run()
+              editor.chain().focus().insertContent("<ul><li></li></ul>").run()
             }
           >
-            Logo (top right)
+            Bullet list
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              editor.chain().focus().insertContent("<ol><li></li></ol>").run()
+            }
+          >
+            Numbered list
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => insert(SIGNATURE_BLOCK)}>
+            <PenLine className="mr-2 h-4 w-4" />
+            Signature fields
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <div className="ml-auto">
-
         <Select
           value=""
           onValueChange={(key) => {
@@ -270,10 +272,10 @@ function Toolbar({ editor }: { editor: Editor }) {
 export function RichTextEditor({ value, onChange, placeholder, minHeight = 320 }: Props) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Underline,
+      StarterKit.configure({
+        link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: "noopener noreferrer" } },
+      }),
       Image.configure({ inline: false, allowBase64: true }),
-      Link.configure({ openOnClick: false, autolink: true }),
       Placeholder.configure({ placeholder: placeholder ?? "Start typing…" }),
     ],
     content: value || "",
