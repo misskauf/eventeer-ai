@@ -735,6 +735,12 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ContractUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onImport={openFromUpload}
+      />
     </div>
   );
 }
