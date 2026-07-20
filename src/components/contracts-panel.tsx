@@ -32,13 +32,6 @@ import {
   Copy,
   Upload,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 import { ContractUploadDialog } from "@/components/contract-upload-dialog";
 import { Link } from "@tanstack/react-router";
 import {
