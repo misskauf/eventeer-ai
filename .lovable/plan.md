@@ -1,5 +1,21 @@
-Scope: `src/components/contracts-panel.tsx`, templates section.
+## Contract templates panel — layout polish
 
-1. Remove the descriptive paragraph ("Reusable contracts with placeholders…") to the left of the Upload/New template buttons. Header row becomes just the two buttons, right-aligned.
-2. In each saved template row, remove the sanitized body preview snippet — keep only the name/badge line and the actions.
-3. Put Edit / Duplicate / Delete on the same row as the template name (name left, actions right), no wrapping to a second row.
+Scope: `src/components/contracts-panel.tsx` (templates section around lines 618–690). No logic changes.
+
+### 1. Fit action buttons in the frame
+
+The **Upload document** and **New template** buttons currently sit side-by-side on the right of the header row, which overflows the narrow Settings frame.
+
+- Change the header row so the button group wraps under the description text on narrow widths and stacks the two buttons vertically.
+- Make both buttons full-width within their container so they line up one above the other with equal width.
+- Keep the existing icons and labels.
+
+### 2. Clearer template name on each saved template
+
+Each saved template row currently shows the name inline next to badges, with a small sanitized body preview underneath. Make the name easier to scan:
+
+- Promote the template name to its own line above the row content as a bold header (e.g. `text-sm font-semibold`), with the `default` badge next to it.
+- Keep the sanitized text preview below the name as secondary muted text.
+- Keep Edit / Duplicate / Delete grouped and right-aligned, moving them to their own row underneath on narrow widths so the name is never truncated.
+
+No changes to data model, saving, dialogs, or the rich-text editor.
