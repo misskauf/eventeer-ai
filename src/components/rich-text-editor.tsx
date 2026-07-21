@@ -19,9 +19,10 @@ import {
   Undo,
   Redo,
   Pilcrow,
-  LayoutTemplate,
   PenLine,
+  Image as LogoIcon,
   Variable,
+
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -76,9 +77,14 @@ function ToolBtn({
 
 const HEADER_BLOCK = `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address · email · phone</p></div><p></p>`;
 
-const TWO_COL_HEADER_BLOCK = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address<br/>Email · Phone</p></div><div style="text-align:right"><em style="color:#999">Logo</em></div></div><p></p>`;
+const TWO_COL_HEADER_BLOCK = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address<br/>Email · Phone</p></div><div style="text-align:right">{{company_logo}}</div></div><p></p>`;
 
-const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><em style="color:#999">Logo</em></div><p></p>`;
+const LOGO_LEFT_BLOCK = `<div style="display:flex;justify-content:flex-start;margin-bottom:12px">{{company_logo}}</div><p></p>`;
+
+const LOGO_CENTER_BLOCK = `<div style="display:flex;justify-content:center;margin-bottom:12px">{{company_logo}}</div><p></p>`;
+
+const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">{{company_logo}}</div><p></p>`;
+
 
 const SIGNATURE_BLOCK = `<hr/><h3>Signatures</h3><table style="width:100%;border-collapse:collapse;margin-top:12px"><tbody><tr><td style="width:50%;vertical-align:top;padding:8px 12px 8px 0"><p style="margin:0 0 4px;font-size:12px;color:#555">Client</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td><td style="width:50%;vertical-align:top;padding:8px 0 8px 12px"><p style="margin:0 0 4px;font-size:12px;color:#555">Company representative</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td></tr></tbody></table><p></p>`;
 
@@ -198,41 +204,38 @@ function Toolbar({ editor }: { editor: Editor }) {
             variant="ghost"
             size="sm"
             className="h-8 gap-1 px-2 text-xs"
-            title="Insert block"
+            title="Insert logo"
             onMouseDown={(e) => e.preventDefault()}
           >
-            <LayoutTemplate className="h-4 w-4" />
-            Insert block
+            <LogoIcon className="h-4 w-4" />
+            Insert logo
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem onSelect={() => insert(HEADER_BLOCK)}>Header</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => insert(TWO_COL_HEADER_BLOCK)}>
-            Two-column header (with logo)
+        <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuItem onSelect={() => insert(LOGO_LEFT_BLOCK)}>
+            Top left
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => insert(LOGO_CENTER_BLOCK)}>
+            Top center
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => insert(LOGO_RIGHT_BLOCK)}>
-            Logo (top right)
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() =>
-              editor.chain().focus().insertContent("<ul><li></li></ul>").run()
-            }
-          >
-            Bullet list
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() =>
-              editor.chain().focus().insertContent("<ol><li></li></ol>").run()
-            }
-          >
-            Numbered list
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => insert(SIGNATURE_BLOCK)}>
-            <PenLine className="mr-2 h-4 w-4" />
-            Signature fields
+            Top right
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 gap-1 px-2 text-xs"
+        title="Insert signature fields"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => insert(SIGNATURE_BLOCK)}
+      >
+        <PenLine className="h-4 w-4" />
+        Insert signature
+      </Button>
+
       <div className="ml-auto flex items-center gap-1">
         <Select
           value=""
