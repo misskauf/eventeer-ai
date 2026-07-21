@@ -662,25 +662,28 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
                   }}
                 />
               </div>
-              <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
-                Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => openDuplicate(t)}
-                title="Duplicate"
-              >
-                <Copy className="mr-1 h-3.5 w-3.5" /> Duplicate
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive"
-                onClick={() => remove(t.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button variant="ghost" size="sm" className="h-8" onClick={() => openEdit(t)}>
+                  <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => openDuplicate(t)}
+                  title="Duplicate"
+                >
+                  <Copy className="mr-1 h-3.5 w-3.5" /> Duplicate
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-destructive"
+                  onClick={() => remove(t.id)}
+                >
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                </Button>
+              </div>
             </div>
           ))}
         </div>
