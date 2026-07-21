@@ -19,9 +19,10 @@ import {
   Undo,
   Redo,
   Pilcrow,
-  LayoutTemplate,
   PenLine,
+  Image as LogoIcon,
   Variable,
+
 } from "lucide-react";
 import {
   DropdownMenu,
