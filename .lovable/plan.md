@@ -1,24 +1,19 @@
-## Problem
+## Align contract template row buttons
 
-Save fails with `403: new row violates row-level security policy for table "contract_templates"`.
+In `src/components/contracts-panel.tsx` (`ContractTemplatesEditor`), the action buttons on each template row (Edit, Duplicate, Delete) are inconsistently sized and spaced — Edit and Duplicate use `size="sm"` while Delete uses `size="icon"` (h-8 w-8), and they sit as loose siblings of the title flex container with no gap wrapper.
 
-Root cause confirmed from network logs: Settings loads the company via `companies?select=*&limit=1`, which returns company `0818a815-…` — but the signed-in user's `user_roles` row points at a different company `999d919e-…`. The user is not a member of `0818a815-…`, so the RLS policy on `contract_templates` (which requires membership via `is_member_of`) rejects the insert.
+### Change
 
-In other words, `src/routes/_authenticated/settings.tsx` picks "any company" instead of "the user's company", and the wrong `company_id` gets stamped onto the insert.
+Wrap the three action buttons in a single right-aligned flex container with consistent sizing and spacing and align the upload template and create template buttons :
 
-## Fix
+- Group `Edit`, `Duplicate`, and `Delete` in `<div className="flex shrink-0 items-center gap-1">`.
+- Use the same size (`size="sm"`, height `h-8`) for all three so they line up on one baseline.
+- Convert Edit to an icon+label using the `Pencil` icon (from `lucide-react`) to match Duplicate's icon+label pattern.
+- Give the Delete button the same `sm` size (icon + label "Delete" or icon-only but matched height `h-8 w-8`) so its bounding box aligns with the others.
+- Keep the destructive color on Delete.
 
-Scope company loading in Settings to the user's actual company.
+No behavior/logic changes — purely visual alignment inside the templates list row.
 
-1. In `src/routes/_authenticated/settings.tsx` `load()`:
-   - Get `user_roles.company_id` for `auth.uid()` first.
-   - Then `companies.select('*').eq('id', <that id>).maybeSingle()`.
-   - If the user has no `user_roles` row, redirect to `/onboarding` (existing flow) instead of loading a stray company.
-2. Same-turn: audit other places that do `companies…limit(1)` without a user filter (`app-shell`, currency hook, contracts panel loads) and switch them to the `user_roles`-scoped lookup so brand/currency/templates all agree on one company.
+### Files
 
-No schema/RLS changes — policies are correct; the client was just sending the wrong `company_id`.
-
-## Verification
-
-- Reload Settings → confirm the loaded company id equals the `user_roles.company_id` (`999d919e-…`).
-- Create/save a contract template → expect `201`, not `403`.
+- `src/components/contracts-panel.tsx` — rows around lines 640–684.

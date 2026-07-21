@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Copy,
   Upload,
+  Pencil,
 } from "lucide-react";
 import { ContractUploadDialog } from "@/components/contract-upload-dialog";
 import { Link } from "@tanstack/react-router";
