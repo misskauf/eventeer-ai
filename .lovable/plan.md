@@ -1,19 +1,21 @@
-## Align contract template row buttons
+## Contract templates panel — layout polish
 
-In `src/components/contracts-panel.tsx` (`ContractTemplatesEditor`), the action buttons on each template row (Edit, Duplicate, Delete) are inconsistently sized and spaced — Edit and Duplicate use `size="sm"` while Delete uses `size="icon"` (h-8 w-8), and they sit as loose siblings of the title flex container with no gap wrapper.
+Scope: `src/components/contracts-panel.tsx` (templates section around lines 618–690). No logic changes.
 
-### Change
+### 1. Fit action buttons in the frame
 
-Wrap the three action buttons in a single right-aligned flex container with consistent sizing and spacing and align the upload template and create template buttons :
+The **Upload document** and **New template** buttons currently sit side-by-side on the right of the header row, which overflows the narrow Settings frame.
 
-- Group `Edit`, `Duplicate`, and `Delete` in `<div className="flex shrink-0 items-center gap-1">`.
-- Use the same size (`size="sm"`, height `h-8`) for all three so they line up on one baseline.
-- Convert Edit to an icon+label using the `Pencil` icon (from `lucide-react`) to match Duplicate's icon+label pattern.
-- Give the Delete button the same `sm` size (icon + label "Delete" or icon-only but matched height `h-8 w-8`) so its bounding box aligns with the others.
-- Keep the destructive color on Delete.
+- Change the header row so the button group wraps under the description text on narrow widths and stacks the two buttons vertically.
+- Make both buttons full-width within their container so they line up one above the other with equal width.
+- Keep the existing icons and labels.
 
-No behavior/logic changes — purely visual alignment inside the templates list row.
+### 2. Clearer template name on each saved template
 
-### Files
+Each saved template row currently shows the name inline next to badges, with a small sanitized body preview underneath. Make the name easier to scan:
 
-- `src/components/contracts-panel.tsx` — rows around lines 640–684.
+- Promote the template name to its own line above the row content as a bold header (e.g. `text-sm font-semibold`), with the `default` badge next to it.
+- Keep the sanitized text preview below the name as secondary muted text.
+- Keep Edit / Duplicate / Delete grouped and right-aligned, moving them to their own row underneath on narrow widths so the name is never truncated.
+
+No changes to data model, saving, dialogs, or the rich-text editor.

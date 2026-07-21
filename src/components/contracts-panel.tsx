@@ -617,16 +617,16 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <p className="text-xs text-muted-foreground sm:flex-1">
           Reusable contracts with placeholders. Insert deal details automatically when creating a
           contract.
         </p>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[180px]">
+          <Button size="sm" variant="outline" className="w-full justify-center" onClick={() => setUploadOpen(true)}>
             <Upload className="mr-1 h-4 w-4" /> Upload document
           </Button>
-          <Button size="sm" onClick={openNew}>
+          <Button size="sm" className="w-full justify-center" onClick={openNew}>
             <Plus className="mr-1 h-4 w-4" /> New template
           </Button>
         </div>
@@ -637,32 +637,30 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
           No templates yet.
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {templates.map((t) => (
             <div
               key={t.id}
-              className="flex items-center justify-between rounded-md border bg-background px-3 py-2 text-sm"
+              className="flex flex-col gap-2 rounded-md border bg-background px-3 py-2 text-sm"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-medium">{t.name}</span>
-                  {t.is_default && (
-                    <Badge variant="secondary" className="text-[10px]">
-                      default
-                    </Badge>
-                  )}
-                </div>
-                <div
-                  className="truncate text-xs text-muted-foreground"
-                  dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(ensureHtml(t.body), { ALLOWED_TAGS: [] }).slice(
-                      0,
-                      120,
-                    ),
-                  }}
-                />
+              <div className="flex items-center gap-2">
+                <span className="truncate text-sm font-semibold">{t.name}</span>
+                {t.is_default && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    default
+                  </Badge>
+                )}
               </div>
-              <div className="flex shrink-0 items-center gap-1">
+              <div
+                className="truncate text-xs text-muted-foreground"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(ensureHtml(t.body), { ALLOWED_TAGS: [] }).slice(
+                    0,
+                    120,
+                  ),
+                }}
+              />
+              <div className="flex flex-wrap items-center justify-end gap-1">
                 <Button variant="ghost" size="sm" className="h-8" onClick={() => openEdit(t)}>
                   <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
                 </Button>
@@ -688,6 +686,7 @@ export function ContractTemplatesEditor({ companyId }: { companyId: string }) {
           ))}
         </div>
       )}
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
