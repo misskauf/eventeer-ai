@@ -199,41 +199,38 @@ function Toolbar({ editor }: { editor: Editor }) {
             variant="ghost"
             size="sm"
             className="h-8 gap-1 px-2 text-xs"
-            title="Insert block"
+            title="Insert logo"
             onMouseDown={(e) => e.preventDefault()}
           >
-            <LayoutTemplate className="h-4 w-4" />
-            Insert block
+            <LogoIcon className="h-4 w-4" />
+            Insert logo
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem onSelect={() => insert(HEADER_BLOCK)}>Header</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => insert(TWO_COL_HEADER_BLOCK)}>
-            Two-column header (with logo)
+        <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuItem onSelect={() => insert(LOGO_LEFT_BLOCK)}>
+            Top left
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => insert(LOGO_CENTER_BLOCK)}>
+            Top center
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => insert(LOGO_RIGHT_BLOCK)}>
-            Logo (top right)
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() =>
-              editor.chain().focus().insertContent("<ul><li></li></ul>").run()
-            }
-          >
-            Bullet list
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() =>
-              editor.chain().focus().insertContent("<ol><li></li></ol>").run()
-            }
-          >
-            Numbered list
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => insert(SIGNATURE_BLOCK)}>
-            <PenLine className="mr-2 h-4 w-4" />
-            Signature fields
+            Top right
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-8 gap-1 px-2 text-xs"
+        title="Insert signature fields"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => insert(SIGNATURE_BLOCK)}
+      >
+        <PenLine className="h-4 w-4" />
+        Insert signature
+      </Button>
+
       <div className="ml-auto flex items-center gap-1">
         <Select
           value=""
