@@ -77,9 +77,14 @@ function ToolBtn({
 
 const HEADER_BLOCK = `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address · email · phone</p></div><p></p>`;
 
-const TWO_COL_HEADER_BLOCK = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address<br/>Email · Phone</p></div><div style="text-align:right"><em style="color:#999">Logo</em></div></div><p></p>`;
+const TWO_COL_HEADER_BLOCK = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address<br/>Email · Phone</p></div><div style="text-align:right">{{company_logo}}</div></div><p></p>`;
 
-const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><em style="color:#999">Logo</em></div><p></p>`;
+const LOGO_LEFT_BLOCK = `<div style="display:flex;justify-content:flex-start;margin-bottom:12px">{{company_logo}}</div><p></p>`;
+
+const LOGO_CENTER_BLOCK = `<div style="display:flex;justify-content:center;margin-bottom:12px">{{company_logo}}</div><p></p>`;
+
+const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">{{company_logo}}</div><p></p>`;
+
 
 const SIGNATURE_BLOCK = `<hr/><h3>Signatures</h3><table style="width:100%;border-collapse:collapse;margin-top:12px"><tbody><tr><td style="width:50%;vertical-align:top;padding:8px 12px 8px 0"><p style="margin:0 0 4px;font-size:12px;color:#555">Client</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td><td style="width:50%;vertical-align:top;padding:8px 0 8px 12px"><p style="margin:0 0 4px;font-size:12px;color:#555">Company representative</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td></tr></tbody></table><p></p>`;
 
