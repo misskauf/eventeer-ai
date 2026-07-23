@@ -2,6 +2,28 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+/** Called from client right after a deal insert; verifies membership then fans out notify. */
+export const notifyLeadCreated = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ deal_id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: deal, error } = await context.supabase
+      .from("deals")
+      .select("id, company_id, client_name, client_email, client_company")
+      .eq("id", data.deal_id)
+      .maybeSingle();
+    if (error || !deal) throw new Error("Deal not found or not accessible");
+    const { notifyDeal } = await import("@/lib/notifications.server");
+    await notifyDeal({
+      companyId: deal.company_id as string,
+      dealId: deal.id as string,
+      kind: "lead_created",
+      title: `New lead: ${deal.client_name}`,
+      body: `${deal.client_name}${deal.client_company ? ` (${deal.client_company})` : ""} — ${deal.client_email}`,
+    });
+    return { ok: true as const };
+  });
+
 export const listMyNotifications = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
