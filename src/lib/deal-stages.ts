@@ -25,6 +25,7 @@ export const STAGE_LABELS: Record<string, string> = {
   contacted: "Contacted",
   meeting_scheduled: "Meeting scheduled",
   proposal_sent: "Proposal sent",
+  changes_requested: "Changes requested",
   client_approved: "Client approved",
 
   signed: "Signed",
