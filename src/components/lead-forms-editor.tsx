@@ -249,7 +249,7 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
     });
   }
 
-  const customKeys = new Set(f.fields.custom.map((c) => c.key));
+  
   const dupKey = f.fields.custom.some((c, i) => f.fields.custom.findIndex((x) => x.key === c.key) !== i);
 
   return (
@@ -434,6 +434,3 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
     </Card>
   );
 }
-
-// Silence unused import warning if bundler tree-shakes: `customKeys` reserved for future use.
-void ((): Set<string> | undefined => undefined);
