@@ -195,6 +195,19 @@ function SettingsPage() {
             </CardContent>
           </Card>
         )}
+        {company?.id && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Lead forms</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Create embeddable web forms for your website. Submissions create a new deal automatically.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <LeadFormsEditor companyId={company.id} />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppShell>
   );
