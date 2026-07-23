@@ -735,11 +735,40 @@ function DealDetail() {
 
       {/* CLIENT RESPONSE (if any) */}
       {clientResponse && (
-        <Card className="mb-6 border-emerald-200 bg-emerald-50/40">
+        <Card
+          className={
+            "mb-6 " +
+            (clientAction === "changes_requested"
+              ? "border-amber-200 bg-amber-50/40"
+              : clientAction === "declined"
+              ? "border-red-200 bg-red-50/40"
+              : "border-emerald-200 bg-emerald-50/40")
+          }
+        >
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" /> Client response
-            </CardTitle>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" /> Client response
+              </CardTitle>
+              <div>
+                <Badge
+                  className={
+                    "border " +
+                    (clientAction === "changes_requested"
+                      ? "bg-amber-100 text-amber-800 border-amber-200"
+                      : clientAction === "declined"
+                      ? "bg-red-100 text-red-800 border-red-200"
+                      : "bg-emerald-100 text-emerald-800 border-emerald-200")
+                  }
+                >
+                  {clientAction === "changes_requested"
+                    ? "Changes requested"
+                    : clientAction === "declined"
+                    ? "Declined"
+                    : "Confirmed"}
+                </Badge>
+              </div>
+            </div>
             {clientResponse.submitted_at && (
               <span className="text-xs text-muted-foreground">
                 {new Date(clientResponse.submitted_at).toLocaleString()}
