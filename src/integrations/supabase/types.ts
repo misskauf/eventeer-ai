@@ -263,6 +263,7 @@ export type Database = {
           consent_given_at: string | null
           consent_text: string | null
           created_at: string
+          custom_fields: Json
           estimated_value: number
           event_date: string | null
           event_type: string | null
@@ -289,6 +290,7 @@ export type Database = {
           consent_given_at?: string | null
           consent_text?: string | null
           created_at?: string
+          custom_fields?: Json
           estimated_value?: number
           event_date?: string | null
           event_type?: string | null
@@ -315,6 +317,7 @@ export type Database = {
           consent_given_at?: string | null
           consent_text?: string | null
           created_at?: string
+          custom_fields?: Json
           estimated_value?: number
           event_date?: string | null
           event_type?: string | null

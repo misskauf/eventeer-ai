@@ -7,7 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LEAD_FIELDS, type LeadFieldsConfig, type LeadFieldKey } from "@/lib/lead-forms";
+import {
+  getEnabledPresetFields,
+  type LeadFieldsConfig,
+  type CustomFieldDef,
+} from "@/lib/lead-forms";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/f/$slug")({
@@ -58,18 +62,27 @@ function PublicLeadForm() {
   const { form, company } = state;
   const fields: LeadFieldsConfig = form.fields;
   const brand = company?.primary_color || "#0f172a";
+  const enabledPresets = getEnabledPresetFields(fields);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!consent) return toast.error("Please accept the consent");
     setBusy(true);
     try {
-      const payload: any = {};
-      for (const f of LEAD_FIELDS) {
-        if (!fields[f.key].enabled) continue;
+      const payload: Record<string, unknown> = {};
+      for (const f of enabledPresets) {
         const raw = values[f.key];
         if (raw === undefined || raw === "") continue;
         payload[f.key] = f.type === "number" ? Number(raw) : raw;
+      }
+      for (const c of fields.custom) {
+        const raw = values[c.key];
+        if (c.type === "checkbox") {
+          payload[c.key] = !!raw;
+          continue;
+        }
+        if (raw === undefined || raw === "") continue;
+        payload[c.key] = c.type === "number" ? Number(raw) : raw;
       }
       const res = await submit({ data: { slug, values: payload, consent: true } });
       if (res.redirect_url) {
@@ -112,29 +125,41 @@ function PublicLeadForm() {
             </div>
 
             <form className="space-y-3" onSubmit={onSubmit}>
-              {LEAD_FIELDS.filter((f) => fields[f.key].enabled).map((f) => (
-                <div key={f.key} className="space-y-1.5">
-                  <Label htmlFor={f.key}>
-                    {f.label}{fields[f.key].required && <span className="text-destructive"> *</span>}
-                  </Label>
-                  {f.type === "textarea" ? (
-                    <Textarea
-                      id={f.key}
-                      required={fields[f.key].required}
-                      value={values[f.key] ?? ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                      rows={4}
-                    />
-                  ) : (
-                    <Input
-                      id={f.key}
-                      type={f.type}
-                      required={fields[f.key].required}
-                      value={values[f.key] ?? ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                    />
-                  )}
-                </div>
+              {enabledPresets.map((f) => {
+                const cfg = fields.preset[f.key];
+                return (
+                  <div key={f.key} className="space-y-1.5">
+                    <Label htmlFor={f.key}>
+                      {f.label}{cfg.required && <span className="text-destructive"> *</span>}
+                    </Label>
+                    {f.type === "textarea" ? (
+                      <Textarea
+                        id={f.key}
+                        required={cfg.required}
+                        value={values[f.key] ?? ""}
+                        onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                        rows={4}
+                      />
+                    ) : (
+                      <Input
+                        id={f.key}
+                        type={f.type as string}
+                        required={cfg.required}
+                        value={values[f.key] ?? ""}
+                        onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+
+              {fields.custom.map((c) => (
+                <CustomFieldInput
+                  key={c.id}
+                  def={c}
+                  value={values[c.key]}
+                  onChange={(v) => setValues((prev) => ({ ...prev, [c.key]: v }))}
+                />
               ))}
 
               <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
@@ -155,6 +180,75 @@ function PublicLeadForm() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function CustomFieldInput({
+  def,
+  value,
+  onChange,
+}: {
+  def: CustomFieldDef;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const id = `cf_${def.id}`;
+  const req = def.required;
+  const label = (
+    <Label htmlFor={id}>
+      {def.label}{req && <span className="text-destructive"> *</span>}
+    </Label>
+  );
+  if (def.type === "textarea") {
+    return (
+      <div className="space-y-1.5">
+        {label}
+        <Textarea id={id} required={req} placeholder={def.placeholder} rows={4}
+          value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} />
+        {def.help && <p className="text-xs text-muted-foreground">{def.help}</p>}
+      </div>
+    );
+  }
+  if (def.type === "checkbox") {
+    return (
+      <label className="flex items-start gap-2 text-sm">
+        <input id={id} type="checkbox" required={req} checked={!!value} onChange={(e) => onChange(e.target.checked)} className="mt-0.5" />
+        <span>{def.label}{req && <span className="text-destructive"> *</span>}{def.help && <span className="block text-xs text-muted-foreground">{def.help}</span>}</span>
+      </label>
+    );
+  }
+  if (def.type === "select") {
+    return (
+      <div className="space-y-1.5">
+        {label}
+        <select
+          id={id}
+          required={req}
+          value={(value as string) ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        >
+          <option value="">Select…</option>
+          {(def.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+        {def.help && <p className="text-xs text-muted-foreground">{def.help}</p>}
+      </div>
+    );
+  }
+  const inputType = def.type === "number" ? "number" : def.type === "date" ? "date" : "text";
+  return (
+    <div className="space-y-1.5">
+      {label}
+      <Input
+        id={id}
+        type={inputType}
+        required={req}
+        placeholder={def.placeholder}
+        value={(value as string | number | undefined) ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {def.help && <p className="text-xs text-muted-foreground">{def.help}</p>}
     </div>
   );
 }
