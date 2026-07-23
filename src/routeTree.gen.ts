@@ -27,6 +27,7 @@ import { Route as AuthenticatedCatalogRulesRouteImport } from './routes/_authent
 import { Route as AuthenticatedCatalogFoodRouteImport } from './routes/_authenticated/catalog.food'
 import { Route as AuthenticatedCatalogExtrasRouteImport } from './routes/_authenticated/catalog.extras'
 import { Route as AuthenticatedCatalogBeveragesRouteImport } from './routes/_authenticated/catalog.beverages'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -123,6 +124,11 @@ const AuthenticatedCatalogBeveragesRoute =
     path: '/beverages',
     getParentRoute: () => AuthenticatedCatalogRoute,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/food': typeof AuthenticatedCatalogFoodRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
   '/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/catalog/food': typeof AuthenticatedCatalogFoodRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
   '/_authenticated/catalog/extras': typeof AuthenticatedCatalogExtrasRoute
   '/_authenticated/catalog/food': typeof AuthenticatedCatalogFoodRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/d/$token'
     | '/p/$token'
+    | '/.lovable/oauth/consent'
     | '/catalog/beverages'
     | '/catalog/extras'
     | '/catalog/food'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/d/$token'
     | '/p/$token'
+    | '/.lovable/oauth/consent'
     | '/catalog/beverages'
     | '/catalog/extras'
     | '/catalog/food'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/d/$token'
     | '/p/$token'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/catalog/beverages'
     | '/_authenticated/catalog/extras'
     | '/_authenticated/catalog/food'
@@ -250,6 +262,7 @@ export interface RootRouteChildren {
   CTokenRoute: typeof CTokenRoute
   DTokenRoute: typeof DTokenRoute
   PTokenRoute: typeof PTokenRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -380,6 +393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogBeveragesRouteImport
       parentRoute: typeof AuthenticatedCatalogRoute
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -440,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   CTokenRoute: CTokenRoute,
   DTokenRoute: DTokenRoute,
   PTokenRoute: PTokenRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
