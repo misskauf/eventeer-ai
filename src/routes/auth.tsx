@@ -10,12 +10,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   component: AuthPage,
 });
 
+function safeNext(next: string | undefined): string | null {
+  if (!next) return null;
+  // Same-origin relative paths only.
+  if (!next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [busy, setBusy] = useState(false);
+
+  async function goNext(fallback: "/deals" | "/onboarding") {
+    const target = safeNext(next);
+    if (target) {
+      window.location.href = target;
+      return;
+    }
+    await navigate({ to: fallback });
+  }
 
   async function onSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,28 +47,32 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    await navigate({ to: "/deals" });
+    await goNext("/deals");
   }
 
   async function onSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     const fd = new FormData(e.currentTarget);
+    const target = safeNext(next);
+    const emailRedirectTo = window.location.origin + (target ?? "/onboarding");
     const { error } = await supabase.auth.signUp({
       email: fd.get("email") as string,
       password: fd.get("password") as string,
-      options: { emailRedirectTo: window.location.origin + "/onboarding" },
+      options: { emailRedirectTo },
     });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Account created. Check your email if confirmation is required.");
-    await navigate({ to: "/onboarding" });
+    await goNext("/onboarding");
   }
 
   async function onGoogle() {
     setBusy(true);
+    const target = safeNext(next);
+    const redirect_uri = window.location.origin + (target ?? "");
     const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri,
     });
     if (res.error) {
       setBusy(false);
@@ -56,8 +80,7 @@ function AuthPage() {
       return;
     }
     if (!res.redirected) {
-      // popup-based: session set — go to onboarding to route to right place
-      await navigate({ to: "/onboarding" });
+      await goNext("/onboarding");
     }
   }
 
