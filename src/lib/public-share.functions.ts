@@ -157,10 +157,13 @@ export const submitClientSelection = createServerFn({ method: "POST" })
     if (shouldAdvance) updatePayload.stage = "client_approved";
     await supabaseAdmin.from("deals").update(updatePayload as any).eq("id", tok.deal_id);
 
-    await supabaseAdmin.from("deal_activities").insert({
-      deal_id: tok.deal_id,
-      company_id: tok.company_id,
-      kind: "client_approved_selection",
+    const { notifyDeal } = await import("@/lib/notifications.server");
+    await notifyDeal({
+      companyId: tok.company_id as string,
+      dealId: tok.deal_id as string,
+      kind: "client_confirmed",
+      title: "Client confirmed their selection",
+      body: `The client submitted their selection${data.client_response?.overall_message ? ` with a message: "${data.client_response.overall_message.slice(0, 200)}"` : "."}`,
       meta: {
         computed_total: data.computed_total,
         has_message: !!data.client_response?.overall_message,
