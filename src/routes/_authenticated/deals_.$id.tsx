@@ -791,7 +791,7 @@ function DealDetail() {
       )}
 
       {/* PROPOSAL SECTION */}
-      <div className="mb-3 flex items-center justify-between">
+      <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
         <h2 className="text-lg font-semibold">Proposal</h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={previewAsClient}>
