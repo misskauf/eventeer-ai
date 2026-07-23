@@ -71,6 +71,9 @@ function ClientProposal() {
   const [openNoteFor, setOpenNoteFor] = useState<Record<string, boolean>>({});
   const [overallMessage, setOverallMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submittedAction, setSubmittedAction] = useState<"confirmed" | "changes_requested" | "declined" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"confirmed" | "changes_requested" | "declined" | null>(null);
+  const [actionNote, setActionNote] = useState("");
 
   useEffect(() => {
     (async () => {
