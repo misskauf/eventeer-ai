@@ -69,6 +69,7 @@ type Deal = {
   approval_note: string | null;
   approval_requested_by: string | null;
   approved_by: string | null;
+  custom_fields?: Record<string, { label?: string; value: unknown }> | null;
 };
 
 
@@ -705,6 +706,25 @@ function DealDetail() {
             <div className="sm:col-span-2 lg:col-span-4">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Notes</div>
               <div className="mt-1 whitespace-pre-wrap">{deal.notes}</div>
+            </div>
+          )}
+          {deal.custom_fields && Object.keys(deal.custom_fields).length > 0 && (
+            <div className="sm:col-span-2 lg:col-span-4">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Additional info</div>
+              <dl className="mt-1 grid gap-2 sm:grid-cols-2">
+                {Object.entries(deal.custom_fields).map(([k, entry]) => {
+                  const label = (entry && typeof entry === "object" && "label" in entry && entry.label) || k;
+                  const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+                  const display =
+                    raw === true ? "Yes" : raw === false ? "No" : raw == null || raw === "" ? "—" : String(raw);
+                  return (
+                    <div key={k} className="text-sm">
+                      <dt className="text-xs text-muted-foreground">{label}</dt>
+                      <dd className="whitespace-pre-wrap">{display}</dd>
+                    </div>
+                  );
+                })}
+              </dl>
             </div>
           )}
         </CardContent>
