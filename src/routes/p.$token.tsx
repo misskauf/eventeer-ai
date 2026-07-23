@@ -244,14 +244,26 @@ function ClientProposal() {
   const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
   const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
 
-  async function onSubmit() {
+  async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
+    if (action === "changes_requested" && !actionNote.trim()) {
+      toast.error("Please add a short note describing the changes you'd like.");
+      return;
+    }
     if (state?.preview) {
-      toast.info("Preview mode — nothing was submitted.");
+      const label =
+        action === "confirmed"
+          ? "Confirm my selection"
+          : action === "changes_requested"
+          ? "Request changes"
+          : "Decline offer";
+      toast.info(`Preview mode — "${label}" was not submitted.`);
       return;
     }
     await submit({
       data: {
         token,
+        action,
+        note: actionNote.trim() || undefined,
         selection: {
           guest_count: state.deal.guest_count,
           space_ids: resolvedSelection!.space_ids,
@@ -270,8 +282,16 @@ function ClientProposal() {
       },
     });
     setSubmitted(true);
-    toast.success("Your selection was sent to the event manager.");
+    setSubmittedAction(action);
+    const successMsg =
+      action === "confirmed"
+        ? "Your selection was sent to the event manager."
+        : action === "changes_requested"
+        ? "Your change request was sent."
+        : "Your response has been recorded.";
+    toast.success(successMsg);
   }
+
 
   const noteToggle = (itemId: string) =>
     setOpenNoteFor((cur) => ({ ...cur, [itemId]: !cur[itemId] }));
