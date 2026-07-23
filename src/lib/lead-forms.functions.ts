@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { normalizeFields, type LeadFieldsConfig } from "./lead-forms";
+import {
+  normalizeFields,
+  splitDealVsCustom,
+  validateSubmission,
+  type LeadFieldsConfig,
+} from "./lead-forms";
 
 /** Server-local publishable Supabase client (no user session) for public reads. */
 function publicClient() {
@@ -51,18 +56,7 @@ export const submitLeadForm = createServerFn({ method: "POST" })
     z
       .object({
         slug: z.string().min(1).max(200),
-        values: z
-          .object({
-            name: z.string().trim().max(200).optional(),
-            email: z.string().trim().email().max(255).optional(),
-            phone: z.string().trim().max(50).optional(),
-            company: z.string().trim().max(200).optional(),
-            event_type: z.string().trim().max(100).optional(),
-            event_date: z.string().trim().max(30).optional(),
-            guest_count: z.number().int().min(0).max(1000000).optional(),
-            message: z.string().trim().max(4000).optional(),
-          })
-          .default({}),
+        values: z.record(z.string(), z.unknown()).default({}),
         consent: z.boolean(),
       })
       .parse(data),
@@ -80,19 +74,8 @@ export const submitLeadForm = createServerFn({ method: "POST" })
     if (!form || !(form as any).active) throw new Error("Form not available");
 
     const fields = normalizeFields((form as any).fields);
-
-    // Required-field validation
-    const v = data.values;
-    const missing: string[] = [];
-    for (const [k, cfg] of Object.entries(fields)) {
-      if (!cfg.enabled || !cfg.required) continue;
-      const val = (v as any)[k];
-      if (val === undefined || val === null || (typeof val === "string" && val.trim() === "")) missing.push(k);
-    }
-    // Name + email always required to create a deal
-    if (!v.name || v.name.trim() === "") missing.push("name");
-    if (!v.email || v.email.trim() === "") missing.push("email");
-    if (missing.length) throw new Error(`Missing required fields: ${Array.from(new Set(missing)).join(", ")}`);
+    const values = validateSubmission(fields, data.values as Record<string, unknown>);
+    const { dealPatch, customFields } = splitDealVsCustom(fields, values);
 
     // Default owner = company's created_by
     const { data: company } = await supabaseAdmin
@@ -103,29 +86,40 @@ export const submitLeadForm = createServerFn({ method: "POST" })
     const ownerId = (company as any)?.created_by as string | null;
     if (!ownerId) throw new Error("No default owner for this company");
 
+    // Compose notes: preset message + phone (kept for backward-compat visibility)
+    const messagePart = typeof dealPatch["notes"] === "string" ? String(dealPatch["notes"]) : null;
+    const legacyMessage = (values["message"] as string | undefined) ?? null;
+    const phone = (values["phone"] as string | undefined) ?? null;
     const notesParts: string[] = [];
-    if (v.phone) notesParts.push(`Phone: ${v.phone}`);
-    if (v.message) notesParts.push(v.message);
+    if (phone) notesParts.push(`Phone: ${phone}`);
+    if (legacyMessage) notesParts.push(legacyMessage);
+    if (!legacyMessage && messagePart) notesParts.push(messagePart);
     const notes = notesParts.join("\n\n") || null;
+
+    const clientName = String(dealPatch["client_name"] ?? "").trim();
+    const clientEmail = String(dealPatch["client_email"] ?? "").trim();
+
+    const insertRow: Record<string, unknown> = {
+      company_id: (form as any).company_id,
+      owner_id: ownerId,
+      client_name: clientName,
+      client_email: clientEmail,
+      client_company: (dealPatch["client_company"] as string | undefined) ?? null,
+      event_type: (dealPatch["event_type"] as string | undefined) ?? null,
+      event_date: (dealPatch["event_date"] as string | undefined) ?? null,
+      guest_count: (dealPatch["guest_count"] as number | undefined) ?? 0,
+      notes,
+      stage: "new",
+      source: "lead_form",
+      lead_form_id: (form as any).id,
+      consent_text: (form as any).consent_text ?? null,
+      consent_given_at: new Date().toISOString(),
+      custom_fields: customFields,
+    };
 
     const { data: deal, error: dealErr } = await supabaseAdmin
       .from("deals")
-      .insert({
-        company_id: (form as any).company_id,
-        owner_id: ownerId,
-        client_name: v.name!.trim(),
-        client_email: v.email!.trim(),
-        client_company: v.company?.trim() || null,
-        event_type: v.event_type?.trim() || null,
-        event_date: v.event_date || null,
-        guest_count: v.guest_count ?? 0,
-        notes,
-        stage: "new" as any,
-        source: "lead_form",
-        lead_form_id: (form as any).id,
-        consent_text: (form as any).consent_text ?? null,
-        consent_given_at: new Date().toISOString(),
-      } as any)
+      .insert(insertRow as any)
       .select("id, company_id")
       .single();
     if (dealErr || !deal) throw new Error(dealErr?.message ?? "Failed to create deal");
@@ -144,8 +138,8 @@ export const submitLeadForm = createServerFn({ method: "POST" })
         companyId: deal.company_id as string,
         dealId: deal.id as string,
         kind: "lead_created",
-        title: `New lead: ${v.name}`,
-        body: `${v.name}${v.company ? ` (${v.company})` : ""} — ${v.email}${v.event_date ? ` — ${v.event_date}` : ""}`,
+        title: `New lead: ${clientName}`,
+        body: `${clientName}${dealPatch["client_company"] ? ` (${dealPatch["client_company"]})` : ""} — ${clientEmail}${dealPatch["event_date"] ? ` — ${dealPatch["event_date"]}` : ""}`,
       });
     } catch (err) {
       console.warn("[submitLeadForm] notifyDeal failed", err);
