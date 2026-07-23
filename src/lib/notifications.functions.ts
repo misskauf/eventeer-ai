@@ -45,7 +45,7 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
       if (!data.ids || data.ids.length === 0) return { ok: true as const, updated: 0 };
       q = q.in("id", data.ids);
     }
-    const { error, count } = await q.select("id", { count: "exact" });
+    const { error, data: updated } = await q.select("id");
     if (error) throw new Error(error.message);
-    return { ok: true as const, updated: count ?? 0 };
+    return { ok: true as const, updated: updated?.length ?? 0 };
   });
