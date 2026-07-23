@@ -547,6 +547,57 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          deal_id: string | null
+          id: string
+          kind: string
+          read_at: string | null
+          recipient_user_id: string | null
+          title: string
+        }
+        Insert: {
+          body?: string
+          company_id: string
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          kind: string
+          read_at?: string | null
+          recipient_user_id?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          kind?: string
+          read_at?: string | null
+          recipient_user_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_rules: {
         Row: {
           basis: string
