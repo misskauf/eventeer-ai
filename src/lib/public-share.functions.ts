@@ -82,6 +82,8 @@ export const submitClientSelection = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().min(8),
+        action: z.enum(["confirmed", "changes_requested", "declined"]).default("confirmed"),
+        note: z.string().optional(),
         selection: z.record(z.string(), z.any()),
         computed_total: z.number().min(0),
         client_response: z
@@ -111,36 +113,42 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       return { ok: true as const, preview: true };
     }
 
+    const action = data.action;
+
     await supabaseAdmin.from("proposal_selections").insert({
       proposal_id: tok.proposal_id,
       company_id: tok.company_id,
       selection: data.selection,
       computed_total: data.computed_total,
       menu_choices: data.client_response?.menu_choices ?? {},
-    });
+      client_action: action,
+    } as any);
 
     // Merge client_response into proposal.constraints so the manager sees it.
-    if (data.client_response) {
-      const { data: prop } = await supabaseAdmin
-        .from("proposals")
-        .select("constraints")
-        .eq("id", tok.proposal_id)
-        .maybeSingle();
-      const currentConstraints = (prop?.constraints as Record<string, any> | null) ?? {};
-      await supabaseAdmin
-        .from("proposals")
-        .update({
-          constraints: {
-            ...currentConstraints,
-            client_response: {
-              ...data.client_response,
-              submitted_at: new Date().toISOString(),
-              computed_total: data.computed_total,
-            },
+    const { data: prop } = await supabaseAdmin
+      .from("proposals")
+      .select("constraints")
+      .eq("id", tok.proposal_id)
+      .maybeSingle();
+    const currentConstraints = (prop?.constraints as Record<string, any> | null) ?? {};
+    const proposalStatus =
+      action === "confirmed" ? "accepted" : action === "declined" ? "declined" : "changes_requested";
+    await supabaseAdmin
+      .from("proposals")
+      .update({
+        status: proposalStatus,
+        constraints: {
+          ...currentConstraints,
+          client_response: {
+            ...(data.client_response ?? {}),
+            action,
+            note: data.note ?? null,
+            submitted_at: new Date().toISOString(),
+            computed_total: data.computed_total,
           },
-        })
-        .eq("id", tok.proposal_id);
-    }
+        },
+      } as any)
+      .eq("id", tok.proposal_id);
 
     // Only advance the stage forward — don't downgrade a signed / paid deal.
     const { data: currentDeal } = await supabaseAdmin
@@ -149,29 +157,60 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       .eq("id", tok.deal_id)
       .maybeSingle();
     const preApprovalStages = new Set([
-      "new", "contacted", "meeting_scheduled", "proposal_sent",
+      "new", "contacted", "meeting_scheduled", "proposal_sent", "changes_requested",
       "inquiry", "proposal_draft", "manager_review", "client_selected",
     ]);
-    const shouldAdvance = !currentDeal?.stage || preApprovalStages.has(currentDeal.stage as string);
+    const terminalStages = new Set([
+      "signed", "waiting_payment", "invoice_sent", "downpayment_received", "paid_in_full",
+    ]);
+    const cur = currentDeal?.stage as string | undefined;
+    let nextStage: string | null = null;
+    if (action === "confirmed" && (!cur || preApprovalStages.has(cur))) {
+      nextStage = "client_approved";
+    } else if (action === "changes_requested" && (!cur || preApprovalStages.has(cur) || cur === "client_approved")) {
+      nextStage = "changes_requested";
+    } else if (action === "declined" && (!cur || !terminalStages.has(cur))) {
+      nextStage = "lost";
+    }
     const updatePayload: { estimated_value: number; stage?: any } = { estimated_value: data.computed_total };
-    if (shouldAdvance) updatePayload.stage = "client_approved";
+    if (nextStage) updatePayload.stage = nextStage;
     await supabaseAdmin.from("deals").update(updatePayload as any).eq("id", tok.deal_id);
 
     const { notifyDeal } = await import("@/lib/notifications.server");
-    await notifyDeal({
-      companyId: tok.company_id as string,
-      dealId: tok.deal_id as string,
-      kind: "client_confirmed",
-      title: "Client confirmed their selection",
-      body: `The client submitted their selection${data.client_response?.overall_message ? ` with a message: "${data.client_response.overall_message.slice(0, 200)}"` : "."}`,
-      meta: {
-        computed_total: data.computed_total,
-        has_message: !!data.client_response?.overall_message,
-      },
-    });
+    const noteExcerpt = data.note ? ` — "${data.note.slice(0, 200)}"` : "";
+    const msgExcerpt = data.client_response?.overall_message
+      ? ` — "${data.client_response.overall_message.slice(0, 200)}"`
+      : "";
+    if (action === "confirmed") {
+      await notifyDeal({
+        companyId: tok.company_id as string,
+        dealId: tok.deal_id as string,
+        kind: "client_confirmed",
+        title: "Client confirmed their selection",
+        body: `The client submitted their selection${msgExcerpt || "."}`,
+        meta: { computed_total: data.computed_total },
+      });
+    } else if (action === "changes_requested") {
+      await notifyDeal({
+        companyId: tok.company_id as string,
+        dealId: tok.deal_id as string,
+        kind: "client_requested_changes",
+        title: "Client requested changes",
+        body: `The client asked for changes${noteExcerpt || msgExcerpt || "."}`,
+        meta: { computed_total: data.computed_total, note: data.note ?? null },
+      });
+    } else {
+      await notifyDeal({
+        companyId: tok.company_id as string,
+        dealId: tok.deal_id as string,
+        kind: "client_declined",
+        title: "Client declined the offer",
+        body: `The client declined${noteExcerpt || msgExcerpt || "."}`,
+        meta: { note: data.note ?? null },
+      });
+    }
 
-
-    return { ok: true as const };
+    return { ok: true as const, action };
   });
 
 export const resolveDashboardToken = createServerFn({ method: "GET" })
