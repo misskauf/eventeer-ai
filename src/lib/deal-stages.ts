@@ -104,6 +104,7 @@ export const STAGE_CALENDAR_TONES: Record<string, string> = {
   contacted: "bg-slate-200 text-slate-800 border-slate-300",
   meeting_scheduled: "bg-slate-600 text-white border-slate-700",
   proposal_sent: "bg-blue-500 text-white border-blue-600",
+  changes_requested: "bg-amber-400 text-amber-900 border-amber-500",
   client_approved: "bg-emerald-500 text-white border-emerald-600",
 
   signed: "bg-yellow-300 text-yellow-900 border-yellow-400",
