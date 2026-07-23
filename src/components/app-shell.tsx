@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 type Company = {
   id: string;
@@ -101,6 +102,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="md:pl-56">
+        <header className="flex h-14 items-center justify-end gap-2 border-b bg-background px-6">
+          <NotificationsBell />
+        </header>
         <div className="mx-auto max-w-6xl p-6">{children}</div>
       </div>
     </div>

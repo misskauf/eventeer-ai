@@ -447,6 +447,12 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
       actor_id: userData.user!.id,
       kind: "deal_created",
     });
+    try {
+      const { notifyLeadCreated } = await import("@/lib/notifications.functions");
+      await notifyLeadCreated({ data: { deal_id: deal.id } });
+    } catch (err) {
+      console.warn("notifyLeadCreated failed", err);
+    }
     setOpen(false);
     onCreated(deal.id);
   }

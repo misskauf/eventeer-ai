@@ -95,10 +95,13 @@ export const signContract = createServerFn({ method: "POST" })
       .eq("id", contract.id);
     if (error) throw new Error(error.message);
 
-    await supabaseAdmin.from("deal_activities").insert({
-      deal_id: contract.deal_id,
-      company_id: contract.company_id,
+    const { notifyDeal } = await import("@/lib/notifications.server");
+    await notifyDeal({
+      companyId: contract.company_id as string,
+      dealId: contract.deal_id as string,
       kind: "contract_signed",
+      title: `Contract signed by ${data.typed_name}`,
+      body: `The client signed the contract at ${new Date(now).toLocaleString()}.`,
       meta: { contract_id: contract.id, signed_by_name: data.typed_name },
     });
 
