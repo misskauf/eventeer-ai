@@ -555,8 +555,11 @@ function DealDetail() {
         selected_alternatives?: Record<string, string>;
         submitted_at?: string;
         computed_total?: number;
+        action?: "confirmed" | "changes_requested" | "declined";
+        note?: string | null;
       }
     | undefined;
+  const clientAction = clientResponse?.action ?? (clientResponse ? "confirmed" : undefined);
 
   const itemName = (itemId: string) => {
     const s = spaces.find((x) => x.id === itemId);
