@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://uztdzbiitrjakzxdviai.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "proposalist-mcp",
+      "version": "0.1.0",
+      "title": "Proposalist"
+    },
+    "tools": [
+      {
+        "name": "list_deals",
+        "title": "List deals",
+        "description": "List deals for the signed-in user's company. Optionally filter by stage or search by client name/company/email.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "stage": {
+              "description": "Filter by deal stage.",
+              "type": "string",
+              "enum": [
+                "new",
+                "qualified",
+                "proposal_sent",
+                "client_approved",
+                "contract_sent",
+                "contract_signed",
+                "won",
+                "lost"
+              ]
+            },
+            "search": {
+              "description": "Case-insensitive match on client name, company, or email.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max rows to return (default 25).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_deal",
+        "title": "Get deal",
+        "description": "Fetch a single deal with its activities and contracts (scoped to the signed-in user's company).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "deal_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "UUID of the deal."
+            }
+          },
+          "required": [
+            "deal_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_catalog",
+        "title": "List catalog items",
+        "description": "List catalog items for the signed-in user's company: spaces, food packages, beverage packages, or extras.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "spaces",
+                "food_packages",
+                "beverage_packages",
+                "extras"
+              ],
+              "description": "Which catalog table to list."
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_contracts",
+        "title": "List contracts",
+        "description": "List contracts for the signed-in user's company, optionally filtered by status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by status.",
+              "type": "string",
+              "enum": [
+                "draft",
+                "sent",
+                "signed",
+                "void"
+              ]
+            },
+            "limit": {
+              "description": "Max rows to return (default 25).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
