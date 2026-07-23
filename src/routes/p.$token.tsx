@@ -575,14 +575,100 @@ function ClientProposal() {
                     Add {money(totals.min_shortfall, currency)} more to meet the venue minimum.
                   </div>
                 )}
-                <Button
-                  className="mt-4 w-full"
-                  style={{ backgroundColor: brand }}
-                  onClick={onSubmit}
-                  disabled={submitted}
-                >
-                  {submitted ? "Sent" : state.preview ? "Confirm (preview)" : "Confirm my selection"}
-                </Button>
+                {submitted ? (
+                  <div
+                    className={
+                      "mt-4 rounded-md border p-3 text-sm " +
+                      (submittedAction === "confirmed"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                        : submittedAction === "changes_requested"
+                        ? "border-amber-200 bg-amber-50 text-amber-900"
+                        : "border-slate-200 bg-slate-50 text-slate-800")
+                    }
+                  >
+                    <div className="font-medium">
+                      {submittedAction === "confirmed"
+                        ? "Selection confirmed"
+                        : submittedAction === "changes_requested"
+                        ? "Change request sent"
+                        : "Response recorded"}
+                    </div>
+                    <div className="mt-1 text-xs opacity-80">
+                      {submittedAction === "confirmed"
+                        ? "The event manager has been notified and will follow up shortly."
+                        : submittedAction === "changes_requested"
+                        ? "The event manager will review your notes and send an updated proposal."
+                        : "Thanks for letting us know."}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    {pendingAction && pendingAction !== "confirmed" && (
+                      <div className="rounded-md border p-3">
+                        <Label className="text-xs">
+                          {pendingAction === "changes_requested"
+                            ? "What would you like to change? (required)"
+                            : "Reason for declining (optional)"}
+                        </Label>
+                        <Textarea
+                          rows={3}
+                          className="mt-1"
+                          value={actionNote}
+                          onChange={(e) => setActionNote(e.target.value)}
+                          placeholder={
+                            pendingAction === "changes_requested"
+                              ? "e.g. Please swap the beverage package…"
+                              : "e.g. We chose another venue"
+                          }
+                        />
+                      </div>
+                    )}
+                    <Button
+                      className="w-full"
+                      style={{ backgroundColor: brand }}
+                      onClick={() => {
+                        if (pendingAction === "changes_requested" || pendingAction === "declined") {
+                          onSubmit(pendingAction);
+                        } else {
+                          setPendingAction("confirmed");
+                          onSubmit("confirmed");
+                        }
+                      }}
+                    >
+                      {state.preview
+                        ? pendingAction === "changes_requested"
+                          ? "Send change request (preview)"
+                          : pendingAction === "declined"
+                          ? "Send decline (preview)"
+                          : "Confirm (preview)"
+                        : pendingAction === "changes_requested"
+                        ? "Send change request"
+                        : pendingAction === "declined"
+                        ? "Send decline"
+                        : "Confirm my selection"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setPendingAction(pendingAction === "changes_requested" ? null : "changes_requested");
+                        setActionNote("");
+                      }}
+                    >
+                      {pendingAction === "changes_requested" ? "Cancel change request" : "Request changes"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setPendingAction(pendingAction === "declined" ? null : "declined");
+                        setActionNote("");
+                      }}
+                    >
+                      {pendingAction === "declined" ? "Cancel decline" : "Decline offer"}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
