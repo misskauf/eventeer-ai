@@ -779,6 +779,7 @@ export type Database = {
       }
       proposal_selections: {
         Row: {
+          client_action: string | null
           company_id: string
           computed_total: number
           id: string
@@ -788,6 +789,7 @@ export type Database = {
           submitted_at: string
         }
         Insert: {
+          client_action?: string | null
           company_id: string
           computed_total?: number
           id?: string
@@ -797,6 +799,7 @@ export type Database = {
           submitted_at?: string
         }
         Update: {
+          client_action?: string | null
           company_id?: string
           computed_total?: number
           id?: string
@@ -1072,6 +1075,7 @@ export type Database = {
         | "downpayment_received"
         | "paid_in_full"
         | "payment_delayed"
+        | "changes_requested"
       extra_pricing_type: "per_person" | "flat" | "per_hour"
       share_token_kind: "client_proposal" | "dashboard" | "preview"
     }
@@ -1220,6 +1224,7 @@ export const Constants = {
         "downpayment_received",
         "paid_in_full",
         "payment_delayed",
+        "changes_requested",
       ],
       extra_pricing_type: ["per_person", "flat", "per_hour"],
       share_token_kind: ["client_proposal", "dashboard", "preview"],

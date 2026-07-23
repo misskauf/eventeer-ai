@@ -555,8 +555,11 @@ function DealDetail() {
         selected_alternatives?: Record<string, string>;
         submitted_at?: string;
         computed_total?: number;
+        action?: "confirmed" | "changes_requested" | "declined";
+        note?: string | null;
       }
     | undefined;
+  const clientAction = clientResponse?.action ?? (clientResponse ? "confirmed" : undefined);
 
   const itemName = (itemId: string) => {
     const s = spaces.find((x) => x.id === itemId);
@@ -732,11 +735,40 @@ function DealDetail() {
 
       {/* CLIENT RESPONSE (if any) */}
       {clientResponse && (
-        <Card className="mb-6 border-emerald-200 bg-emerald-50/40">
+        <Card
+          className={
+            "mb-6 " +
+            (clientAction === "changes_requested"
+              ? "border-amber-200 bg-amber-50/40"
+              : clientAction === "declined"
+              ? "border-red-200 bg-red-50/40"
+              : "border-emerald-200 bg-emerald-50/40")
+          }
+        >
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" /> Client response
-            </CardTitle>
+            <div className="flex flex-col gap-1">
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" /> Client response
+              </CardTitle>
+              <div>
+                <Badge
+                  className={
+                    "border " +
+                    (clientAction === "changes_requested"
+                      ? "bg-amber-100 text-amber-800 border-amber-200"
+                      : clientAction === "declined"
+                      ? "bg-red-100 text-red-800 border-red-200"
+                      : "bg-emerald-100 text-emerald-800 border-emerald-200")
+                  }
+                >
+                  {clientAction === "changes_requested"
+                    ? "Changes requested"
+                    : clientAction === "declined"
+                    ? "Declined"
+                    : "Confirmed"}
+                </Badge>
+              </div>
+            </div>
             {clientResponse.submitted_at && (
               <span className="text-xs text-muted-foreground">
                 {new Date(clientResponse.submitted_at).toLocaleString()}
@@ -786,12 +818,47 @@ function DealDetail() {
                 Client-computed total: {money(clientResponse.computed_total, currency)}
               </div>
             )}
+            {clientResponse.note && (
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {clientAction === "declined" ? "Reason" : "Requested changes"}
+                </div>
+                <div className="mt-1 whitespace-pre-wrap rounded-md border bg-background p-3">
+                  {clientResponse.note}
+                </div>
+              </div>
+            )}
+            {clientAction === "changes_requested" && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    document.getElementById("proposal-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    toast.info("Edit the proposal below and click \"Send to client\" to deliver a new version.");
+                  }}
+                >
+                  <Pencil className="mr-1 h-4 w-4" /> Edit &amp; send new version
+                </Button>
+              </div>
+            )}
+            {clientAction === "confirmed" && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    document.getElementById("contracts-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  <Send className="mr-1 h-4 w-4" /> Create contract
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* PROPOSAL SECTION */}
-      <div className="mb-3 flex items-center justify-between">
+      <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
         <h2 className="text-lg font-semibold">Proposal</h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={previewAsClient}>
@@ -1368,7 +1435,7 @@ function DealDetail() {
                 </>
               )}
             </div>
-            <div className="border-t bg-background/95 p-3">
+            <div id="contracts-panel" className="border-t bg-background/95 p-3 scroll-mt-4">
               <ContractsPanel
                 companyId={deal.company_id}
                 ctx={{

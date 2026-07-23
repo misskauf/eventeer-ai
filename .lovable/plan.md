@@ -1,40 +1,55 @@
-## Extend Lead Forms with More Fields
+## Goal
+Replace the single "Confirm my selection" button on the public proposal (`/p/:token`) with three actions — **Confirm**, **Request changes**, **Decline** — each with a distinct persisted status, deal stage, notification, and post-submit confirmation state. Surface the client's choice + note prominently on the venue-side deal detail with a direct link to the appropriate next step (duplicate proposal for changes, existing Create/Send contract for confirmed).
 
-### 1. Database (migration)
-- `deals.custom_fields jsonb not null default '{}'::jsonb` — stores answers keyed by field id/key.
-- `lead_forms.fields` already JSONB — extend its shape (no column change):
-  - Existing keys stay as-is.
-  - Add optional preset keys: `budget`, `venue_preference`, `hearing_about_us`, `address`, `city`, `company_website` (each `{ enabled, required }`).
-  - New `custom` array: `[{ id, key, label, type, required, options?, placeholder?, help? }]` where `type` ∈ `text | textarea | number | date | select | checkbox`.
+## Database
+Single migration:
+- `ALTER TYPE deal_stage ADD VALUE IF NOT EXISTS 'changes_requested';`
+- `ALTER TABLE proposal_selections ADD COLUMN client_action text;` (nullable; values: `confirmed | changes_requested | declined`)
+- Extend `STAGE_LABELS`, `STAGE_ORDER`, `STAGE_TONES` in `src/lib/deal-stages.ts` with `changes_requested` (amber tone, placed between `proposal_sent` and `client_approved`).
 
-### 2. Field registry
-- New `src/lib/lead-form-fields.ts`:
-  - `PRESET_FIELDS` list (built-ins + new presets above) with label, input type, and how each maps to a `deals` column (or falls back to `custom_fields`).
-  - Helpers: `defaultFieldsConfig()`, `getEnabledFields(config)`, `validateSubmission(config, values)`, `splitDealVsCustom(config, values)`.
-- Mapping rules:
-  - `name → contact_name`, `email → contact_email`, `phone → contact_phone`, `company → contact_company`, `event_type → event_type`, `event_date → event_date`, `guest_count → guest_count`, `message → notes`, `budget → budget` (if column exists, else custom), everything else + all `custom[*]` → `deals.custom_fields`.
+`proposals.status` values are already free-form text — no schema change; we start writing `accepted | changes_requested | declined`.
 
-### 3. Public form (`src/routes/f.$slug.tsx`)
-- Render presets + custom fields in defined order.
-- Client-side validation (required, type, min/max for number, options for select).
-- Submit sends `{ values: Record<string, unknown> }`.
+## Server: `submitClientSelection` (`src/lib/public-share.functions.ts`)
+- Extend Zod input with `action: z.enum(["confirmed","changes_requested","declined"])` and optional `note: z.string().optional()`.
+- Preview tokens: still no-op.
+- Persist `client_action` on the `proposal_selections` insert.
+- Merge `client_response.action` + `note` into `proposals.constraints.client_response` (alongside existing fields, so the deal detail can render them).
+- Update `proposals.status` based on action (`accepted` / `changes_requested` / `declined`).
+- Only advance deal stage when it's still in the pre-approval set:
+  - `confirmed` → `client_approved`
+  - `changes_requested` → `changes_requested`
+  - `declined` → `lost` (allow even if past pre-approval, since declining is terminal — but skip when already `signed`/paid).
+- Call `notifyDeal` with matching `kind`: `client_confirmed`, `client_requested_changes`, or `client_declined`, and an appropriate title/body including the note excerpt.
 
-### 4. Server function (`src/lib/lead-forms.functions.ts`)
-- `submitLeadForm` validates with Zod against the form's active field config (dynamic schema built from `getEnabledFields`), enforces GDPR checkbox, splits values into deal columns vs `custom_fields`, inserts the deal, logs activity, calls `notifyDeal('lead_created', …)`.
+`NotifyKind` already includes all three values, and the notifications table already accepts free-form kinds — no notifications schema change.
 
-### 5. Admin editor (`src/components/lead-forms-editor.tsx`)
-- Two sections inside each form:
-  - **Preset fields**: existing + new presets with enabled/required toggles.
-  - **Custom fields**: add/remove/reorder rows; each row edits label, type, required, and (for `select`) comma-separated options. `key` auto-derived from label (slug) but editable; uniqueness enforced.
-- Persist through existing save flow.
+## Client: `src/routes/p.$token.tsx`
+Total card:
+- Replace the single button with three buttons stacked:
+  1. **Confirm my selection** (primary, branded) — submits directly, requires nothing extra.
+  2. **Request changes** (outline) — opens the existing `overallMessage` textarea inline as required, blocks submit until a non-empty note.
+  3. **Decline offer** (ghost / destructive-outline) — opens the same textarea as optional reason.
+- Track `pendingAction: "confirmed"|"changes_requested"|"declined"|null` so the message box label + submit-button copy adapt (e.g. "Send change request", "Send decline").
+- Refactor `onSubmit(action)` to pass the action + note into `submit()`.
+- Preview mode: still non-submitting; toast tells the user which action was clicked.
+- After success set `submitted` + `submittedAction`; render a confirmation panel in place of the buttons ("Selection confirmed — the event manager has been notified" / "Your change request was sent" / "Your response has been recorded"), and disable all action buttons.
 
-### 6. Deal view surfacing
-- In the deal detail page (source-of-lead panel), render `custom_fields` as a labelled key/value list using the originating form's config to resolve labels (fallback to raw key).
+No restyling beyond adding the two new buttons and the confirmation panel — reuse existing `Button`, `Textarea`, `Card` primitives.
 
-### 7. Out of scope
-- No file uploads, no conditional logic, no per-field styling, no changes to embed snippet, no email template changes.
+## Client: venue deal detail (`src/routes/_authenticated/deals_.$id.tsx`)
+The existing "Client response" card already renders overall message + picks. Enhance it:
+- Read `action` from `constraints.client_response` and show a prominent status header inside the card (Confirmed / Changes requested / Declined) with a matching tone (emerald / amber / red).
+- Under the header, show a "Next step" action row:
+  - `changes_requested` → button **Duplicate & edit proposal** — reuse existing `saveProposal` flow by calling it with a fresh version (call the existing internal handler used by "Save new version"; wire the button to the same code path already used to create a new proposal version and scroll to the proposal editor).
+  - `confirmed` → button **Create contract** that scrolls to / opens the existing `ContractsPanel` (already on the page). No new contract code.
+  - `declined` → no next-step CTA, just the status.
+- Card border/background tone follows the action (keep current emerald default when confirmed).
 
-### Technical notes
-- Zod schema built dynamically per submission; unknown keys stripped.
-- `custom_fields` writes go through the same public `submitLeadForm` fn — RLS unchanged (insert allowed via existing policy).
-- Editor keeps backward compat: forms without `custom` array behave as today.
+No changes to the contracts flow, notification pipeline, approval workflow, or pricing engine.
+
+## Files touched
+- `supabase` migration (enum + column)
+- `src/lib/deal-stages.ts`
+- `src/lib/public-share.functions.ts`
+- `src/routes/p.$token.tsx`
+- `src/routes/_authenticated/deals_.$id.tsx`

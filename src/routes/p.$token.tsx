@@ -71,6 +71,9 @@ function ClientProposal() {
   const [openNoteFor, setOpenNoteFor] = useState<Record<string, boolean>>({});
   const [overallMessage, setOverallMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submittedAction, setSubmittedAction] = useState<"confirmed" | "changes_requested" | "declined" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"confirmed" | "changes_requested" | "declined" | null>(null);
+  const [actionNote, setActionNote] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -241,14 +244,26 @@ function ClientProposal() {
   const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
   const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
 
-  async function onSubmit() {
+  async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
+    if (action === "changes_requested" && !actionNote.trim()) {
+      toast.error("Please add a short note describing the changes you'd like.");
+      return;
+    }
     if (state?.preview) {
-      toast.info("Preview mode — nothing was submitted.");
+      const label =
+        action === "confirmed"
+          ? "Confirm my selection"
+          : action === "changes_requested"
+          ? "Request changes"
+          : "Decline offer";
+      toast.info(`Preview mode — "${label}" was not submitted.`);
       return;
     }
     await submit({
       data: {
         token,
+        action,
+        note: actionNote.trim() || undefined,
         selection: {
           guest_count: state.deal.guest_count,
           space_ids: resolvedSelection!.space_ids,
@@ -267,8 +282,16 @@ function ClientProposal() {
       },
     });
     setSubmitted(true);
-    toast.success("Your selection was sent to the event manager.");
+    setSubmittedAction(action);
+    const successMsg =
+      action === "confirmed"
+        ? "Your selection was sent to the event manager."
+        : action === "changes_requested"
+        ? "Your change request was sent."
+        : "Your response has been recorded.";
+    toast.success(successMsg);
   }
+
 
   const noteToggle = (itemId: string) =>
     setOpenNoteFor((cur) => ({ ...cur, [itemId]: !cur[itemId] }));
@@ -552,14 +575,100 @@ function ClientProposal() {
                     Add {money(totals.min_shortfall, currency)} more to meet the venue minimum.
                   </div>
                 )}
-                <Button
-                  className="mt-4 w-full"
-                  style={{ backgroundColor: brand }}
-                  onClick={onSubmit}
-                  disabled={submitted}
-                >
-                  {submitted ? "Sent" : state.preview ? "Confirm (preview)" : "Confirm my selection"}
-                </Button>
+                {submitted ? (
+                  <div
+                    className={
+                      "mt-4 rounded-md border p-3 text-sm " +
+                      (submittedAction === "confirmed"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                        : submittedAction === "changes_requested"
+                        ? "border-amber-200 bg-amber-50 text-amber-900"
+                        : "border-slate-200 bg-slate-50 text-slate-800")
+                    }
+                  >
+                    <div className="font-medium">
+                      {submittedAction === "confirmed"
+                        ? "Selection confirmed"
+                        : submittedAction === "changes_requested"
+                        ? "Change request sent"
+                        : "Response recorded"}
+                    </div>
+                    <div className="mt-1 text-xs opacity-80">
+                      {submittedAction === "confirmed"
+                        ? "The event manager has been notified and will follow up shortly."
+                        : submittedAction === "changes_requested"
+                        ? "The event manager will review your notes and send an updated proposal."
+                        : "Thanks for letting us know."}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    {pendingAction && pendingAction !== "confirmed" && (
+                      <div className="rounded-md border p-3">
+                        <Label className="text-xs">
+                          {pendingAction === "changes_requested"
+                            ? "What would you like to change? (required)"
+                            : "Reason for declining (optional)"}
+                        </Label>
+                        <Textarea
+                          rows={3}
+                          className="mt-1"
+                          value={actionNote}
+                          onChange={(e) => setActionNote(e.target.value)}
+                          placeholder={
+                            pendingAction === "changes_requested"
+                              ? "e.g. Please swap the beverage package…"
+                              : "e.g. We chose another venue"
+                          }
+                        />
+                      </div>
+                    )}
+                    <Button
+                      className="w-full"
+                      style={{ backgroundColor: brand }}
+                      onClick={() => {
+                        if (pendingAction === "changes_requested" || pendingAction === "declined") {
+                          onSubmit(pendingAction);
+                        } else {
+                          setPendingAction("confirmed");
+                          onSubmit("confirmed");
+                        }
+                      }}
+                    >
+                      {state.preview
+                        ? pendingAction === "changes_requested"
+                          ? "Send change request (preview)"
+                          : pendingAction === "declined"
+                          ? "Send decline (preview)"
+                          : "Confirm (preview)"
+                        : pendingAction === "changes_requested"
+                        ? "Send change request"
+                        : pendingAction === "declined"
+                        ? "Send decline"
+                        : "Confirm my selection"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setPendingAction(pendingAction === "changes_requested" ? null : "changes_requested");
+                        setActionNote("");
+                      }}
+                    >
+                      {pendingAction === "changes_requested" ? "Cancel change request" : "Request changes"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setPendingAction(pendingAction === "declined" ? null : "declined");
+                        setActionNote("");
+                      }}
+                    >
+                      {pendingAction === "declined" ? "Cancel decline" : "Decline offer"}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
