@@ -1368,7 +1368,7 @@ function DealDetail() {
                 </>
               )}
             </div>
-            <div className="border-t bg-background/95 p-3">
+            <div id="contracts-panel" className="border-t bg-background/95 p-3 scroll-mt-4">
               <ContractsPanel
                 companyId={deal.company_id}
                 ctx={{
