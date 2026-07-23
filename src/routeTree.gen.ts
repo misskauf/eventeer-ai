@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as DTokenRouteImport } from './routes/d.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -60,6 +61,11 @@ const IndexRoute = IndexRouteImport.update({
 const PTokenRoute = PTokenRouteImport.update({
   id: '/p/$token',
   path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DTokenRoute = DTokenRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
+  '/f/$slug': typeof FSlugRoute
   '/p/$token': typeof PTokenRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
+  '/f/$slug': typeof FSlugRoute
   '/p/$token': typeof PTokenRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
+  '/f/$slug': typeof FSlugRoute
   '/p/$token': typeof PTokenRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/c/$token'
     | '/d/$token'
+    | '/f/$slug'
     | '/p/$token'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/c/$token'
     | '/d/$token'
+    | '/f/$slug'
     | '/p/$token'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/c/$token'
     | '/d/$token'
+    | '/f/$slug'
     | '/p/$token'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CTokenRoute: typeof CTokenRoute
   DTokenRoute: typeof DTokenRoute
+  FSlugRoute: typeof FSlugRoute
   PTokenRoute: typeof PTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -362,6 +375,13 @@ declare module '@tanstack/react-router' {
       path: '/p/$token'
       fullPath: '/p/$token'
       preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/d/$token': {
@@ -546,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CTokenRoute: CTokenRoute,
   DTokenRoute: DTokenRoute,
+  FSlugRoute: FSlugRoute,
   PTokenRoute: PTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
