@@ -818,6 +818,41 @@ function DealDetail() {
                 Client-computed total: {money(clientResponse.computed_total, currency)}
               </div>
             )}
+            {clientResponse.note && (
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {clientAction === "declined" ? "Reason" : "Requested changes"}
+                </div>
+                <div className="mt-1 whitespace-pre-wrap rounded-md border bg-background p-3">
+                  {clientResponse.note}
+                </div>
+              </div>
+            )}
+            {clientAction === "changes_requested" && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    document.getElementById("proposal-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    toast.info("Edit the proposal below and click \"Send to client\" to deliver a new version.");
+                  }}
+                >
+                  <Pencil className="mr-1 h-4 w-4" /> Edit &amp; send new version
+                </Button>
+              </div>
+            )}
+            {clientAction === "confirmed" && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    document.getElementById("contracts-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  <Send className="mr-1 h-4 w-4" /> Create contract
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
