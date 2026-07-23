@@ -3,6 +3,7 @@ export type DealStage =
   | "contacted"
   | "meeting_scheduled"
   | "proposal_sent"
+  | "changes_requested"
   | "client_approved"
   | "signed"
   | "waiting_payment"
