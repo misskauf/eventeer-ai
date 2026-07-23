@@ -260,14 +260,18 @@ export type Database = {
           client_email: string
           client_name: string
           company_id: string
+          consent_given_at: string | null
+          consent_text: string | null
           created_at: string
           estimated_value: number
           event_date: string | null
           event_type: string | null
           guest_count: number
           id: string
+          lead_form_id: string | null
           notes: string | null
           owner_id: string
+          source: string
           stage: Database["public"]["Enums"]["deal_stage"]
           updated_at: string
         }
@@ -282,14 +286,18 @@ export type Database = {
           client_email: string
           client_name: string
           company_id: string
+          consent_given_at?: string | null
+          consent_text?: string | null
           created_at?: string
           estimated_value?: number
           event_date?: string | null
           event_type?: string | null
           guest_count?: number
           id?: string
+          lead_form_id?: string | null
           notes?: string | null
           owner_id: string
+          source?: string
           stage?: Database["public"]["Enums"]["deal_stage"]
           updated_at?: string
         }
@@ -304,14 +312,18 @@ export type Database = {
           client_email?: string
           client_name?: string
           company_id?: string
+          consent_given_at?: string | null
+          consent_text?: string | null
           created_at?: string
           estimated_value?: number
           event_date?: string | null
           event_type?: string | null
           guest_count?: number
           id?: string
+          lead_form_id?: string | null
           notes?: string | null
           owner_id?: string
+          source?: string
           stage?: Database["public"]["Enums"]["deal_stage"]
           updated_at?: string
         }
@@ -321,6 +333,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_lead_form_id_fkey"
+            columns: ["lead_form_id"]
+            isOneToOne: false
+            referencedRelation: "lead_forms"
             referencedColumns: ["id"]
           },
         ]
@@ -542,6 +561,59 @@ export type Database = {
             foreignKeyName: "fee_config_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_forms: {
+        Row: {
+          active: boolean
+          company_id: string
+          consent_text: string
+          created_at: string
+          fields: Json
+          id: string
+          intro_text: string | null
+          name: string
+          redirect_url: string | null
+          slug: string
+          success_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          consent_text?: string
+          created_at?: string
+          fields?: Json
+          id?: string
+          intro_text?: string | null
+          name: string
+          redirect_url?: string | null
+          slug: string
+          success_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          consent_text?: string
+          created_at?: string
+          fields?: Json
+          id?: string
+          intro_text?: string | null
+          name?: string
+          redirect_url?: string | null
+          slug?: string
+          success_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_forms_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },

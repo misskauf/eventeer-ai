@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ContractTemplatesEditor } from "@/components/contracts-panel";
+import { LeadFormsEditor } from "@/components/lead-forms-editor";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -191,6 +192,19 @@ function SettingsPage() {
             <CardHeader><CardTitle>Contract templates</CardTitle></CardHeader>
             <CardContent>
               <ContractTemplatesEditor companyId={company.id} />
+            </CardContent>
+          </Card>
+        )}
+        {company?.id && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Lead forms</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Create embeddable web forms for your website. Submissions create a new deal automatically.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <LeadFormsEditor companyId={company.id} />
             </CardContent>
           </Card>
         )}
