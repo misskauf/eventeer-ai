@@ -5,9 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Pencil, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2, ExternalLink, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_FIELDS, LEAD_FIELDS, normalizeFields, type LeadFieldsConfig, type LeadFieldKey } from "@/lib/lead-forms";
+import {
+  defaultFieldsConfig,
+  normalizeFields,
+  PRESET_FIELDS,
+  slugKey,
+  cryptoRandomId,
+  type LeadFieldsConfig,
+  type PresetFieldKey,
+  type CustomFieldDef,
+  type CustomFieldType,
+} from "@/lib/lead-forms";
 
 type LeadForm = {
   id: string;
@@ -22,7 +32,7 @@ type LeadForm = {
   active: boolean;
 };
 
-function slugify(s: string) {
+function slugifySlug(s: string) {
   return s
     .toLowerCase()
     .trim()
@@ -62,7 +72,7 @@ export function LeadFormsEditor({ companyId }: { companyId: string }) {
       company_id: companyId,
       name: "Event inquiry",
       slug,
-      fields: { ...DEFAULT_FIELDS },
+      fields: defaultFieldsConfig(),
       intro_text: "Tell us about your event and we'll get back to you shortly.",
       success_text: "Thanks — we've received your inquiry and will be in touch shortly.",
       redirect_url: null,
@@ -76,7 +86,7 @@ export function LeadFormsEditor({ companyId }: { companyId: string }) {
     const payload = {
       company_id: companyId,
       name: form.name.trim() || "Untitled",
-      slug: slugify(form.slug) || slugify(form.name) || `form-${Date.now()}`,
+      slug: slugifySlug(form.slug) || slugifySlug(form.name) || `form-${Date.now()}`,
       fields: form.fields as any,
       intro_text: form.intro_text?.trim() || null,
       success_text: form.success_text?.trim() || null,
@@ -197,8 +207,50 @@ function SnippetRow({ label, value, onCopy, multiline, extra }: { label: string;
 function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCancel: () => void; onSave: (v: LeadForm) => void }) {
   const [f, setF] = useState<LeadForm>(value);
   const set = (patch: Partial<LeadForm>) => setF((prev) => ({ ...prev, ...patch }));
-  const setField = (key: LeadFieldKey, patch: Partial<{ enabled: boolean; required: boolean }>) =>
-    setF((prev) => ({ ...prev, fields: { ...prev.fields, [key]: { ...prev.fields[key], ...patch } } }));
+  const setPreset = (key: PresetFieldKey, patch: Partial<{ enabled: boolean; required: boolean }>) =>
+    setF((prev) => ({
+      ...prev,
+      fields: {
+        ...prev.fields,
+        preset: { ...prev.fields.preset, [key]: { ...prev.fields.preset[key], ...patch } },
+      },
+    }));
+
+  function updateCustom(id: string, patch: Partial<CustomFieldDef>) {
+    setF((prev) => ({
+      ...prev,
+      fields: {
+        ...prev.fields,
+        custom: prev.fields.custom.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+      },
+    }));
+  }
+  function addCustom() {
+    const def: CustomFieldDef = {
+      id: cryptoRandomId(),
+      key: `field_${f.fields.custom.length + 1}`,
+      label: "New question",
+      type: "text",
+      required: false,
+    };
+    setF((prev) => ({ ...prev, fields: { ...prev.fields, custom: [...prev.fields.custom, def] } }));
+  }
+  function removeCustom(id: string) {
+    setF((prev) => ({ ...prev, fields: { ...prev.fields, custom: prev.fields.custom.filter((c) => c.id !== id) } }));
+  }
+  function moveCustom(id: string, dir: -1 | 1) {
+    setF((prev) => {
+      const arr = [...prev.fields.custom];
+      const i = arr.findIndex((c) => c.id === id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= arr.length) return prev;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return { ...prev, fields: { ...prev.fields, custom: arr } };
+    });
+  }
+
+  const customKeys = new Set(f.fields.custom.map((c) => c.key));
+  const dupKey = f.fields.custom.some((c, i) => f.fields.custom.findIndex((x) => x.key === c.key) !== i);
 
   return (
     <Card>
@@ -220,26 +272,138 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
         </div>
 
         <div className="space-y-2 rounded-md border p-3">
-          <div className="text-sm font-medium">Fields</div>
+          <div className="text-sm font-medium">Standard fields</div>
           <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-xs uppercase text-muted-foreground">
             <div>Field</div><div>Show</div><div>Required</div>
           </div>
-          {LEAD_FIELDS.map((meta) => (
-            <div key={meta.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 text-sm">
-              <div>{meta.label}</div>
-              <input
-                type="checkbox"
-                checked={f.fields[meta.key].enabled}
-                onChange={(e) => setField(meta.key, { enabled: e.target.checked, required: e.target.checked && f.fields[meta.key].required })}
-              />
-              <input
-                type="checkbox"
-                checked={f.fields[meta.key].required}
-                disabled={!f.fields[meta.key].enabled}
-                onChange={(e) => setField(meta.key, { required: e.target.checked })}
-              />
+          {PRESET_FIELDS.map((meta) => {
+            const cfg = f.fields.preset[meta.key];
+            return (
+              <div key={meta.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 text-sm">
+                <div>{meta.label}</div>
+                <input
+                  type="checkbox"
+                  checked={cfg.enabled}
+                  onChange={(e) => setPreset(meta.key, { enabled: e.target.checked, required: e.target.checked && cfg.required })}
+                />
+                <input
+                  type="checkbox"
+                  checked={cfg.required}
+                  disabled={!cfg.enabled}
+                  onChange={(e) => setPreset(meta.key, { required: e.target.checked })}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="space-y-3 rounded-md border p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-medium">Custom questions</div>
+              <div className="text-xs text-muted-foreground">Add your own fields. Answers are saved on the deal.</div>
             </div>
-          ))}
+            <Button size="sm" variant="outline" onClick={addCustom}>
+              <Plus className="mr-1 h-3.5 w-3.5" /> Add field
+            </Button>
+          </div>
+
+          {f.fields.custom.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No custom fields yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {f.fields.custom.map((c, idx) => (
+                <div key={c.id} className="rounded-md border p-3 space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-muted-foreground">Field {idx + 1}</div>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => moveCustom(c.id, -1)} disabled={idx === 0}>
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => moveCustom(c.id, 1)} disabled={idx === f.fields.custom.length - 1}>
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => removeCustom(c.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="md:col-span-2 space-y-1.5">
+                      <Label className="text-xs">Label</Label>
+                      <Input
+                        value={c.label}
+                        onChange={(e) => {
+                          const label = e.target.value;
+                          // auto-sync key from label if key looks auto-derived
+                          const autoKey = slugKey(c.label);
+                          const patch: Partial<CustomFieldDef> = { label };
+                          if (!c.key || c.key === autoKey) patch.key = slugKey(label) || c.key;
+                          updateCustom(c.id, patch);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Type</Label>
+                      <select
+                        value={c.type}
+                        onChange={(e) => updateCustom(c.id, { type: e.target.value as CustomFieldType })}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="text">Short text</option>
+                        <option value="textarea">Long text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="select">Dropdown (select)</option>
+                        <option value="checkbox">Checkbox</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Key (data name)</Label>
+                      <Input
+                        value={c.key}
+                        onChange={(e) => updateCustom(c.id, { key: slugKey(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Placeholder</Label>
+                      <Input
+                        value={c.placeholder ?? ""}
+                        onChange={(e) => updateCustom(c.id, { placeholder: e.target.value })}
+                      />
+                    </div>
+                    <label className="flex items-end gap-2 text-sm h-10">
+                      <input
+                        type="checkbox"
+                        checked={c.required}
+                        onChange={(e) => updateCustom(c.id, { required: e.target.checked })}
+                      />
+                      Required
+                    </label>
+                  </div>
+                  {c.type === "select" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Options (comma separated)</Label>
+                      <Input
+                        value={(c.options ?? []).join(", ")}
+                        onChange={(e) =>
+                          updateCustom(c.id, {
+                            options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                          })
+                        }
+                        placeholder="Option 1, Option 2, Option 3"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {dupKey && (
+            <div className="text-xs text-destructive">Two custom fields share the same key — please make them unique.</div>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -264,9 +428,12 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button onClick={() => onSave(f)}>Save form</Button>
+          <Button onClick={() => onSave(f)} disabled={dupKey}>Save form</Button>
         </div>
       </CardContent>
     </Card>
   );
 }
+
+// Silence unused import warning if bundler tree-shakes: `customKeys` reserved for future use.
+void ((): Set<string> | undefined => undefined);
