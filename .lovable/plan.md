@@ -1,47 +1,88 @@
-## Goal
-On the deal detail page, nudge the manager to re-engage the client when a sent proposal has gone unanswered for more than N days. One click sends a templated email with the existing proposal link.
+# Bilingual (EN/DE) Support Across Catalog, Deals, Proposals & Contracts
 
-## Current state (verified)
-- `proposals.sent_at` is set when the manager sends a proposal, and a matching `share_tokens` row (`kind='client_proposal'`) is created — the URL is `/p/{token}`. Tokens don't expire, so reusing them keeps the client's link valid.
-- Client reply lands as a `proposal_selections` row with a `client_action` value (confirm/request_changes/decline).
-- `deal_activities` already tracks lifecycle events (`proposal_sent`, etc.).
-- `src/lib/notifications.server.ts` exposes `notifyDeal()` which inserts a `notifications` row + `deal_activities` row and best-effort sends via Resend. It targets the internal owner, not the external client — so the client email needs a separate Resend call.
-- `companies` has no `proposal_reminder_days` yet; deals/companies have no `language` column (Prompt 8 language not in schema), so this plan defaults copy to English and leaves a hook for later.
+Per your request, the migration plan is shown first, followed by the app-level changes.
 
-## Changes
+---
 
-### 1. Schema (migration)
-- `ALTER TABLE public.companies ADD COLUMN proposal_reminder_days integer NOT NULL DEFAULT 5 CHECK (proposal_reminder_days BETWEEN 1 AND 60);`
-- No new table; reminders are stored as `deal_activities` rows with `kind = 'proposal_reminder_sent'` and `meta = { proposal_id, version, sent_to, share_url }`.
+## 1. Migration Plan (shown first for review)
 
-### 2. Settings UI (`src/routes/_authenticated/settings.tsx`)
-- Add a numeric input "Remind client after (days)" bound to `companies.proposal_reminder_days`, in the existing Company card. No restyle.
+Single migration adding German fields, a per-deal language, a template language, and a company default. No data loss — existing text is treated as the English/default value.
 
-### 3. Server function (`src/lib/proposal-reminders.functions.ts`, new)
-- `sendProposalReminder({ dealId })` with `requireSupabaseAuth`:
-  1. Load deal (verify caller's company via `is_member_of`), latest proposal with `sent_at`, existing `share_tokens` row for that proposal.
-  2. Guard: proposal must be sent, no `proposal_selections` row exists, deal has a `client_email`.
-  3. Reuse the existing token to build `${APP_URL}/p/{token}` (no new token, link stays valid).
-  4. Send Resend email directly to `deal.client_email` (subject + body templated; English default, placeholder for future language). Reuses the same Resend helper pattern already in `notifications.server.ts` (extract shared `sendResendEmail` into `notifications.server.ts` export).
-  5. Insert `deal_activities` row (`kind='proposal_reminder_sent'`, meta as above).
-  6. Also call `notifyDeal()` with `kind='proposal_reminder_sent'` so the bell + owner email fire.
-- Return `{ ok: true, sentAt }`.
+```text
+companies
+  + default_deal_language  text        default 'en'  check in ('en','de')
 
-### 4. Deal detail UI (`src/routes/_authenticated/deals_.$id.tsx`)
-- After loading proposals + selections, compute:
-  - `latestSent` = most recent proposal with `sent_at`
-  - `hasClientReply` = any `proposal_selections` row for that proposal
-  - `daysSinceSent` = floor((now - sent_at) / 1 day)
-  - `lastReminderAt` = max `created_at` from `deal_activities` where `kind='proposal_reminder_sent'`
-- If `latestSent && !hasClientReply && daysSinceSent > company.proposal_reminder_days`, render a small banner above the proposal panel (using existing alert-style component; no new styles):
-  - Text: "Sent {daysSinceSent} days ago — no reply yet." + if `lastReminderAt`, "Last reminded {relative}."
-  - Button: "Send reminder to client" → calls the server fn, toasts, refreshes.
-- Button is disabled while sending and for 24h after `lastReminderAt` (soft anti-spam), with tooltip explaining the cooldown.
+deals
+  + language               text        default 'en'  check in ('en','de')
+    (backfilled from companies.default_deal_language on insert via default;
+     existing rows set to 'en')
 
-### 5. In-app bell (optional, included)
-- The `notifyDeal()` call in step 3 already produces a bell notification for the owner ("Reminder sent to client · {client_name}"). No separate crossing-threshold job is added — it would need a scheduler; we surface the threshold visually via the banner instead. Called out here so the user knows the threshold-crossing auto-notification is not implemented.
+spaces
+  + name_de                text        null
+  + description_de         text        null
+  + long_description_de    text        null
 
-## Assumptions / open items
-- Copy is English only until a deal/company `language` column exists (Prompt 8). The template is structured so swapping to a per-language string map is a one-file change.
-- 24h client-side cooldown prevents accidental double-clicks; server does not hard-enforce it (kept simple; can add if needed).
-- No visual restyle — banner uses the existing muted/warning card pattern already in the deal page.
+fb_packages
+  + name_de                text        null
+  + long_description_de    text        null
+  (description_de optional — add only if `description` is client-visible; will confirm from schema before writing)
+
+extras
+  + name_de                text        null
+  + long_description_de    text        null
+
+contract_templates
+  + language               text        default 'en'  check in ('en','de')
+    (existing rows default to 'en')
+```
+
+Notes:
+- All new columns are nullable (or defaulted) — no backfill of translations; empty DE fields fall back to the default at read time.
+- No RLS/GRANT changes needed (columns added to existing tables).
+- No changes to `invoice_templates` in this pass unless you want invoices localized too (ask below).
+
+---
+
+## 2. App changes
+
+### Shared i18n layer
+- `src/lib/i18n.ts`: `Lang = 'en' | 'de'`, a `STRINGS` table for all fixed UI copy (section titles: Space / Food / Beverages / Extras, "Choose one", "Your total", "Confirm my selection", "Request changes", "Decline offer", reminder email subject/body, notification copy, print "Download PDF", etc.), and a helper `t(lang, key)` + `pickLocalized(item, lang, field)` that returns `item[field+'_de']` when `lang==='de'` and the value is non-empty, else `item[field]`.
+
+### Catalog editor (Spaces / F&B / Extras)
+- Add an EN / DE tab (Tabs component) inside each item editor. EN tab edits `name` / `description` / `long_description`; DE tab edits the `_de` counterparts. Placeholder in DE fields: "Fällt auf Englisch zurück, wenn leer."
+- No other editor logic changes; pricing / weekday pricing / hours untouched.
+
+### Contract templates
+- Add a Language selector (EN / DE) on the template editor and show a badge in the templates list.
+- Contract picker on the deal filters templates by `deal.language` first, with a "Show all languages" toggle as fallback.
+
+### Deals
+- `deals_.$id.tsx`: add a compact Language selector (EN / DE) in the deal header, persisted via a small server fn `setDealLanguage`. Changing language re-renders previews but does not mutate stored selections.
+- New deals inherit `companies.default_deal_language`.
+
+### Client-facing proposal (`p.$token.tsx`)
+- Load `deal.language`; wrap the page in `t(lang, …)` for all fixed strings and `pickLocalized(item, lang, 'name' | 'long_description' | 'description')` for every catalog item rendered (spaces, F&B, beverages, extras, alternative groups).
+- Confirm / Request changes / Decline button labels + the notes-dialog copy come from the string table.
+- Print/Download PDF label localized.
+
+### Contract page (`c.$token.tsx`) & renderer
+- `renderContract` (and any placeholder resolution) receives `lang`. Placeholder *labels* stay as tokens; the resolved values already come from the deal. Fixed chrome ("Event Agreement", signature block labels: Date / Place / Signature, etc.) uses the string table.
+- Contract body itself stays whatever the template author wrote — because templates are language-tagged, Keren authors the DE body in a DE template.
+
+### Emails / notifications
+- `proposal-reminders.functions.ts` and `notifications.server.ts` (`sendClientEmailAndNotify`) accept the deal's language and pull subject + body from the string table. Internal team notifications stay in EN (they're for staff), unless you want those localized too — see question below.
+
+### Settings
+- Add `default_deal_language` selector (EN / DE) to Company settings.
+
+---
+
+## 3. Out of scope (call out if you want them in)
+- Invoice template localization (no `language` column on `invoice_templates` in this pass).
+- Localizing internal/staff notifications and the manager app UI (only client-facing surfaces + emails are localized here).
+- Auto-translation of existing catalog content — you fill DE fields manually via the new tabs.
+
+---
+
+## 4. One quick confirmation before I write the migration
+- On `fb_packages` and `extras`, is the short `description` field shown to clients on the proposal, or only `long_description`? If only `long_description`, I'll skip `description_de` on those two tables to keep the schema tight. (I'll verify from the current `p.$token.tsx` before running the migration either way.)

@@ -19,6 +19,7 @@ import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare, Download } from "lucide-react";
+import { t, pickLocalized, normalizeLang, type Lang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/p/$token")({
   ssr: false,
@@ -230,9 +231,10 @@ function ClientProposal() {
     return computeTotals(offer, resolvedSelection);
   }, [offer, resolvedSelection]);
 
-  if (error === "expired") return <Message title="This link has expired" body="Please ask your event manager for a fresh link." />;
-  if (error) return <Message title="Proposal not found" body="This link is invalid or has been revoked." />;
-  if (!state || !totals) return <div className="p-8 text-center text-muted-foreground">Loading proposal…</div>;
+  const lang: Lang = normalizeLang(state?.deal?.language);
+  if (error === "expired") return <Message title={t(lang, "expired_title")} body={t(lang, "expired_body")} />;
+  if (error) return <Message title={t(lang, "not_found_title")} body={t(lang, "not_found_body")} />;
+  if (!state || !totals) return <div className="p-8 text-center text-muted-foreground">{t(lang, "loading")}</div>;
 
   const brand = (state.company.primary_color as string) || "#0f172a";
   const currency = state.company.currency as string;
@@ -252,10 +254,10 @@ function ClientProposal() {
     if (state?.preview) {
       const label =
         action === "confirmed"
-          ? "Confirm my selection"
+          ? t(lang, "confirm_selection")
           : action === "changes_requested"
-          ? "Request changes"
-          : "Decline offer";
+          ? t(lang, "request_changes")
+          : t(lang, "decline_offer");
       toast.info(`Preview mode — "${label}" was not submitted.`);
       return;
     }
@@ -285,10 +287,10 @@ function ClientProposal() {
     setSubmittedAction(action);
     const successMsg =
       action === "confirmed"
-        ? "Your selection was sent to the event manager."
+        ? t(lang, "selection_confirmed")
         : action === "changes_requested"
-        ? "Your change request was sent."
-        : "Your response has been recorded.";
+        ? t(lang, "change_request_sent")
+        : t(lang, "response_recorded");
     toast.success(successMsg);
   }
 
@@ -343,7 +345,7 @@ function ClientProposal() {
           </div>
           <div className="no-print">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Download className="mr-1 h-4 w-4" /> Download PDF
+              <Download className="mr-1 h-4 w-4" /> {t(lang, "download_pdf")}
             </Button>
           </div>
         </div>

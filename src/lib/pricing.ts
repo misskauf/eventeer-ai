@@ -7,11 +7,13 @@ export type WeekdayPricing = Partial<Record<"0" | "1" | "2" | "3" | "4" | "5" | 
 export type SpaceSel = {
   id: string;
   name: string;
+  name_de?: string | null;
   base_rental_fee: number;
   min_rental_fee: number;
   basis?: "net" | "gross" | null;
   tax_rate_pct?: number | null;
   long_description?: string | null;
+  long_description_de?: string | null;
   weekday_pricing?: WeekdayPricing | null;
 };
 
@@ -34,11 +36,13 @@ export function resolveSpaceFees(
 export type PackageSel = {
   id: string;
   name: string;
+  name_de?: string | null;
   price_per_person: number;
   kind?: "food" | "beverage" | null;
   basis?: "net" | "gross" | null;
   tax_rate_pct?: number | null;
   long_description?: string | null;
+  long_description_de?: string | null;
   included_hours?: number | null;
   overage_price_per_person_per_hour?: number | null;
   selection_mode?: "fixed" | "single_group" | "multi_group" | null;
@@ -50,12 +54,14 @@ export type PackageSel = {
 export type ExtraSel = {
   id: string;
   name: string;
+  name_de?: string | null;
   pricing_type: "per_person" | "flat" | "per_hour";
   price: number;
   hours?: number;
   basis?: "net" | "gross" | null;
   tax_rate_pct?: number | null;
   long_description?: string | null;
+  long_description_de?: string | null;
 };
 
 export type DiscountTarget = {
