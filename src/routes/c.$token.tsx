@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatEventDate } from "@/lib/date-format";
 import { toast } from "sonner";
-import { CheckCircle2, FileText } from "lucide-react";
+import { CheckCircle2, FileText, Download } from "lucide-react";
 import { ContractDocument } from "@/components/contract-document";
 
 export const Route = createFileRoute("/c/$token")({
@@ -81,7 +81,16 @@ function ClientSigning() {
   const isSigned = !!signedAt;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12 printable">
+      <style>{`
+        @media print {
+          .printable button, .printable [role="button"] { display: none !important; }
+          .printable .max-h-\\[60vh\\],
+          .printable [class*="max-h-"] { max-height: none !important; overflow: visible !important; }
+          .printable .overflow-y-auto,
+          .printable .overflow-auto { overflow: visible !important; }
+        }
+      `}</style>
       <div className="mb-6 flex items-center gap-3">
         {company?.logo_url ? (
           <img src={company.logo_url} alt="" className="h-10 w-10 rounded object-contain" />
@@ -90,13 +99,19 @@ function ClientSigning() {
             <FileText className="h-5 w-5" />
           </div>
         )}
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="text-sm text-muted-foreground">{company?.name}</div>
           <h1 className="text-xl font-semibold">
             {deal?.client_name ? `Event Agreement — ${deal.client_name}` : "Event Agreement"}
           </h1>
         </div>
+        <div className="no-print">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Download className="mr-1 h-4 w-4" /> Download PDF
+          </Button>
+        </div>
       </div>
+
 
       {deal && (
         <Card className="mb-4">

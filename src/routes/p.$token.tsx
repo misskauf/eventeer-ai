@@ -18,7 +18,7 @@ import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Download } from "lucide-react";
 
 export const Route = createFileRoute("/p/$token")({
   ssr: false,
@@ -297,9 +297,19 @@ function ClientProposal() {
     setOpenNoteFor((cur) => ({ ...cur, [itemId]: !cur[itemId] }));
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-muted/20 printable">
+      <style>{`
+        @media print {
+          .printable button, .printable [role="button"] { display: none !important; }
+          .printable .max-h-\\[60vh\\],
+          .printable [class*="max-h-"] { max-height: none !important; overflow: visible !important; }
+          .printable .overflow-y-auto,
+          .printable .overflow-auto { overflow: visible !important; }
+          .printable header { border-top-width: 6px !important; }
+        }
+      `}</style>
       {state.preview && (
-        <div className="bg-amber-500 py-1.5 text-center text-xs font-medium text-amber-950">
+        <div className="bg-amber-500 py-1.5 text-center text-xs font-medium text-amber-950 no-print">
           Preview mode — this is exactly what your client will see. Nothing gets submitted.
         </div>
       )}
@@ -331,8 +341,14 @@ function ClientProposal() {
               {state.deal.guest_count > 0 && ` · ${state.deal.guest_count} guests`}
             </div>
           </div>
+          <div className="no-print">
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Download className="mr-1 h-4 w-4" /> Download PDF
+            </Button>
+          </div>
         </div>
       </header>
+
 
       <main className="mx-auto max-w-4xl px-6 py-8">
         {introMarkdown && (
