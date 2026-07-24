@@ -128,6 +128,8 @@ function DealDetail() {
     { id: string; client_name: string; client_company: string | null; stage: string }[]
   >([]);
   const [requireApproval, setRequireApproval] = useState(false);
+  const [invoiceMode, setInvoiceMode] = useState<"external" | "template">("external");
+  const [invoiceNotes, setInvoiceNotes] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
