@@ -436,11 +436,12 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                lang={lang}
               />
             )}
             {basePkgFood.length > 0 && (
               <SingleChoicePackages
-                title="Food"
+                title={t(lang, "section_food")}
                 items={basePkgFood}
                 currency={currency}
                 selectedId={selFoodPkgs[0] ?? ""}
@@ -458,11 +459,12 @@ function ClientProposal() {
                 }
                 menuModeByPkg={menuModeByPkg}
                 managerMenuChoices={managerMenuChoices}
+                lang={lang}
               />
             )}
             {basePkgBev.length > 0 && (
               <SingleChoicePackages
-                title="Beverages"
+                title={t(lang, "section_beverages")}
                 items={basePkgBev}
                 currency={currency}
                 selectedId={selBevPkgs[0] ?? ""}
@@ -483,15 +485,16 @@ function ClientProposal() {
                 }
                 menuModeByPkg={menuModeByPkg}
                 managerMenuChoices={managerMenuChoices}
+                lang={lang}
               />
             )}
             {baseExtraItems.length > 0 && (
               <OptionGroup
-                title="Extras"
+                title={t(lang, "section_extras")}
                 items={baseExtraItems.map((e) => ({
-                  id: e.id, name: e.name,
+                  id: e.id, name: pickLocalized(e, lang, "name"),
                   note: `${money(e.price, currency)} ${e.pricing_type.replace("_", " ")}`,
-                  details: e.long_description,
+                  details: pickLocalized(e, lang, "long_description") || null,
                 }))}
                 selected={selExtras}
                 onToggle={(id, v) => toggle(setSelExtras, id, v)}
@@ -499,6 +502,7 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                lang={lang}
               />
             )}
 
