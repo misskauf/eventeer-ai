@@ -61,6 +61,7 @@ function SettingsPage() {
         require_deal_approval: fd.get("require_deal_approval") === "on",
         invoice_mode: (fd.get("invoice_mode") as string) || "external",
         invoice_notes: (fd.get("invoice_notes") as string) || null,
+        proposal_reminder_days: Math.min(60, Math.max(1, Number(fd.get("proposal_reminder_days") ?? 5))),
       } as any)
       .eq("id", company.id);
     if (error) return toast.error(error.message);
