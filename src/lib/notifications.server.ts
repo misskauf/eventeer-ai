@@ -152,3 +152,60 @@ export async function notifyDeal(input: NotifyDealInput): Promise<void> {
     html: renderEmail(input.title, input.body ?? "", dealUrl),
   });
 }
+
+/**
+ * Send an email directly to the client (external recipient) AND log an
+ * internal deal_activity + in-app notification for the deal owner.
+ * Used by the proposal reminder flow.
+ */
+export async function sendClientEmailAndNotify(input: {
+  companyId: string;
+  dealId: string;
+  toEmail: string;
+  subject: string;
+  body: string;
+  shareUrl: string;
+  internalTitle: string;
+  internalBody?: string;
+  activityMeta?: Record<string, unknown>;
+}): Promise<void> {
+  // 1. Email the client (external).
+  await sendResendEmail({
+    to: [input.toEmail],
+    subject: input.subject,
+    html: renderEmail(input.subject, input.body, input.shareUrl),
+  });
+
+  // 2. Record the deal activity so "last reminded on" can be shown.
+  const { error: actErr } = await supabaseAdmin.from("deal_activities").insert({
+    deal_id: input.dealId,
+    company_id: input.companyId,
+    kind: "proposal_reminder_sent",
+    meta: {
+      title: input.internalTitle,
+      body: input.internalBody ?? "",
+      to: input.toEmail,
+      share_url: input.shareUrl,
+      ...(input.activityMeta ?? {}),
+    } as any,
+  } as any);
+  if (actErr) console.warn("[sendClientEmailAndNotify] activity insert failed", actErr);
+
+  // 3. In-app bell notification for the deal owner.
+  const { recipientUserId } = await resolveRecipient({
+    companyId: input.companyId,
+    dealId: input.dealId,
+    kind: "proposal_reminder_sent",
+    title: input.internalTitle,
+  });
+  const { error: notifErr } = await supabaseAdmin.from("notifications").insert({
+    company_id: input.companyId,
+    deal_id: input.dealId,
+    recipient_user_id: recipientUserId,
+    kind: "proposal_reminder_sent",
+    title: input.internalTitle,
+    body: input.internalBody ?? "",
+  } as any);
+  if (notifErr) console.warn("[sendClientEmailAndNotify] notification insert failed", notifErr);
+}
+
