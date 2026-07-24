@@ -199,8 +199,22 @@ function SettingsPage() {
                   />
                 </div>
               </div>
+              </div>
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="text-sm font-medium">Client follow-up</div>
+                <p className="text-xs text-muted-foreground">
+                  How many days after a proposal is sent before EventFlow suggests reminding the client.
+                </p>
+                <Field
+                  name="proposal_reminder_days"
+                  label="Remind client after (days)"
+                  type="number"
+                  defaultValue={(company as any).proposal_reminder_days ?? 5}
+                />
+              </div>
               <Button className="w-full">Save brand</Button>
             </form>
+
 
           </CardContent>
         </Card>
