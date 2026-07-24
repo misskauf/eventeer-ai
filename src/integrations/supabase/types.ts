@@ -139,6 +139,7 @@ export type Database = {
           signed_by_email: string | null
           signed_by_name: string | null
           signed_ip: string | null
+          signed_place: string | null
           signing_token: string | null
           signing_token_expires_at: string | null
           status: string
@@ -162,6 +163,7 @@ export type Database = {
           signed_by_email?: string | null
           signed_by_name?: string | null
           signed_ip?: string | null
+          signed_place?: string | null
           signing_token?: string | null
           signing_token_expires_at?: string | null
           status?: string
@@ -185,6 +187,7 @@ export type Database = {
           signed_by_email?: string | null
           signed_by_name?: string | null
           signed_ip?: string | null
+          signed_place?: string | null
           signing_token?: string | null
           signing_token_expires_at?: string | null
           status?: string

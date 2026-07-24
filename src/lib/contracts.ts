@@ -43,6 +43,10 @@ export const CONTRACT_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   { key: "company_email", label: "Company email" },
   { key: "company_phone", label: "Company phone" },
   { key: "company_website", label: "Company website" },
+  { key: "client_signature", label: "Client signature (image)" },
+  { key: "client_signature_name", label: "Client signature name" },
+  { key: "client_signature_date", label: "Client signature date" },
+  { key: "client_signature_place", label: "Client signature place" },
 ];
 
 function esc(s: string): string {

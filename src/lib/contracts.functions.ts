@@ -11,7 +11,7 @@ function randomToken(len = 32) {
 }
 
 const PUBLIC_CONTRACT_FIELDS =
-  "id, deal_id, company_id, template_name, rendered_body, status, sent_at, signed_at, signed_by_name, signed_by_email, signing_token_expires_at";
+  "id, deal_id, company_id, template_name, rendered_body, status, sent_at, signed_at, signed_by_name, signed_by_email, signed_place, signature_data, signing_token_expires_at";
 
 /** Public: fetch a contract by its signing token (for the client signing page). */
 export const getContractByToken = createServerFn({ method: "GET" })
@@ -47,13 +47,16 @@ export const getContractByToken = createServerFn({ method: "GET" })
     return { ok: true as const, contract, company, deal };
   });
 
-/** Public: client signs the contract by typing their name. */
+/** Public: client signs the contract by drawing/typing their signature. */
 export const signContract = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
         token: z.string().min(16),
         typed_name: z.string().trim().min(2).max(200),
+        signed_place: z.string().trim().min(1).max(200),
+        signed_date: z.string().min(4).max(40),
+        signature_image: z.string().startsWith("data:image/").max(2_000_000),
         agreed: z.literal(true),
       })
       .parse(data),
@@ -62,7 +65,7 @@ export const signContract = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: contract } = await supabaseAdmin
       .from("contracts")
-      .select("id, deal_id, company_id, status, sent_to_email, signing_token_expires_at")
+      .select("id, deal_id, company_id, status, sent_to_email, signing_token_expires_at, rendered_body")
       .eq("signing_token", data.token)
       .maybeSingle();
     if (!contract) throw new Error("Invalid signing link");
@@ -80,6 +83,32 @@ export const signContract = createServerFn({ method: "POST" })
       null;
     const now = new Date().toISOString();
 
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const imgTag = `<img src="${data.signature_image}" alt="Signature" style="max-height:60px"/>`;
+    const nameEsc = esc(data.typed_name);
+    const placeEsc = esc(data.signed_place);
+    const dateEsc = esc(data.signed_date);
+
+    const body = (contract.rendered_body as string) ?? "";
+    const hasPlaceholder = /\{\{\s*client_signature(_name|_date|_place)?\s*\}\}/i.test(body);
+    let signedBody = body;
+    if (hasPlaceholder) {
+      signedBody = body
+        .replace(/\{\{\s*client_signature\s*\}\}/gi, imgTag)
+        .replace(/\{\{\s*client_signature_name\s*\}\}/gi, nameEsc)
+        .replace(/\{\{\s*client_signature_date\s*\}\}/gi, dateEsc)
+        .replace(/\{\{\s*client_signature_place\s*\}\}/gi, placeEsc);
+    } else {
+      signedBody =
+        body +
+        `<hr/><div style="margin-top:16px"><p style="margin:0 0 4px;font-size:12px;color:#555">Client signature</p>` +
+        `<p style="margin:0 0 8px">${imgTag}</p>` +
+        `<p style="margin:0">Name: ${nameEsc}</p>` +
+        `<p style="margin:0">Place: ${placeEsc}</p>` +
+        `<p style="margin:0">Date: ${dateEsc}</p></div>`;
+    }
+
     const { error } = await supabaseAdmin
       .from("contracts")
       .update({
@@ -87,8 +116,10 @@ export const signContract = createServerFn({ method: "POST" })
         signed_at: now,
         signed_by_name: data.typed_name,
         signed_by_email: contract.sent_to_email,
+        signed_place: data.signed_place,
         signed_ip: ip,
-        signature_data: data.typed_name,
+        signature_data: data.signature_image,
+        rendered_body: signedBody,
         signing_token: null,
         signing_token_expires_at: null,
       } as any)
@@ -105,7 +136,14 @@ export const signContract = createServerFn({ method: "POST" })
       meta: { contract_id: contract.id, signed_by_name: data.typed_name },
     });
 
-    return { ok: true as const, signed_at: now, signed_by_name: data.typed_name };
+    return {
+      ok: true as const,
+      signed_at: now,
+      signed_by_name: data.typed_name,
+      signed_place: data.signed_place,
+      signed_date: data.signed_date,
+      signature_image: data.signature_image,
+    };
   });
 
 /** Manager: mint a signing token and mark contract as sent. Returns the signing URL. */
