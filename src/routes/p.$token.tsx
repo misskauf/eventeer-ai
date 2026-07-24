@@ -555,13 +555,13 @@ function ClientProposal() {
                   </div>
                 ))}
                 <Separator className="my-2" />
-                <Row label="Net" value={money(totals.net_subtotal, currency)} />
+                <Row label={t(lang, "net")} value={money(totals.net_subtotal, currency)} />
                 {totals.discount_targeted && totals.discount_net > 0 && (
-                  <Row label="Discount (net)" value={"-" + money(totals.discount_net, currency)} />
+                  <Row label={`${t(lang, "discount")} (${t(lang, "net").toLowerCase()})`} value={"-" + money(totals.discount_net, currency)} />
                 )}
-                <Row label="Tax" value={money(totals.tax_subtotal, currency)} />
-                <Row label="Gross" value={money(totals.gross_subtotal, currency)} />
-                {!totals.discount_targeted && discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
+                <Row label={t(lang, "tax")} value={money(totals.tax_subtotal, currency)} />
+                <Row label={t(lang, "gross")} value={money(totals.gross_subtotal, currency)} />
+                {!totals.discount_targeted && discount > 0 && <Row label={t(lang, "discount")} value={"-" + money(discount, currency)} />}
                 {(() => {
                   const fcAny = feesCfg as any;
                   const gMode = fcAny?.gratuity_mode ?? "slider";
