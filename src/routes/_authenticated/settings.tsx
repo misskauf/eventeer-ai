@@ -59,6 +59,8 @@ function SettingsPage() {
         contact_phone: (fd.get("contact_phone") as string) || null,
         website: (fd.get("website") as string) || null,
         require_deal_approval: fd.get("require_deal_approval") === "on",
+        invoice_mode: (fd.get("invoice_mode") as string) || "external",
+        invoice_notes: (fd.get("invoice_notes") as string) || null,
       } as any)
       .eq("id", company.id);
     if (error) return toast.error(error.message);
