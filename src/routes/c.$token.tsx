@@ -10,13 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatEventDate } from "@/lib/date-format";
 import { toast } from "sonner";
 import { CheckCircle2, FileText } from "lucide-react";
-import DOMPurify from "isomorphic-dompurify";
-import { ensureHtml } from "@/lib/contracts";
+import { ContractDocument } from "@/components/contract-document";
 
 export const Route = createFileRoute("/c/$token")({
   ssr: false,
   component: ClientSigning,
-  head: () => ({ meta: [{ title: "Sign contract" }] }),
+  head: () => ({ meta: [{ title: "Event Agreement" }] }),
 });
 
 function ClientSigning() {
@@ -93,7 +92,9 @@ function ClientSigning() {
         )}
         <div>
           <div className="text-sm text-muted-foreground">{company?.name}</div>
-          <h1 className="text-xl font-semibold">{contract.template_name || "Event contract"}</h1>
+          <h1 className="text-xl font-semibold">
+            {deal?.client_name ? `Event Agreement — ${deal.client_name}` : "Event Agreement"}
+          </h1>
         </div>
       </div>
 
@@ -127,11 +128,9 @@ function ClientSigning() {
           <CardTitle className="text-base">Contract</CardTitle>
         </CardHeader>
         <CardContent>
-          <div
-            className="prose prose-sm max-h-[60vh] max-w-none overflow-y-auto rounded-md border bg-background p-4 dark:prose-invert"
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(ensureHtml(contract.rendered_body ?? "")),
-            }}
+          <ContractDocument
+            html={contract.rendered_body ?? ""}
+            className="max-h-[60vh] overflow-y-auto rounded-md border bg-background p-4"
           />
         </CardContent>
       </Card>
