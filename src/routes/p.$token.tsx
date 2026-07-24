@@ -842,7 +842,7 @@ function SingleChoicePackages({
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
-  menuModeByPkg, managerMenuChoices,
+  menuModeByPkg, managerMenuChoices, lang,
 }: {
   title: string;
   items: PackageSel[];
@@ -863,15 +863,23 @@ function SingleChoicePackages({
   onMenuChoiceChange: (pkgId: string, groupLabel: string, next: string[]) => void;
   menuModeByPkg: Record<string, "manager" | "client">;
   managerMenuChoices: Record<string, Record<string, string[]>>;
+  lang: Lang;
 }) {
   if (items.length === 0) return null;
   const multi = items.length > 1;
+  const perGuest = lang === "de" ? "/ Gast" : "/ guest";
+  const hIncluded = lang === "de" ? "Std. inklusive" : "h included";
+  const viewDetails = lang === "de" ? "Details ansehen ↗" : "View details ↗";
+  const menuManagerLabel = lang === "de" ? "Menü (vom Event-Manager gewählt)" : "Menu (selected by the event manager)";
+  const totalMenuItems = lang === "de" ? "Menüpunkte gesamt" : "Total menu items";
+  const selectUpTo = lang === "de" ? "Wählen Sie bis zu" : "Select up to";
+  const selectedLabel = lang === "de" ? "gewählt" : "selected";
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? "Choose one" : "Included in your proposal"}
+          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
         </p>
       </CardHeader>
       <CardContent>
@@ -887,6 +895,7 @@ function SingleChoicePackages({
             const currentH = includedH != null ? packageHours?.[p.id] ?? includedH : 0;
             const mode = p.selection_mode ?? "fixed";
             const groups = Array.isArray(p.selection_groups) ? p.selection_groups : [];
+            const localDesc = pickLocalized(p, lang, "long_description");
             return (
               <div
                 key={p.id}
@@ -899,10 +908,10 @@ function SingleChoicePackages({
                     <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
                   )}
                   <div className="flex-1">
-                    <div className="font-medium">{p.name}</div>
+                    <div className="font-medium">{pickLocalized(p, lang, "name")}</div>
                     <div className="text-xs text-muted-foreground">
-                      {money(p.price_per_person, currency)} / guest
-                      {includedH != null && <> · {includedH}h included</>}
+                      {money(p.price_per_person, currency)} {perGuest}
+                      {includedH != null && <> · {includedH}{lang === "de" ? " " : ""}{hIncluded}</>}
                     </div>
                     {p.details_url && (
                       <a
@@ -912,16 +921,16 @@ function SingleChoicePackages({
                         className="mt-1 inline-block text-xs text-primary underline"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        View details ↗
+                        {viewDetails}
                       </a>
                     )}
-                    {p.long_description && <Markdown source={p.long_description} className="mt-2" />}
+                    {localDesc && <Markdown source={localDesc} className="mt-2" />}
                   </div>
                 </label>
                 {isSelected && (
                   <div className="mt-2 flex flex-wrap items-center gap-4 border-t pt-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Guests</span>
+                      <span className="text-muted-foreground">{t(lang, "guests")}</span>
                       <Input
                         type="number"
                         min={1}
@@ -938,13 +947,14 @@ function SingleChoicePackages({
                         overageRate={Number(p.overage_price_per_person_per_hour ?? 0)}
                         currency={currency}
                         onHoursChange={onHoursChange}
+                        lang={lang}
                       />
                     )}
                   </div>
                 )}
                 {isSelected && mode !== "fixed" && groups.length > 0 && (menuModeByPkg[p.id] ?? "client") === "manager" && (
                   <div className="mt-3 space-y-2 border-t pt-3">
-                    <div className="text-xs font-medium">Menu (selected by the event manager)</div>
+                    <div className="text-xs font-medium">{menuManagerLabel}</div>
                     {groups.map((g) => {
                       const picks = managerMenuChoices[p.id]?.[g.label] ?? [];
                       return (
@@ -975,7 +985,7 @@ function SingleChoicePackages({
                         <>
                           {totalMax && totalMax > 0 && (
                             <div className="text-xs text-muted-foreground">
-                              Total menu items: {totalPicked}/{totalMax}
+                              {totalMenuItems}: {totalPicked}/{totalMax}
                             </div>
                           )}
                           {groups.map((g) => {
@@ -986,7 +996,7 @@ function SingleChoicePackages({
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="font-medium">{g.label}</span>
                                   <span className="text-muted-foreground">
-                                    Select up to {g.max_select} · {picked.length}/{g.max_select} selected
+                                    {selectUpTo} {g.max_select} · {picked.length}/{g.max_select} {selectedLabel}
                                   </span>
                                 </div>
                                 <div className="space-y-1.5">
@@ -1036,6 +1046,7 @@ function SingleChoicePackages({
                   value={itemNotes[p.id] ?? ""}
                   onToggle={() => onToggleNote(p.id)}
                   onChange={(v) => onNoteChange(p.id, v)}
+                  lang={lang}
                 />
               </div>
             );
