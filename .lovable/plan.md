@@ -1,88 +1,45 @@
-# Bilingual (EN/DE) Support Across Catalog, Deals, Proposals & Contracts
+# Real drawn e-signature on the client signing page
 
-Per your request, the migration plan is shown first, followed by the app-level changes.
+## DB migration
+- Add `signed_place text` (nullable) to `contracts`.
 
----
+## `src/lib/contracts.functions.ts` — `signContract`
+- Extend input schema: `signature_image` (string, PNG data URL, `startsWith('data:image/')`), `signed_place` (string, 1–200), `signed_date` (ISO date string).
+- Fetch existing `rendered_body` along with the current fields.
+- Build signed HTML by replacing placeholders in `rendered_body`:
+  - `{{client_signature}}` → `<img src="..." style="max-height:60px"/>`
+  - `{{client_signature_name}}` → escaped name
+  - `{{client_signature_date}}` → formatted date
+  - `{{client_signature_place}}` → escaped place
+  - If none of those placeholders are present, append a signature block (image + name / place / date) to the end.
+- Update `contracts` with: `status='signed'`, `signed_at=now`, `signed_by_name`, `signed_by_email` (from `sent_to_email`), `signed_place`, `signed_ip`, `signature_data = signature_image`, `rendered_body = signedHtml`, clear signing token.
+- Keep the existing `notifyDeal('contract_signed', …)` call.
 
-## 1. Migration Plan (shown first for review)
+## `src/routes/c.$token.tsx` — Sign contract card
+- Replace the single name input with:
+  - **Signature pad**: `<canvas>` with pointer events (`pointerdown/move/up`), high-DPR sizing, Clear button, `hasDrawn` flag. On submit, export via `canvas.toDataURL('image/png')`.
+  - **Type instead** toggle: renders typed name in cursive on a hidden canvas and exports to PNG so we always store an image.
+  - **Full legal name** (required text).
+  - **Place / city** (required text).
+  - **Date** (date input, default today, required).
+  - Keep the agreement checkbox.
+- Sign button disabled until name + (drawn or typed signature) + place + date + agreed.
+- Pass `signature_image`, `signed_place`, `signed_date` to `signContract`.
+- Signed state card: show the signature image, name, place, and date. The contract card automatically shows the updated `rendered_body`. Ensure print stylesheet still displays the image and signed block.
 
-Single migration adding German fields, a per-deal language, a template language, and a company default. No data loss — existing text is treated as the English/default value.
+## `src/lib/contracts.ts` — placeholders
+- Add to `CONTRACT_PLACEHOLDERS`:
+  - `client_signature` — Client signature (image)
+  - `client_signature_name` — Client signature name
+  - `client_signature_date` — Client signature date
+  - `client_signature_place` — Client signature place
+- These are filled at signing time, so `buildPlaceholderValues` leaves them as empty strings (or unset) during initial render; the signContract handler substitutes them.
 
-```text
-companies
-  + default_deal_language  text        default 'en'  check in ('en','de')
+## `src/components/rich-text-editor.tsx` — Insert signature block
+- Replace the underscore-lines signature snippet with a two-cell table (or aligned block) using the new placeholders:
+  - Client: `{{client_signature}}` image row, name = `{{client_signature_name}}`, place = `{{client_signature_place}}`, date = `{{client_signature_date}}`.
+  - Keep the venue side as-is (or mirror it with existing company placeholders).
 
-deals
-  + language               text        default 'en'  check in ('en','de')
-    (backfilled from companies.default_deal_language on insert via default;
-     existing rows set to 'en')
-
-spaces
-  + name_de                text        null
-  + description_de         text        null
-  + long_description_de    text        null
-
-fb_packages
-  + name_de                text        null
-  + long_description_de    text        null
-  (description_de optional — add only if `description` is client-visible; will confirm from schema before writing)
-
-extras
-  + name_de                text        null
-  + long_description_de    text        null
-
-contract_templates
-  + language               text        default 'en'  check in ('en','de')
-    (existing rows default to 'en')
-```
-
-Notes:
-- All new columns are nullable (or defaulted) — no backfill of translations; empty DE fields fall back to the default at read time.
-- No RLS/GRANT changes needed (columns added to existing tables).
-- No changes to `invoice_templates` in this pass unless you want invoices localized too (ask below).
-
----
-
-## 2. App changes
-
-### Shared i18n layer
-- `src/lib/i18n.ts`: `Lang = 'en' | 'de'`, a `STRINGS` table for all fixed UI copy (section titles: Space / Food / Beverages / Extras, "Choose one", "Your total", "Confirm my selection", "Request changes", "Decline offer", reminder email subject/body, notification copy, print "Download PDF", etc.), and a helper `t(lang, key)` + `pickLocalized(item, lang, field)` that returns `item[field+'_de']` when `lang==='de'` and the value is non-empty, else `item[field]`.
-
-### Catalog editor (Spaces / F&B / Extras)
-- Add an EN / DE tab (Tabs component) inside each item editor. EN tab edits `name` / `description` / `long_description`; DE tab edits the `_de` counterparts. Placeholder in DE fields: "Fällt auf Englisch zurück, wenn leer."
-- No other editor logic changes; pricing / weekday pricing / hours untouched.
-
-### Contract templates
-- Add a Language selector (EN / DE) on the template editor and show a badge in the templates list.
-- Contract picker on the deal filters templates by `deal.language` first, with a "Show all languages" toggle as fallback.
-
-### Deals
-- `deals_.$id.tsx`: add a compact Language selector (EN / DE) in the deal header, persisted via a small server fn `setDealLanguage`. Changing language re-renders previews but does not mutate stored selections.
-- New deals inherit `companies.default_deal_language`.
-
-### Client-facing proposal (`p.$token.tsx`)
-- Load `deal.language`; wrap the page in `t(lang, …)` for all fixed strings and `pickLocalized(item, lang, 'name' | 'long_description' | 'description')` for every catalog item rendered (spaces, F&B, beverages, extras, alternative groups).
-- Confirm / Request changes / Decline button labels + the notes-dialog copy come from the string table.
-- Print/Download PDF label localized.
-
-### Contract page (`c.$token.tsx`) & renderer
-- `renderContract` (and any placeholder resolution) receives `lang`. Placeholder *labels* stay as tokens; the resolved values already come from the deal. Fixed chrome ("Event Agreement", signature block labels: Date / Place / Signature, etc.) uses the string table.
-- Contract body itself stays whatever the template author wrote — because templates are language-tagged, Keren authors the DE body in a DE template.
-
-### Emails / notifications
-- `proposal-reminders.functions.ts` and `notifications.server.ts` (`sendClientEmailAndNotify`) accept the deal's language and pull subject + body from the string table. Internal team notifications stay in EN (they're for staff), unless you want those localized too — see question below.
-
-### Settings
-- Add `default_deal_language` selector (EN / DE) to Company settings.
-
----
-
-## 3. Out of scope (call out if you want them in)
-- Invoice template localization (no `language` column on `invoice_templates` in this pass).
-- Localizing internal/staff notifications and the manager app UI (only client-facing surfaces + emails are localized here).
-- Auto-translation of existing catalog content — you fill DE fields manually via the new tabs.
-
----
-
-## 4. One quick confirmation before I write the migration
-- On `fb_packages` and `extras`, is the short `description` field shown to clients on the proposal, or only `long_description`? If only `long_description`, I'll skip `description_de` on those two tables to keep the schema tight. (I'll verify from the current `p.$token.tsx` before running the migration either way.)
+## Out of scope
+- No changes to proposal flow, deal detail page, invoices, or i18n strings.
+- No new dependencies.
