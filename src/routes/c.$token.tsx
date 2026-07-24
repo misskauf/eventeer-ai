@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatEventDate } from "@/lib/date-format";
 import { toast } from "sonner";
-import { CheckCircle2, FileText } from "lucide-react";
+import { CheckCircle2, FileText, Download } from "lucide-react";
 import { ContractDocument } from "@/components/contract-document";
 
 export const Route = createFileRoute("/c/$token")({
