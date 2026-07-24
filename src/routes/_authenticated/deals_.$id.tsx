@@ -721,6 +721,32 @@ function DealDetail() {
         );
       })()}
 
+      {showReminderBanner && (
+        <div className="mb-4 flex flex-wrap items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <Clock className="mt-0.5 h-4 w-4 flex-none" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium">
+              Proposal sent {daysSinceSent} day{daysSinceSent === 1 ? "" : "s"} ago — no reply yet.
+            </div>
+            {lastReminderAt && (
+              <div className="mt-0.5 text-xs">
+                Last reminded on {new Date(lastReminderAt).toLocaleString()}.
+              </div>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSendReminder}
+            disabled={sendingReminder || cooldownActive}
+            title={cooldownActive ? "You already reminded the client in the last 24 hours." : undefined}
+          >
+            <Send className="mr-1 h-4 w-4" />
+            {sendingReminder ? "Sending…" : "Send reminder to client"}
+          </Button>
+        </div>
+      )}
+
       {/* DEAL SECTION */}
 
       <Card
