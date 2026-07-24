@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ContractTemplatesEditor } from "@/components/contracts-panel";
+import { InvoiceTemplatesEditor } from "@/components/invoice-templates-panel";
 import { LeadFormsEditor } from "@/components/lead-forms-editor";
 
 
