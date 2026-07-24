@@ -707,26 +707,27 @@ function itemsForGroup(
   spaces: SpaceSel[],
   packages: PackageSel[],
   extras: ExtraSel[],
+  lang: Lang,
 ) {
   return g.item_ids
     .map((iid) => {
       if (g.category === "space") {
         const s = spaces.find((x) => x.id === iid);
-        return s ? { id: s.id, name: s.name, note: "", details: s.long_description } : null;
+        return s ? { id: s.id, name: pickLocalized(s, lang, "name"), note: "", details: pickLocalized(s, lang, "long_description") || null } : null;
       }
       if (g.category === "extra") {
         const e = extras.find((x) => x.id === iid);
-        return e ? { id: e.id, name: e.name, note: e.pricing_type.replace("_", " "), details: e.long_description } : null;
+        return e ? { id: e.id, name: pickLocalized(e, lang, "name"), note: e.pricing_type.replace("_", " "), details: pickLocalized(e, lang, "long_description") || null } : null;
       }
       const p = packages.find((x) => x.id === iid);
-      return p ? { id: p.id, name: p.name, note: `per guest`, details: p.long_description } : null;
+      return p ? { id: p.id, name: pickLocalized(p, lang, "name"), note: lang === "de" ? `pro Gast` : `per guest`, details: pickLocalized(p, lang, "long_description") || null } : null;
     })
     .filter(Boolean) as { id: string; name: string; note: string; details?: string | null }[];
 }
 
 function OptionGroup({
   title, items, selected, onToggle,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   title: string;
   items: { id: string; name: string; note: string; details?: string | null }[];
@@ -736,6 +737,7 @@ function OptionGroup({
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
   onNoteChange: (id: string, v: string) => void;
+  lang: Lang;
 }) {
   if (items.length === 0) return null;
   return (
@@ -755,6 +757,7 @@ function OptionGroup({
                 value={itemNotes[i.id] ?? ""}
                 onToggle={() => onToggleNote(i.id)}
                 onChange={(v) => onNoteChange(i.id, v)}
+                lang={lang}
               />
             </div>
           </label>
