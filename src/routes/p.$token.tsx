@@ -510,7 +510,7 @@ function ClientProposal() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <MessageSquare className="h-4 w-4" /> Message to the event manager
+                  <MessageSquare className="h-4 w-4" /> {t(lang, "message_to_manager")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -518,7 +518,7 @@ function ClientProposal() {
                   rows={4}
                   value={overallMessage}
                   onChange={(e) => setOverallMessage(e.target.value)}
-                  placeholder="Anything you'd like to request, change, or ask about?"
+                  placeholder={t(lang, "message_placeholder")}
                 />
               </CardContent>
             </Card>
