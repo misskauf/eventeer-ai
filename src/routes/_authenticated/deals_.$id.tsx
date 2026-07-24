@@ -131,9 +131,12 @@ function DealDetail() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [invoiceMode, setInvoiceMode] = useState<"external" | "template">("external");
   const [invoiceNotes, setInvoiceNotes] = useState<string | null>(null);
+  const [reminderDays, setReminderDays] = useState<number>(5);
   const [userId, setUserId] = useState<string | null>(null);
   const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
+  const [sendingReminder, setSendingReminder] = useState(false);
+
 
 
   async function loadAll() {
