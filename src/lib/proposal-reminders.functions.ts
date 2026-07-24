@@ -81,7 +81,6 @@ export const sendProposalReminder = createServerFn({ method: "POST" })
     const body = bodyLines.join("\n");
 
     // Send the client email + record activity + fire internal notification.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendClientEmailAndNotify } = await import("@/lib/notifications.server");
     await sendClientEmailAndNotify({
       companyId: deal.company_id,
@@ -101,15 +100,6 @@ export const sendProposalReminder = createServerFn({ method: "POST" })
       },
     });
 
-    // Also read back the timestamp we just wrote so the UI can update.
-    const { data: latest } = await supabaseAdmin
-      .from("deal_activities")
-      .select("created_at")
-      .eq("deal_id", deal.id)
-      .eq("kind", "proposal_reminder_sent")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    return { ok: true as const, sentAt: latest?.created_at ?? new Date().toISOString() };
+    return { ok: true as const, sentAt: new Date().toISOString() };
   });
+
