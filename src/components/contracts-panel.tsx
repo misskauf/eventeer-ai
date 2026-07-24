@@ -48,6 +48,7 @@ import {
 import { formatRelative } from "@/lib/deal-stages";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import DOMPurify from "isomorphic-dompurify";
+import { ContractDocument } from "@/components/contract-document";
 
 type Template = {
   id: string;
@@ -512,11 +513,9 @@ export function ContractsPanel({ companyId, ctx }: Props) {
               {viewer.signed_by_email && <> · {viewer.signed_by_email}</>}
             </div>
           )}
-          <div
-            className="prose prose-sm max-w-none rounded-md border bg-background p-4 dark:prose-invert"
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(ensureHtml(viewer?.rendered_body ?? "")),
-            }}
+          <ContractDocument
+            html={viewer?.rendered_body ?? ""}
+            className="rounded-md border bg-background p-4"
           />
         </DialogContent>
       </Dialog>
