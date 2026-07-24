@@ -153,7 +153,7 @@ function DealDetail() {
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
-      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes").eq("id", d.company_id).maybeSingle(),
+      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes, proposal_reminder_days").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
 
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
