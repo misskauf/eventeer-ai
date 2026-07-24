@@ -592,11 +592,11 @@ function ClientProposal() {
                   );
                 })()}
                 <Separator className="my-2" />
-                <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
+                <Row label={<b>{t(lang, "grand_total")}</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
 
                 {totals.min_shortfall > 0 && (
                   <div className="mt-3 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
-                    Add {money(totals.min_shortfall, currency)} more to meet the venue minimum.
+                    {`${lang === "de" ? "Bitte " : "Add "}${money(totals.min_shortfall, currency)} ${t(lang, "min_shortfall")}`}
                   </div>
                 )}
                 {submitted ? (
@@ -612,17 +612,17 @@ function ClientProposal() {
                   >
                     <div className="font-medium">
                       {submittedAction === "confirmed"
-                        ? "Selection confirmed"
+                        ? t(lang, "selection_confirmed")
                         : submittedAction === "changes_requested"
-                        ? "Change request sent"
-                        : "Response recorded"}
+                        ? t(lang, "change_request_sent")
+                        : t(lang, "response_recorded")}
                     </div>
                     <div className="mt-1 text-xs opacity-80">
                       {submittedAction === "confirmed"
-                        ? "The event manager has been notified and will follow up shortly."
+                        ? t(lang, "confirmed_follow_up")
                         : submittedAction === "changes_requested"
-                        ? "The event manager will review your notes and send an updated proposal."
-                        : "Thanks for letting us know."}
+                        ? t(lang, "changes_follow_up")
+                        : t(lang, "declined_follow_up")}
                     </div>
                   </div>
                 ) : (
@@ -631,8 +631,8 @@ function ClientProposal() {
                       <div className="rounded-md border p-3">
                         <Label className="text-xs">
                           {pendingAction === "changes_requested"
-                            ? "What would you like to change? (required)"
-                            : "Reason for declining (optional)"}
+                            ? t(lang, "change_request_prompt")
+                            : t(lang, "decline_prompt")}
                         </Label>
                         <Textarea
                           rows={3}
@@ -641,8 +641,8 @@ function ClientProposal() {
                           onChange={(e) => setActionNote(e.target.value)}
                           placeholder={
                             pendingAction === "changes_requested"
-                              ? "e.g. Please swap the beverage package…"
-                              : "e.g. We chose another venue"
+                              ? t(lang, "change_request_placeholder")
+                              : t(lang, "decline_placeholder")
                           }
                         />
                       </div>
@@ -661,15 +661,15 @@ function ClientProposal() {
                     >
                       {state.preview
                         ? pendingAction === "changes_requested"
-                          ? "Send change request (preview)"
+                          ? t(lang, "send_change_request_preview")
                           : pendingAction === "declined"
-                          ? "Send decline (preview)"
-                          : "Confirm (preview)"
+                          ? t(lang, "send_decline_preview")
+                          : t(lang, "confirm_preview")
                         : pendingAction === "changes_requested"
-                        ? "Send change request"
+                        ? t(lang, "send_change_request")
                         : pendingAction === "declined"
-                        ? "Send decline"
-                        : "Confirm my selection"}
+                        ? t(lang, "send_decline")
+                        : t(lang, "confirm_selection")}
                     </Button>
                     <Button
                       variant="outline"
@@ -679,7 +679,7 @@ function ClientProposal() {
                         setActionNote("");
                       }}
                     >
-                      {pendingAction === "changes_requested" ? "Cancel change request" : "Request changes"}
+                      {pendingAction === "changes_requested" ? t(lang, "cancel_change_request") : t(lang, "request_changes")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -689,7 +689,7 @@ function ClientProposal() {
                         setActionNote("");
                       }}
                     >
-                      {pendingAction === "declined" ? "Cancel decline" : "Decline offer"}
+                      {pendingAction === "declined" ? t(lang, "cancel_decline") : t(lang, "decline_offer")}
                     </Button>
                   </div>
                 )}
