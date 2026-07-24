@@ -365,13 +365,13 @@ function ClientProposal() {
           <div className="space-y-6 lg:col-span-2">
             {/* Alternative groups — client picks exactly one */}
             {altGroups.map((g) => {
-              const items = itemsForGroup(g, spaces, packages, extras);
+              const items = itemsForGroup(g, spaces, packages, extras, lang);
               if (items.length === 0) return null;
               return (
                 <Card key={g.id} style={{ borderLeftColor: brand, borderLeftWidth: 3 }}>
                   <CardHeader>
                     <CardTitle className="text-base">{g.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground">Choose one</p>
+                    <p className="text-xs text-muted-foreground">{t(lang, "choose_one")}</p>
                   </CardHeader>
                   <CardContent>
                     <RadioGroup
@@ -405,6 +405,7 @@ function ClientProposal() {
                                   overageRate={Number(beveragePackage.overage_price_per_person_per_hour ?? 0)}
                                   currency={currency}
                                   onHoursChange={(id, value) => setPackageHours((cur) => ({ ...cur, [id]: value }))}
+                                  lang={lang}
                                 />
                               )}
                               <NoteToggle
@@ -413,6 +414,7 @@ function ClientProposal() {
                                 value={itemNotes[it.id] ?? ""}
                                 onToggle={() => noteToggle(it.id)}
                                 onChange={(v) => setItemNotes((cur) => ({ ...cur, [it.id]: v }))}
+                                lang={lang}
                               />
                             </div>
                           </label>
