@@ -244,6 +244,17 @@ function SettingsPage() {
             </CardContent>
           </Card>
         )}
+        {company?.id && (company as any).invoice_mode === "template" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoice templates</CardTitle>
+              <p className="text-sm text-muted-foreground">Used when generating invoices from a signed deal.</p>
+            </CardHeader>
+            <CardContent>
+              <InvoiceTemplatesEditor companyId={company.id} />
+            </CardContent>
+          </Card>
+        )}
         {company?.id && (
           <Card className="md:col-span-2">
             <CardHeader>
