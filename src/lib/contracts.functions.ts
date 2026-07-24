@@ -11,7 +11,7 @@ function randomToken(len = 32) {
 }
 
 const PUBLIC_CONTRACT_FIELDS =
-  "id, deal_id, company_id, template_name, rendered_body, status, sent_at, signed_at, signed_by_name, signed_by_email, signing_token_expires_at";
+  "id, deal_id, company_id, template_name, rendered_body, status, sent_at, signed_at, signed_by_name, signed_by_email, signed_place, signature_data, signing_token_expires_at";
 
 /** Public: fetch a contract by its signing token (for the client signing page). */
 export const getContractByToken = createServerFn({ method: "GET" })
