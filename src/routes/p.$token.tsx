@@ -19,6 +19,7 @@ import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare, Download } from "lucide-react";
+import { t, pickLocalized, normalizeLang, type Lang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/p/$token")({
   ssr: false,
@@ -230,9 +231,10 @@ function ClientProposal() {
     return computeTotals(offer, resolvedSelection);
   }, [offer, resolvedSelection]);
 
-  if (error === "expired") return <Message title="This link has expired" body="Please ask your event manager for a fresh link." />;
-  if (error) return <Message title="Proposal not found" body="This link is invalid or has been revoked." />;
-  if (!state || !totals) return <div className="p-8 text-center text-muted-foreground">Loading proposal…</div>;
+  const lang: Lang = normalizeLang(state?.deal?.language);
+  if (error === "expired") return <Message title={t(lang, "expired_title")} body={t(lang, "expired_body")} />;
+  if (error) return <Message title={t(lang, "not_found_title")} body={t(lang, "not_found_body")} />;
+  if (!state || !totals) return <div className="p-8 text-center text-muted-foreground">{t(lang, "loading")}</div>;
 
   const brand = (state.company.primary_color as string) || "#0f172a";
   const currency = state.company.currency as string;
@@ -252,10 +254,10 @@ function ClientProposal() {
     if (state?.preview) {
       const label =
         action === "confirmed"
-          ? "Confirm my selection"
+          ? t(lang, "confirm_selection")
           : action === "changes_requested"
-          ? "Request changes"
-          : "Decline offer";
+          ? t(lang, "request_changes")
+          : t(lang, "decline_offer");
       toast.info(`Preview mode — "${label}" was not submitted.`);
       return;
     }
@@ -285,10 +287,10 @@ function ClientProposal() {
     setSubmittedAction(action);
     const successMsg =
       action === "confirmed"
-        ? "Your selection was sent to the event manager."
+        ? t(lang, "selection_confirmed")
         : action === "changes_requested"
-        ? "Your change request was sent."
-        : "Your response has been recorded.";
+        ? t(lang, "change_request_sent")
+        : t(lang, "response_recorded");
     toast.success(successMsg);
   }
 
@@ -343,7 +345,7 @@ function ClientProposal() {
           </div>
           <div className="no-print">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Download className="mr-1 h-4 w-4" /> Download PDF
+              <Download className="mr-1 h-4 w-4" /> {t(lang, "download_pdf")}
             </Button>
           </div>
         </div>
@@ -363,13 +365,13 @@ function ClientProposal() {
           <div className="space-y-6 lg:col-span-2">
             {/* Alternative groups — client picks exactly one */}
             {altGroups.map((g) => {
-              const items = itemsForGroup(g, spaces, packages, extras);
+              const items = itemsForGroup(g, spaces, packages, extras, lang);
               if (items.length === 0) return null;
               return (
                 <Card key={g.id} style={{ borderLeftColor: brand, borderLeftWidth: 3 }}>
                   <CardHeader>
                     <CardTitle className="text-base">{g.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground">Choose one</p>
+                    <p className="text-xs text-muted-foreground">{t(lang, "choose_one")}</p>
                   </CardHeader>
                   <CardContent>
                     <RadioGroup
@@ -403,6 +405,7 @@ function ClientProposal() {
                                   overageRate={Number(beveragePackage.overage_price_per_person_per_hour ?? 0)}
                                   currency={currency}
                                   onHoursChange={(id, value) => setPackageHours((cur) => ({ ...cur, [id]: value }))}
+                                  lang={lang}
                                 />
                               )}
                               <NoteToggle
@@ -411,6 +414,7 @@ function ClientProposal() {
                                 value={itemNotes[it.id] ?? ""}
                                 onToggle={() => noteToggle(it.id)}
                                 onChange={(v) => setItemNotes((cur) => ({ ...cur, [it.id]: v }))}
+                                lang={lang}
                               />
                             </div>
                           </label>
@@ -432,11 +436,12 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                lang={lang}
               />
             )}
             {basePkgFood.length > 0 && (
               <SingleChoicePackages
-                title="Food"
+                title={t(lang, "section_food")}
                 items={basePkgFood}
                 currency={currency}
                 selectedId={selFoodPkgs[0] ?? ""}
@@ -454,11 +459,12 @@ function ClientProposal() {
                 }
                 menuModeByPkg={menuModeByPkg}
                 managerMenuChoices={managerMenuChoices}
+                lang={lang}
               />
             )}
             {basePkgBev.length > 0 && (
               <SingleChoicePackages
-                title="Beverages"
+                title={t(lang, "section_beverages")}
                 items={basePkgBev}
                 currency={currency}
                 selectedId={selBevPkgs[0] ?? ""}
@@ -479,15 +485,16 @@ function ClientProposal() {
                 }
                 menuModeByPkg={menuModeByPkg}
                 managerMenuChoices={managerMenuChoices}
+                lang={lang}
               />
             )}
             {baseExtraItems.length > 0 && (
               <OptionGroup
-                title="Extras"
+                title={t(lang, "section_extras")}
                 items={baseExtraItems.map((e) => ({
-                  id: e.id, name: e.name,
+                  id: e.id, name: pickLocalized(e, lang, "name"),
                   note: `${money(e.price, currency)} ${e.pricing_type.replace("_", " ")}`,
-                  details: e.long_description,
+                  details: pickLocalized(e, lang, "long_description") || null,
                 }))}
                 selected={selExtras}
                 onToggle={(id, v) => toggle(setSelExtras, id, v)}
@@ -495,6 +502,7 @@ function ClientProposal() {
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                lang={lang}
               />
             )}
 
@@ -502,7 +510,7 @@ function ClientProposal() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <MessageSquare className="h-4 w-4" /> Message to the event manager
+                  <MessageSquare className="h-4 w-4" /> {t(lang, "message_to_manager")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -510,7 +518,7 @@ function ClientProposal() {
                   rows={4}
                   value={overallMessage}
                   onChange={(e) => setOverallMessage(e.target.value)}
-                  placeholder="Anything you'd like to request, change, or ask about?"
+                  placeholder={t(lang, "message_placeholder")}
                 />
               </CardContent>
             </Card>
@@ -518,7 +526,7 @@ function ClientProposal() {
 
           <div>
             <Card className="sticky top-4">
-              <CardHeader><CardTitle>Your total</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t(lang, "your_total")}</CardTitle></CardHeader>
               <CardContent className="space-y-1 text-sm">
                 {totals.lines.map((l, i) => (
                   <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
@@ -547,13 +555,13 @@ function ClientProposal() {
                   </div>
                 ))}
                 <Separator className="my-2" />
-                <Row label="Net" value={money(totals.net_subtotal, currency)} />
+                <Row label={t(lang, "net")} value={money(totals.net_subtotal, currency)} />
                 {totals.discount_targeted && totals.discount_net > 0 && (
-                  <Row label="Discount (net)" value={"-" + money(totals.discount_net, currency)} />
+                  <Row label={`${t(lang, "discount")} (${t(lang, "net").toLowerCase()})`} value={"-" + money(totals.discount_net, currency)} />
                 )}
-                <Row label="Tax" value={money(totals.tax_subtotal, currency)} />
-                <Row label="Gross" value={money(totals.gross_subtotal, currency)} />
-                {!totals.discount_targeted && discount > 0 && <Row label="Discount" value={"-" + money(discount, currency)} />}
+                <Row label={t(lang, "tax")} value={money(totals.tax_subtotal, currency)} />
+                <Row label={t(lang, "gross")} value={money(totals.gross_subtotal, currency)} />
+                {!totals.discount_targeted && discount > 0 && <Row label={t(lang, "discount")} value={"-" + money(discount, currency)} />}
                 {(() => {
                   const fcAny = feesCfg as any;
                   const gMode = fcAny?.gratuity_mode ?? "slider";
@@ -584,11 +592,11 @@ function ClientProposal() {
                   );
                 })()}
                 <Separator className="my-2" />
-                <Row label={<b>Grand total</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
+                <Row label={<b>{t(lang, "grand_total")}</b>} value={<b>{money(totals.grand_total, currency)}</b>} />
 
                 {totals.min_shortfall > 0 && (
                   <div className="mt-3 rounded-md bg-yellow-50 p-2 text-xs text-yellow-900">
-                    Add {money(totals.min_shortfall, currency)} more to meet the venue minimum.
+                    {`${lang === "de" ? "Bitte " : "Add "}${money(totals.min_shortfall, currency)} ${t(lang, "min_shortfall")}`}
                   </div>
                 )}
                 {submitted ? (
@@ -604,17 +612,17 @@ function ClientProposal() {
                   >
                     <div className="font-medium">
                       {submittedAction === "confirmed"
-                        ? "Selection confirmed"
+                        ? t(lang, "selection_confirmed")
                         : submittedAction === "changes_requested"
-                        ? "Change request sent"
-                        : "Response recorded"}
+                        ? t(lang, "change_request_sent")
+                        : t(lang, "response_recorded")}
                     </div>
                     <div className="mt-1 text-xs opacity-80">
                       {submittedAction === "confirmed"
-                        ? "The event manager has been notified and will follow up shortly."
+                        ? t(lang, "confirmed_follow_up")
                         : submittedAction === "changes_requested"
-                        ? "The event manager will review your notes and send an updated proposal."
-                        : "Thanks for letting us know."}
+                        ? t(lang, "changes_follow_up")
+                        : t(lang, "declined_follow_up")}
                     </div>
                   </div>
                 ) : (
@@ -623,8 +631,8 @@ function ClientProposal() {
                       <div className="rounded-md border p-3">
                         <Label className="text-xs">
                           {pendingAction === "changes_requested"
-                            ? "What would you like to change? (required)"
-                            : "Reason for declining (optional)"}
+                            ? t(lang, "change_request_prompt")
+                            : t(lang, "decline_prompt")}
                         </Label>
                         <Textarea
                           rows={3}
@@ -633,8 +641,8 @@ function ClientProposal() {
                           onChange={(e) => setActionNote(e.target.value)}
                           placeholder={
                             pendingAction === "changes_requested"
-                              ? "e.g. Please swap the beverage package…"
-                              : "e.g. We chose another venue"
+                              ? t(lang, "change_request_placeholder")
+                              : t(lang, "decline_placeholder")
                           }
                         />
                       </div>
@@ -653,15 +661,15 @@ function ClientProposal() {
                     >
                       {state.preview
                         ? pendingAction === "changes_requested"
-                          ? "Send change request (preview)"
+                          ? t(lang, "send_change_request_preview")
                           : pendingAction === "declined"
-                          ? "Send decline (preview)"
-                          : "Confirm (preview)"
+                          ? t(lang, "send_decline_preview")
+                          : t(lang, "confirm_preview")
                         : pendingAction === "changes_requested"
-                        ? "Send change request"
+                        ? t(lang, "send_change_request")
                         : pendingAction === "declined"
-                        ? "Send decline"
-                        : "Confirm my selection"}
+                        ? t(lang, "send_decline")
+                        : t(lang, "confirm_selection")}
                     </Button>
                     <Button
                       variant="outline"
@@ -671,7 +679,7 @@ function ClientProposal() {
                         setActionNote("");
                       }}
                     >
-                      {pendingAction === "changes_requested" ? "Cancel change request" : "Request changes"}
+                      {pendingAction === "changes_requested" ? t(lang, "cancel_change_request") : t(lang, "request_changes")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -681,7 +689,7 @@ function ClientProposal() {
                         setActionNote("");
                       }}
                     >
-                      {pendingAction === "declined" ? "Cancel decline" : "Decline offer"}
+                      {pendingAction === "declined" ? t(lang, "cancel_decline") : t(lang, "decline_offer")}
                     </Button>
                   </div>
                 )}
@@ -699,26 +707,27 @@ function itemsForGroup(
   spaces: SpaceSel[],
   packages: PackageSel[],
   extras: ExtraSel[],
+  lang: Lang,
 ) {
   return g.item_ids
     .map((iid) => {
       if (g.category === "space") {
         const s = spaces.find((x) => x.id === iid);
-        return s ? { id: s.id, name: s.name, note: "", details: s.long_description } : null;
+        return s ? { id: s.id, name: pickLocalized(s, lang, "name"), note: "", details: pickLocalized(s, lang, "long_description") || null } : null;
       }
       if (g.category === "extra") {
         const e = extras.find((x) => x.id === iid);
-        return e ? { id: e.id, name: e.name, note: e.pricing_type.replace("_", " "), details: e.long_description } : null;
+        return e ? { id: e.id, name: pickLocalized(e, lang, "name"), note: e.pricing_type.replace("_", " "), details: pickLocalized(e, lang, "long_description") || null } : null;
       }
       const p = packages.find((x) => x.id === iid);
-      return p ? { id: p.id, name: p.name, note: `per guest`, details: p.long_description } : null;
+      return p ? { id: p.id, name: pickLocalized(p, lang, "name"), note: lang === "de" ? `pro Gast` : `per guest`, details: pickLocalized(p, lang, "long_description") || null } : null;
     })
     .filter(Boolean) as { id: string; name: string; note: string; details?: string | null }[];
 }
 
 function OptionGroup({
   title, items, selected, onToggle,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   title: string;
   items: { id: string; name: string; note: string; details?: string | null }[];
@@ -728,6 +737,7 @@ function OptionGroup({
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
   onNoteChange: (id: string, v: string) => void;
+  lang: Lang;
 }) {
   if (items.length === 0) return null;
   return (
@@ -747,6 +757,7 @@ function OptionGroup({
                 value={itemNotes[i.id] ?? ""}
                 onToggle={() => onToggleNote(i.id)}
                 onChange={(v) => onNoteChange(i.id, v)}
+                lang={lang}
               />
             </div>
           </label>
@@ -758,7 +769,7 @@ function OptionGroup({
 
 function SingleChoiceSpaces({
   items, currency, selectedId, onChange,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
   currency: string;
@@ -768,15 +779,16 @@ function SingleChoiceSpaces({
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
   onNoteChange: (id: string, v: string) => void;
+  lang: Lang;
 }) {
   if (items.length === 0) return null;
   const multi = items.length > 1;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Space</CardTitle>
+        <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? "Choose one" : "Included in your proposal"}
+          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
         </p>
       </CardHeader>
       <CardContent>
@@ -787,6 +799,7 @@ function SingleChoiceSpaces({
         >
           {items.map((s) => {
             const isSelected = s.id === selectedId;
+            const localDesc = pickLocalized(s, lang, "long_description");
             return (
               <label
                 key={s.id}
@@ -801,17 +814,18 @@ function SingleChoiceSpaces({
                   <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
                 )}
                 <div className="flex-1">
-                  <div className="font-medium">{s.name}</div>
+                  <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
                   <div className="text-xs text-muted-foreground">
-                    From {money(s.base_rental_fee, currency)}
+                    {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
                   </div>
-                  {s.long_description && <Markdown source={s.long_description} className="mt-2" />}
+                  {localDesc && <Markdown source={localDesc} className="mt-2" />}
                   <NoteToggle
                     itemId={s.id}
                     open={!!openNoteFor[s.id]}
                     value={itemNotes[s.id] ?? ""}
                     onToggle={() => onToggleNote(s.id)}
                     onChange={(v) => onNoteChange(s.id, v)}
+                    lang={lang}
                   />
                 </div>
               </label>
@@ -828,7 +842,7 @@ function SingleChoicePackages({
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
-  menuModeByPkg, managerMenuChoices,
+  menuModeByPkg, managerMenuChoices, lang,
 }: {
   title: string;
   items: PackageSel[];
@@ -849,15 +863,23 @@ function SingleChoicePackages({
   onMenuChoiceChange: (pkgId: string, groupLabel: string, next: string[]) => void;
   menuModeByPkg: Record<string, "manager" | "client">;
   managerMenuChoices: Record<string, Record<string, string[]>>;
+  lang: Lang;
 }) {
   if (items.length === 0) return null;
   const multi = items.length > 1;
+  const perGuest = lang === "de" ? "/ Gast" : "/ guest";
+  const hIncluded = lang === "de" ? "Std. inklusive" : "h included";
+  const viewDetails = lang === "de" ? "Details ansehen ↗" : "View details ↗";
+  const menuManagerLabel = lang === "de" ? "Menü (vom Event-Manager gewählt)" : "Menu (selected by the event manager)";
+  const totalMenuItems = lang === "de" ? "Menüpunkte gesamt" : "Total menu items";
+  const selectUpTo = lang === "de" ? "Wählen Sie bis zu" : "Select up to";
+  const selectedLabel = lang === "de" ? "gewählt" : "selected";
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? "Choose one" : "Included in your proposal"}
+          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
         </p>
       </CardHeader>
       <CardContent>
@@ -873,6 +895,7 @@ function SingleChoicePackages({
             const currentH = includedH != null ? packageHours?.[p.id] ?? includedH : 0;
             const mode = p.selection_mode ?? "fixed";
             const groups = Array.isArray(p.selection_groups) ? p.selection_groups : [];
+            const localDesc = pickLocalized(p, lang, "long_description");
             return (
               <div
                 key={p.id}
@@ -885,10 +908,10 @@ function SingleChoicePackages({
                     <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
                   )}
                   <div className="flex-1">
-                    <div className="font-medium">{p.name}</div>
+                    <div className="font-medium">{pickLocalized(p, lang, "name")}</div>
                     <div className="text-xs text-muted-foreground">
-                      {money(p.price_per_person, currency)} / guest
-                      {includedH != null && <> · {includedH}h included</>}
+                      {money(p.price_per_person, currency)} {perGuest}
+                      {includedH != null && <> · {includedH}{lang === "de" ? " " : ""}{hIncluded}</>}
                     </div>
                     {p.details_url && (
                       <a
@@ -898,16 +921,16 @@ function SingleChoicePackages({
                         className="mt-1 inline-block text-xs text-primary underline"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        View details ↗
+                        {viewDetails}
                       </a>
                     )}
-                    {p.long_description && <Markdown source={p.long_description} className="mt-2" />}
+                    {localDesc && <Markdown source={localDesc} className="mt-2" />}
                   </div>
                 </label>
                 {isSelected && (
                   <div className="mt-2 flex flex-wrap items-center gap-4 border-t pt-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Guests</span>
+                      <span className="text-muted-foreground">{t(lang, "guests")}</span>
                       <Input
                         type="number"
                         min={1}
@@ -924,13 +947,14 @@ function SingleChoicePackages({
                         overageRate={Number(p.overage_price_per_person_per_hour ?? 0)}
                         currency={currency}
                         onHoursChange={onHoursChange}
+                        lang={lang}
                       />
                     )}
                   </div>
                 )}
                 {isSelected && mode !== "fixed" && groups.length > 0 && (menuModeByPkg[p.id] ?? "client") === "manager" && (
                   <div className="mt-3 space-y-2 border-t pt-3">
-                    <div className="text-xs font-medium">Menu (selected by the event manager)</div>
+                    <div className="text-xs font-medium">{menuManagerLabel}</div>
                     {groups.map((g) => {
                       const picks = managerMenuChoices[p.id]?.[g.label] ?? [];
                       return (
@@ -961,7 +985,7 @@ function SingleChoicePackages({
                         <>
                           {totalMax && totalMax > 0 && (
                             <div className="text-xs text-muted-foreground">
-                              Total menu items: {totalPicked}/{totalMax}
+                              {totalMenuItems}: {totalPicked}/{totalMax}
                             </div>
                           )}
                           {groups.map((g) => {
@@ -972,7 +996,7 @@ function SingleChoicePackages({
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="font-medium">{g.label}</span>
                                   <span className="text-muted-foreground">
-                                    Select up to {g.max_select} · {picked.length}/{g.max_select} selected
+                                    {selectUpTo} {g.max_select} · {picked.length}/{g.max_select} {selectedLabel}
                                   </span>
                                 </div>
                                 <div className="space-y-1.5">
@@ -1022,6 +1046,7 @@ function SingleChoicePackages({
                   value={itemNotes[p.id] ?? ""}
                   onToggle={() => onToggleNote(p.id)}
                   onChange={(v) => onNoteChange(p.id, v)}
+                  lang={lang}
                 />
               </div>
             );
@@ -1039,6 +1064,7 @@ function BeverageHoursField({
   overageRate,
   currency,
   onHoursChange,
+  lang,
 }: {
   packageId: string;
   includedHours: number;
@@ -1046,10 +1072,15 @@ function BeverageHoursField({
   overageRate: number;
   currency: string;
   onHoursChange: (id: string, v: number) => void;
+  lang: Lang;
 }) {
+  const eventHours = lang === "de" ? "Veranstaltungsstunden" : "Event hours";
+  const standard = lang === "de" ? "Standard" : "standard";
+  const extra = lang === "de" ? "Std. zusätzlich" : "h extra";
+  const perGuestHour = lang === "de" ? "/Gast/Std." : "/guest/h";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-muted-foreground">Event hours</span>
+      <span className="text-muted-foreground">{eventHours}</span>
       <Input
         type="number"
         min={includedHours}
@@ -1058,26 +1089,31 @@ function BeverageHoursField({
         onChange={(e) => onHoursChange(packageId, Math.max(includedHours, Number(e.target.value) || includedHours))}
         className="h-7 w-20"
       />
-      <span className="text-muted-foreground">standard {includedHours}h</span>
+      <span className="text-muted-foreground">{standard} {includedHours}h</span>
       {overageRate > 0 && (
-        <span className="text-muted-foreground">+{money(overageRate, currency)}/guest/h</span>
+        <span className="text-muted-foreground">+{money(overageRate, currency)}{perGuestHour}</span>
       )}
       {currentHours > includedHours && (
-        <span className="font-medium text-foreground">+{currentHours - includedHours}h extra</span>
+        <span className="font-medium text-foreground">+{currentHours - includedHours}{lang === "de" ? " " : ""}{extra}</span>
       )}
     </div>
   );
 }
 
 function NoteToggle({
-  itemId, open, value, onToggle, onChange,
+  itemId, open, value, onToggle, onChange, lang,
 }: {
   itemId: string;
   open: boolean;
   value: string;
   onToggle: () => void;
   onChange: (v: string) => void;
+  lang: Lang;
 }) {
+  const hide = lang === "de" ? "Notiz ausblenden" : "Hide note";
+  const edit = lang === "de" ? "Notiz bearbeiten" : "Edit note";
+  const add = lang === "de" ? "Notiz hinzufügen" : "Add a note";
+  const placeholder = lang === "de" ? "Hinterlassen Sie eine Notiz zu diesem Artikel" : "Leave a note about this item";
   return (
     <div className="mt-2">
       <button
@@ -1085,20 +1121,21 @@ function NoteToggle({
         onClick={onToggle}
         className="text-[11px] text-muted-foreground underline hover:text-foreground"
       >
-        {open ? "Hide note" : value ? "Edit note" : "Add a note"}
+        {open ? hide : value ? edit : add}
       </button>
       {open && (
         <Textarea
           rows={2}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Leave a note about this item"
+          placeholder={placeholder}
           className="mt-1 text-xs"
         />
       )}
     </div>
   );
 }
+
 
 function Row({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return <div className="flex justify-between"><span>{label}</span><span className="tabular-nums">{value}</span></div>;

@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           created_by: string
           currency: string
+          default_deal_language: string
           id: string
           invoice_mode: string
           invoice_notes: string | null
@@ -41,6 +42,7 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: string
+          default_deal_language?: string
           id?: string
           invoice_mode?: string
           invoice_notes?: string | null
@@ -60,6 +62,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: string
+          default_deal_language?: string
           id?: string
           invoice_mode?: string
           invoice_notes?: string | null
@@ -83,6 +86,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_default: boolean
+          language: string
           name: string
           updated_at: string
         }
@@ -94,6 +98,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_default?: boolean
+          language?: string
           name: string
           updated_at?: string
         }
@@ -105,6 +110,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_default?: boolean
+          language?: string
           name?: string
           updated_at?: string
         }
@@ -278,6 +284,7 @@ export type Database = {
           event_type: string | null
           guest_count: number
           id: string
+          language: string
           lead_form_id: string | null
           notes: string | null
           owner_id: string
@@ -305,6 +312,7 @@ export type Database = {
           event_type?: string | null
           guest_count?: number
           id?: string
+          language?: string
           lead_form_id?: string | null
           notes?: string | null
           owner_id: string
@@ -332,6 +340,7 @@ export type Database = {
           event_type?: string | null
           guest_count?: number
           id?: string
+          language?: string
           lead_form_id?: string | null
           notes?: string | null
           owner_id?: string
@@ -366,7 +375,9 @@ export type Database = {
           description: string | null
           id: string
           long_description: string | null
+          long_description_de: string | null
           name: string
+          name_de: string | null
           price: number
           pricing_type: Database["public"]["Enums"]["extra_pricing_type"]
           tax_rate_pct: number | null
@@ -381,7 +392,9 @@ export type Database = {
           description?: string | null
           id?: string
           long_description?: string | null
+          long_description_de?: string | null
           name: string
+          name_de?: string | null
           price?: number
           pricing_type?: Database["public"]["Enums"]["extra_pricing_type"]
           tax_rate_pct?: number | null
@@ -396,7 +409,9 @@ export type Database = {
           description?: string | null
           id?: string
           long_description?: string | null
+          long_description_de?: string | null
           name?: string
+          name_de?: string | null
           price?: number
           pricing_type?: Database["public"]["Enums"]["extra_pricing_type"]
           tax_rate_pct?: number | null
@@ -426,8 +441,10 @@ export type Database = {
           included_hours: number | null
           kind: string
           long_description: string | null
+          long_description_de: string | null
           min_guests: number
           name: string
+          name_de: string | null
           overage_price_per_person_per_hour: number
           price_per_person: number
           selection_groups: Json
@@ -449,8 +466,10 @@ export type Database = {
           included_hours?: number | null
           kind?: string
           long_description?: string | null
+          long_description_de?: string | null
           min_guests?: number
           name: string
+          name_de?: string | null
           overage_price_per_person_per_hour?: number
           price_per_person?: number
           selection_groups?: Json
@@ -472,8 +491,10 @@ export type Database = {
           included_hours?: number | null
           kind?: string
           long_description?: string | null
+          long_description_de?: string | null
           min_guests?: number
           name?: string
+          name_de?: string | null
           overage_price_per_person_per_hour?: number
           price_per_person?: number
           selection_groups?: Json
@@ -1061,8 +1082,10 @@ export type Database = {
           features: string[]
           id: string
           long_description: string | null
+          long_description_de: string | null
           min_rental_fee: number
           name: string
+          name_de: string | null
           photo_url: string | null
           tax_rate_pct: number | null
           updated_at: string
@@ -1083,8 +1106,10 @@ export type Database = {
           features?: string[]
           id?: string
           long_description?: string | null
+          long_description_de?: string | null
           min_rental_fee?: number
           name: string
+          name_de?: string | null
           photo_url?: string | null
           tax_rate_pct?: number | null
           updated_at?: string
@@ -1105,8 +1130,10 @@ export type Database = {
           features?: string[]
           id?: string
           long_description?: string | null
+          long_description_de?: string | null
           min_rental_fee?: number
           name?: string
+          name_de?: string | null
           photo_url?: string | null
           tax_rate_pct?: number | null
           updated_at?: string
