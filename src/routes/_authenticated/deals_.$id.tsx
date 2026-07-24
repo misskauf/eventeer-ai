@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { sendProposalReminder } from "@/lib/proposal-reminders.functions";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, PageHeader } from "@/components/app-shell";
@@ -131,9 +133,12 @@ function DealDetail() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [invoiceMode, setInvoiceMode] = useState<"external" | "template">("external");
   const [invoiceNotes, setInvoiceNotes] = useState<string | null>(null);
+  const [reminderDays, setReminderDays] = useState<number>(5);
   const [userId, setUserId] = useState<string | null>(null);
   const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
+  const [sendingReminder, setSendingReminder] = useState(false);
+
 
 
   async function loadAll() {
@@ -150,7 +155,7 @@ function DealDetail() {
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
-      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes").eq("id", d.company_id).maybeSingle(),
+      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes, proposal_reminder_days").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
 
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
@@ -169,6 +174,7 @@ function DealDetail() {
     setRequireApproval(!!(co.data as any)?.require_deal_approval);
     setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
     setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
+    setReminderDays(Number((co.data as any)?.proposal_reminder_days ?? 5));
 
     setActivities(ac.data ?? []);
     if (pr.data) {
@@ -566,6 +572,35 @@ function DealDetail() {
     | undefined;
   const clientAction = clientResponse?.action ?? (clientResponse ? "confirmed" : undefined);
 
+  // ---- Stale-proposal reminder ----
+  const proposalSentAt = existingProposal?.sent_at as string | null | undefined;
+  const daysSinceSent = proposalSentAt
+    ? Math.floor((Date.now() - new Date(proposalSentAt).getTime()) / 86_400_000)
+    : 0;
+  const lastReminderActivity = activities.find((a) => a.kind === "proposal_reminder_sent");
+  const lastReminderAt = lastReminderActivity?.created_at as string | undefined;
+  const hoursSinceLastReminder = lastReminderAt
+    ? (Date.now() - new Date(lastReminderAt).getTime()) / 3_600_000
+    : Infinity;
+  const cooldownActive = hoursSinceLastReminder < 24;
+  const showReminderBanner =
+    !!proposalSentAt && !clientAction && daysSinceSent > reminderDays;
+  const sendReminderFn = useServerFn(sendProposalReminder);
+  async function handleSendReminder() {
+    if (!deal) return;
+    setSendingReminder(true);
+    try {
+      await sendReminderFn({ data: { dealId: deal.id } });
+      toast.success("Reminder sent to client");
+      await loadAll();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to send reminder");
+    } finally {
+      setSendingReminder(false);
+    }
+  }
+
+
   const itemName = (itemId: string) => {
     const s = spaces.find((x) => x.id === itemId);
     if (s) return s.name;
@@ -685,6 +720,32 @@ function DealDetail() {
           </div>
         );
       })()}
+
+      {showReminderBanner && (
+        <div className="mb-4 flex flex-wrap items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <Clock className="mt-0.5 h-4 w-4 flex-none" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium">
+              Proposal sent {daysSinceSent} day{daysSinceSent === 1 ? "" : "s"} ago — no reply yet.
+            </div>
+            {lastReminderAt && (
+              <div className="mt-0.5 text-xs">
+                Last reminded on {new Date(lastReminderAt).toLocaleString()}.
+              </div>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSendReminder}
+            disabled={sendingReminder || cooldownActive}
+            title={cooldownActive ? "You already reminded the client in the last 24 hours." : undefined}
+          >
+            <Send className="mr-1 h-4 w-4" />
+            {sendingReminder ? "Sending…" : "Send reminder to client"}
+          </Button>
+        </div>
+      )}
 
       {/* DEAL SECTION */}
 

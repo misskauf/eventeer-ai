@@ -1,83 +1,47 @@
+## Goal
+On the deal detail page, nudge the manager to re-engage the client when a sent proposal has gone unanswered for more than N days. One click sends a templated email with the existing proposal link.
 
-# Optional Invoicing (Document generation only)
+## Current state (verified)
+- `proposals.sent_at` is set when the manager sends a proposal, and a matching `share_tokens` row (`kind='client_proposal'`) is created — the URL is `/p/{token}`. Tokens don't expire, so reusing them keeps the client's link valid.
+- Client reply lands as a `proposal_selections` row with a `client_action` value (confirm/request_changes/decline).
+- `deal_activities` already tracks lifecycle events (`proposal_sent`, etc.).
+- `src/lib/notifications.server.ts` exposes `notifyDeal()` which inserts a `notifications` row + `deal_activities` row and best-effort sends via Resend. It targets the internal owner, not the external client — so the client email needs a separate Resend call.
+- `companies` has no `proposal_reminder_days` yet; deals/companies have no `language` column (Prompt 8 language not in schema), so this plan defaults copy to English and leaves a hook for later.
 
-Add an optional "Invoice" step to signed deals. No payment collection, no numbering guarantees, no bank details, no paid tracking. Two modes chosen in Settings:
+## Changes
 
-- **External** — venue invoices in their own tool; EventFlow just marks the stage.
-- **EventFlow template** — generate an invoice document from the accepted proposal, rendered via the shared `ContractDocument` component, printable to PDF from the browser.
+### 1. Schema (migration)
+- `ALTER TABLE public.companies ADD COLUMN proposal_reminder_days integer NOT NULL DEFAULT 5 CHECK (proposal_reminder_days BETWEEN 1 AND 60);`
+- No new table; reminders are stored as `deal_activities` rows with `kind = 'proposal_reminder_sent'` and `meta = { proposal_id, version, sent_to, share_url }`.
 
-## Data model (single migration)
+### 2. Settings UI (`src/routes/_authenticated/settings.tsx`)
+- Add a numeric input "Remind client after (days)" bound to `companies.proposal_reminder_days`, in the existing Company card. No restyle.
 
-- `companies` — add:
-  - `invoice_mode text not null default 'external'` — `'external' | 'template'`
-  - `invoice_notes text` — optional footer notes (e.g. "Payment due within 14 days")
-- `invoice_templates` — new table (mirrors `contract_templates`):
-  - `company_id`, `name`, `body_html`, `is_default boolean`, timestamps. RLS + GRANTs per company membership (same pattern as `contract_templates`).
-- `invoices` — new table:
-  - `company_id`, `deal_id`, `template_id nullable`, `body_html` (rendered snapshot), `mode text` (`'external'|'template'`), `status text` (`'draft'|'sent'|'done'`), `issued_at nullable`, timestamps. RLS + GRANTs by company membership.
-- Reuse existing `invoice_sent` value on `deal_stage` enum — no enum change.
+### 3. Server function (`src/lib/proposal-reminders.functions.ts`, new)
+- `sendProposalReminder({ dealId })` with `requireSupabaseAuth`:
+  1. Load deal (verify caller's company via `is_member_of`), latest proposal with `sent_at`, existing `share_tokens` row for that proposal.
+  2. Guard: proposal must be sent, no `proposal_selections` row exists, deal has a `client_email`.
+  3. Reuse the existing token to build `${APP_URL}/p/{token}` (no new token, link stays valid).
+  4. Send Resend email directly to `deal.client_email` (subject + body templated; English default, placeholder for future language). Reuses the same Resend helper pattern already in `notifications.server.ts` (extract shared `sendResendEmail` into `notifications.server.ts` export).
+  5. Insert `deal_activities` row (`kind='proposal_reminder_sent'`, meta as above).
+  6. Also call `notifyDeal()` with `kind='proposal_reminder_sent'` so the bell + owner email fire.
+- Return `{ ok: true, sentAt }`.
 
-## Placeholder system
+### 4. Deal detail UI (`src/routes/_authenticated/deals_.$id.tsx`)
+- After loading proposals + selections, compute:
+  - `latestSent` = most recent proposal with `sent_at`
+  - `hasClientReply` = any `proposal_selections` row for that proposal
+  - `daysSinceSent` = floor((now - sent_at) / 1 day)
+  - `lastReminderAt` = max `created_at` from `deal_activities` where `kind='proposal_reminder_sent'`
+- If `latestSent && !hasClientReply && daysSinceSent > company.proposal_reminder_days`, render a small banner above the proposal panel (using existing alert-style component; no new styles):
+  - Text: "Sent {daysSinceSent} days ago — no reply yet." + if `lastReminderAt`, "Last reminded {relative}."
+  - Button: "Send reminder to client" → calls the server fn, toasts, refreshes.
+- Button is disabled while sending and for 24h after `lastReminderAt` (soft anti-spam), with tooltip explaining the cooldown.
 
-Extend the existing contract placeholder renderer (`src/lib/contracts.ts`) OR add a sibling `src/lib/invoices.ts` that shares the token map. Placeholders available:
+### 5. In-app bell (optional, included)
+- The `notifyDeal()` call in step 3 already produces a bell notification for the owner ("Reminder sent to client · {client_name}"). No separate crossing-threshold job is added — it would need a scheduler; we surface the threshold visually via the banner instead. Called out here so the user knows the threshold-crossing auto-notification is not implemented.
 
-- Client: `{{client_name}}`, `{{client_email}}`, `{{client_company}}`
-- Event: `{{event_name}}`, `{{event_date}}`, `{{event_start}}`, `{{event_end}}`, `{{guest_count}}`, `{{venue}}`
-- Line items table: `{{line_items_table}}` — HTML table of accepted proposal selections (space, food, beverages incl. extra hours, extras) with qty, unit price, line total.
-- Totals: `{{subtotal}}`, `{{service_charge}}`, `{{tax}}`, `{{total}}`, `{{currency}}`
-- Meta: `{{today}}`, `{{invoice_notes}}`
-- Company: `{{company_name}}`, `{{company_address}}`, `{{company_logo}}`, `{{company_email}}`
-
-Line items and totals derive from the **accepted `proposal_selections`** row via the existing pricing engine — no re-computation logic invented.
-
-## Settings UI (`src/routes/_authenticated/settings.tsx`)
-
-New "Invoicing" card:
-- Radio: **External** / **EventFlow template**. Clearly labeled "Optional".
-- If template: manage invoice templates (list + New + Duplicate + Upload — reusing `ContractUploadDialog` and `RichTextEditor`), pick a default. Free-text "Invoice notes" field.
-
-## Invoice templates editor
-
-New page or panel `src/components/invoice-templates-panel.tsx`, mirroring `contracts-panel.tsx`: TipTap rich-text editor with the "Insert placeholder" toolbar bound to the invoice placeholder list. Upload flow reuses the existing document import → HTML conversion.
-
-## Deal detail (`src/routes/_authenticated/deals_.$id.tsx`)
-
-Add an **Invoice** section, only shown when `stage ∈ {signed, waiting_payment, invoice_sent, downpayment_received, paid_in_full}`. Clearly labeled "Optional — invoicing".
-
-- **External mode**: single button **Mark invoice sent** → server fn sets `invoices.status='sent'`, moves stage to `invoice_sent`, calls `notifyDeal({kind:'invoice_sent'})`. Second button **Mark done**.
-- **Template mode**: template picker (defaults to the company default) → **Generate invoice** renders placeholders into `invoices.body_html` snapshot → preview via `<ContractDocument>` → **Print / Save PDF** (browser print), **Mark invoice sent**, **Mark done**. Regenerate re-snapshots.
-
-No client-facing signing page. No email of the invoice itself in v1 — venue downloads/prints and sends outside the app (matches "no payment collection").
-
-## Print stylesheet
-
-Add a scoped `@media print` block in `src/styles.css` (or a small `print.css` imported by the invoice preview) that:
-- Hides app chrome (`.no-print`, sidebar, headers, buttons).
-- Sets white background, black text, A4 page size, sensible margins.
-- Preserves the `prose` typography used by `ContractDocument`.
-
-The preview page wraps the document in a `.printable` container so `window.print()` yields a clean PDF.
-
-## Server functions (`src/lib/invoices.functions.ts`)
-
-- `listInvoiceTemplates`, `upsertInvoiceTemplate`, `duplicateInvoiceTemplate`, `deleteInvoiceTemplate`
-- `generateInvoice({dealId, templateId?})` — renders snapshot, upserts `invoices` row (draft).
-- `updateInvoiceStatus({invoiceId, status})` — updates status + deal stage + `notifyDeal`.
-
-All use `requireSupabaseAuth`; RLS scoped by `is_member_of(auth.uid(), company_id)`.
-
-## Notifications
-
-Extend `notifyDeal` kinds with `invoice_sent` (deal activity + email to team using existing Resend flow). Reuse existing pattern; no new infra.
-
-## Out of scope (explicit)
-
-- No Stripe / payment intents / bank details / IBAN fields.
-- No sequential invoice numbers (users can type their own in the template if wanted).
-- No "paid" tracking beyond the existing stage badges.
-- No client portal for invoices.
-
-## Files touched
-
-- New: migration; `src/lib/invoices.functions.ts`; `src/lib/invoices.ts` (placeholder renderer); `src/components/invoice-templates-panel.tsx`; `src/components/invoice-panel.tsx` (deal-detail section).
-- Edited: `src/routes/_authenticated/settings.tsx` (Invoicing card); `src/routes/_authenticated/deals_.$id.tsx` (mount InvoicePanel); `src/lib/notifications.server.ts` (new kind); `src/styles.css` (print rules).
+## Assumptions / open items
+- Copy is English only until a deal/company `language` column exists (Prompt 8). The template is structured so swapping to a per-language string map is a one-file change.
+- 24h client-side cooldown prevents accidental double-clicks; server does not hard-enforce it (kept simple; can add if needed).
+- No visual restyle — banner uses the existing muted/warning card pattern already in the deal page.

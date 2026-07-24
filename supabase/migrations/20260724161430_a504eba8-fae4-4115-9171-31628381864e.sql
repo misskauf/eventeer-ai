@@ -1,0 +1,1 @@
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS proposal_reminder_days integer NOT NULL DEFAULT 5 CHECK (proposal_reminder_days BETWEEN 1 AND 60);

@@ -28,6 +28,7 @@ export type Database = {
           logo_url: string | null
           name: string
           primary_color: string
+          proposal_reminder_days: number
           require_deal_approval: boolean
           timezone: string
           updated_at: string
@@ -46,6 +47,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           primary_color?: string
+          proposal_reminder_days?: number
           require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
@@ -64,6 +66,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           primary_color?: string
+          proposal_reminder_days?: number
           require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
