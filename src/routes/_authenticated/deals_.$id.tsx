@@ -46,6 +46,7 @@ import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/de
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 import { ContractsPanel } from "@/components/contracts-panel";
+import { InvoicePanel } from "@/components/invoice-panel";
 
 
 
