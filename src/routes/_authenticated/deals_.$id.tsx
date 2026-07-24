@@ -572,6 +572,35 @@ function DealDetail() {
     | undefined;
   const clientAction = clientResponse?.action ?? (clientResponse ? "confirmed" : undefined);
 
+  // ---- Stale-proposal reminder ----
+  const proposalSentAt = existingProposal?.sent_at as string | null | undefined;
+  const daysSinceSent = proposalSentAt
+    ? Math.floor((Date.now() - new Date(proposalSentAt).getTime()) / 86_400_000)
+    : 0;
+  const lastReminderActivity = activities.find((a) => a.kind === "proposal_reminder_sent");
+  const lastReminderAt = lastReminderActivity?.created_at as string | undefined;
+  const hoursSinceLastReminder = lastReminderAt
+    ? (Date.now() - new Date(lastReminderAt).getTime()) / 3_600_000
+    : Infinity;
+  const cooldownActive = hoursSinceLastReminder < 24;
+  const showReminderBanner =
+    !!proposalSentAt && !clientAction && daysSinceSent > reminderDays;
+  const sendReminderFn = useServerFn(sendProposalReminder);
+  async function handleSendReminder() {
+    if (!deal) return;
+    setSendingReminder(true);
+    try {
+      await sendReminderFn({ data: { dealId: deal.id } });
+      toast.success("Reminder sent to client");
+      await loadAll();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to send reminder");
+    } finally {
+      setSendingReminder(false);
+    }
+  }
+
+
   const itemName = (itemId: string) => {
     const s = spaces.find((x) => x.id === itemId);
     if (s) return s.name;
