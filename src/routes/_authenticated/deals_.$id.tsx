@@ -552,6 +552,8 @@ function DealDetail() {
     toast.success("Dashboard link copied");
   }
 
+  const sendReminderFn = useServerFn(sendProposalReminder);
+
   if (!deal || !offer || !totals) return <AppShell><div>Loading…</div></AppShell>;
 
   const setGuestOverride = (pid: string, v: number) =>
@@ -585,7 +587,7 @@ function DealDetail() {
   const cooldownActive = hoursSinceLastReminder < 24;
   const showReminderBanner =
     !!proposalSentAt && !clientAction && daysSinceSent > reminderDays;
-  const sendReminderFn = useServerFn(sendProposalReminder);
+
   async function handleSendReminder() {
     if (!deal) return;
     setSendingReminder(true);
