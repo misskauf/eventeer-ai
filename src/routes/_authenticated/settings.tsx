@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ContractTemplatesEditor } from "@/components/contracts-panel";
 import { InvoiceTemplatesEditor } from "@/components/invoice-templates-panel";
 import { LeadFormsEditor } from "@/components/lead-forms-editor";
+import { LogoUploader } from "@/components/logo-uploader";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
