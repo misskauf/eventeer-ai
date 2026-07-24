@@ -769,7 +769,7 @@ function OptionGroup({
 
 function SingleChoiceSpaces({
   items, currency, selectedId, onChange,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
   currency: string;
@@ -779,15 +779,16 @@ function SingleChoiceSpaces({
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
   onNoteChange: (id: string, v: string) => void;
+  lang: Lang;
 }) {
   if (items.length === 0) return null;
   const multi = items.length > 1;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Space</CardTitle>
+        <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? "Choose one" : "Included in your proposal"}
+          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
         </p>
       </CardHeader>
       <CardContent>
@@ -798,6 +799,7 @@ function SingleChoiceSpaces({
         >
           {items.map((s) => {
             const isSelected = s.id === selectedId;
+            const localDesc = pickLocalized(s, lang, "long_description");
             return (
               <label
                 key={s.id}
@@ -812,17 +814,18 @@ function SingleChoiceSpaces({
                   <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
                 )}
                 <div className="flex-1">
-                  <div className="font-medium">{s.name}</div>
+                  <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
                   <div className="text-xs text-muted-foreground">
-                    From {money(s.base_rental_fee, currency)}
+                    {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
                   </div>
-                  {s.long_description && <Markdown source={s.long_description} className="mt-2" />}
+                  {localDesc && <Markdown source={localDesc} className="mt-2" />}
                   <NoteToggle
                     itemId={s.id}
                     open={!!openNoteFor[s.id]}
                     value={itemNotes[s.id] ?? ""}
                     onToggle={() => onToggleNote(s.id)}
                     onChange={(v) => onNoteChange(s.id, v)}
+                    lang={lang}
                   />
                 </div>
               </label>
