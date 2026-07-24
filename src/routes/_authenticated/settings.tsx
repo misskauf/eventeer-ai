@@ -199,7 +199,6 @@ function SettingsPage() {
                   />
                 </div>
               </div>
-              </div>
               <div className="space-y-2 rounded-md border p-3">
                 <div className="text-sm font-medium">Client follow-up</div>
                 <p className="text-xs text-muted-foreground">
