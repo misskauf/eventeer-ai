@@ -111,7 +111,12 @@ function SettingsPage() {
           <CardContent>
             <form className="space-y-3" onSubmit={saveCompany}>
               <Field name="name" label="Company name" defaultValue={company.name} />
-              <Field name="logo_url" label="Logo URL" defaultValue={company.logo_url ?? ""} />
+              <LogoUploader
+                companyId={company.id}
+                logoUrl={company.logo_url}
+                onChange={(url) => setCompany({ ...company, logo_url: url })}
+              />
+              <input type="hidden" name="logo_url" value={company.logo_url ?? ""} />
               <div className="grid grid-cols-2 gap-3">
                 <Field name="primary_color" label="Brand color" type="color" defaultValue={company.primary_color} />
                 <Field name="currency" label="Currency" defaultValue={company.currency} />
