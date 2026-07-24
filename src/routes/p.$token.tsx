@@ -18,7 +18,7 @@ import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
 import { toast } from "sonner";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Download } from "lucide-react";
 
 export const Route = createFileRoute("/p/$token")({
   ssr: false,
