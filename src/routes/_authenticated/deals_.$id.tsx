@@ -172,6 +172,7 @@ function DealDetail() {
     setRequireApproval(!!(co.data as any)?.require_deal_approval);
     setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
     setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
+    setReminderDays(Number((co.data as any)?.proposal_reminder_days ?? 5));
 
     setActivities(ac.data ?? []);
     if (pr.data) {
