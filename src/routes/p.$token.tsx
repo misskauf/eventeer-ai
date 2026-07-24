@@ -526,7 +526,7 @@ function ClientProposal() {
 
           <div>
             <Card className="sticky top-4">
-              <CardHeader><CardTitle>Your total</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t(lang, "your_total")}</CardTitle></CardHeader>
               <CardContent className="space-y-1 text-sm">
                 {totals.lines.map((l, i) => (
                   <div key={i} className="space-y-0.5 border-b py-1 last:border-b-0">
