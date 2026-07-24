@@ -1,55 +1,46 @@
 ## Goal
-Replace the single "Confirm my selection" button on the public proposal (`/p/:token`) with three actions — **Confirm**, **Request changes**, **Decline** — each with a distinct persisted status, deal stage, notification, and post-submit confirmation state. Surface the client's choice + note prominently on the venue-side deal detail with a direct link to the appropriate next step (duplicate proposal for changes, existing Create/Send contract for confirmed).
+One shared renderer for contract HTML so the template editor, the internal deal preview, and the client signing page can never drift apart — and stop leaking the internal template name to the client.
 
-## Database
-Single migration:
-- `ALTER TYPE deal_stage ADD VALUE IF NOT EXISTS 'changes_requested';`
-- `ALTER TABLE proposal_selections ADD COLUMN client_action text;` (nullable; values: `confirmed | changes_requested | declined`)
-- Extend `STAGE_LABELS`, `STAGE_ORDER`, `STAGE_TONES` in `src/lib/deal-stages.ts` with `changes_requested` (amber tone, placed between `proposal_sent` and `client_approved`).
+## 1. New shared component
+Create `src/components/contract-document.tsx`:
 
-`proposals.status` values are already free-form text — no schema change; we start writing `accepted | changes_requested | declined`.
+- Props: `{ html: string | null | undefined; className?: string }`.
+- Runs `ensureHtml()` (from `@/lib/contracts`) then `DOMPurify.sanitize()` with an explicit allow-list:
+  - `ALLOWED_TAGS`: `ul, ol, li, h1, h2, h3, h4, p, hr, table, thead, tbody, tr, td, th, img, a, strong, em, u, br, div, span`
+  - `ALLOWED_ATTR`: `style, href, src, alt, target, colspan, rowspan, class`
+  - `ADD_ATTR: ['style','target']`
+- Renders a single `<div className="contract-html prose prose-sm max-w-none dark:prose-invert ...">` with `dangerouslySetInnerHTML`.
+- Keeps the existing `.contract-html` CSS hooks in `src/styles.css` so bullets/headings render even without the typography plugin.
 
-## Server: `submitClientSelection` (`src/lib/public-share.functions.ts`)
-- Extend Zod input with `action: z.enum(["confirmed","changes_requested","declined"])` and optional `note: z.string().optional()`.
-- Preview tokens: still no-op.
-- Persist `client_action` on the `proposal_selections` insert.
-- Merge `client_response.action` + `note` into `proposals.constraints.client_response` (alongside existing fields, so the deal detail can render them).
-- Update `proposals.status` based on action (`accepted` / `changes_requested` / `declined`).
-- Only advance deal stage when it's still in the pre-approval set:
-  - `confirmed` → `client_approved`
-  - `changes_requested` → `changes_requested`
-  - `declined` → `lost` (allow even if past pre-approval, since declining is terminal — but skip when already `signed`/paid).
-- Call `notifyDeal` with matching `kind`: `client_confirmed`, `client_requested_changes`, or `client_declined`, and an appropriate title/body including the note excerpt.
+## 2. Tailwind typography plugin
+`@tailwindcss/typography` is not currently installed (Tailwind v4 CSS-first config, no plugin registered). Add it so `prose` classes work as first-class styling:
 
-`NotifyKind` already includes all three values, and the notifications table already accepts free-form kinds — no notifications schema change.
+- `bun add -d @tailwindcss/typography`
+- In `src/styles.css`, add `@plugin "@tailwindcss/typography";` near the top (after `@import "tailwindcss"`).
+- Leave the existing `.contract-html` fallback rules in place as a safety net.
 
-## Client: `src/routes/p.$token.tsx`
-Total card:
-- Replace the single button with three buttons stacked:
-  1. **Confirm my selection** (primary, branded) — submits directly, requires nothing extra.
-  2. **Request changes** (outline) — opens the existing `overallMessage` textarea inline as required, blocks submit until a non-empty note.
-  3. **Decline offer** (ghost / destructive-outline) — opens the same textarea as optional reason.
-- Track `pendingAction: "confirmed"|"changes_requested"|"declined"|null` so the message box label + submit-button copy adapt (e.g. "Send change request", "Send decline").
-- Refactor `onSubmit(action)` to pass the action + note into `submit()`.
-- Preview mode: still non-submitting; toast tells the user which action was clicked.
-- After success set `submitted` + `submittedAction`; render a confirmation panel in place of the buttons ("Selection confirmed — the event manager has been notified" / "Your change request was sent" / "Your response has been recorded"), and disable all action buttons.
+## 3. Replace the three inline renderers
+Swap each `<div className="prose ..." dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ensureHtml(...)) }} />` for `<ContractDocument html={...} />`:
 
-No restyling beyond adding the two new buttons and the confirmation panel — reuse existing `Button`, `Textarea`, `Card` primitives.
+- `src/components/contracts-panel.tsx` — the template editor preview / viewer dialog (line ~516). Keep the plain-text sanitize (line ~657) that strips all tags for the card excerpt — unrelated.
+- `src/routes/_authenticated/deals_.$id.tsx` — the internal deal-side contract preview (inside `ContractsPanel` usage, only if a second inline renderer exists there; otherwise no change since `ContractsPanel` already owns it).
+- `src/routes/c.$token.tsx` — the client signing page body (line ~130).
 
-## Client: venue deal detail (`src/routes/_authenticated/deals_.$id.tsx`)
-The existing "Client response" card already renders overall message + picks. Enhance it:
-- Read `action` from `constraints.client_response` and show a prominent status header inside the card (Confirmed / Changes requested / Declined) with a matching tone (emerald / amber / red).
-- Under the header, show a "Next step" action row:
-  - `changes_requested` → button **Duplicate & edit proposal** — reuse existing `saveProposal` flow by calling it with a fresh version (call the existing internal handler used by "Save new version"; wire the button to the same code path already used to create a new proposal version and scroll to the proposal editor).
-  - `confirmed` → button **Create contract** that scrolls to / opens the existing `ContractsPanel` (already on the page). No new contract code.
-  - `declined` → no next-step CTA, just the status.
-- Card border/background tone follows the action (keep current emerald default when confirmed).
+## 4. Hide the internal template name from the client
+In `src/routes/c.$token.tsx`:
 
-No changes to the contracts flow, notification pipeline, approval workflow, or pricing engine.
+- Remove the `<h1>{contract.template_name || "Event contract"}</h1>` header.
+- Header block shows only: company logo + company name, and a neutral title — prefer `deal.client_name ? \`Event Agreement — ${deal.client_name}\` : "Event Agreement"`.
+- Also update the browser tab: `head: () => ({ meta: [{ title: "Event Agreement" }] })` (no template name).
+- The dialog title inside `contracts-panel.tsx` (manager view) keeps `template_name` — that side is internal.
 
-## Files touched
-- `supabase` migration (enum + column)
-- `src/lib/deal-stages.ts`
-- `src/lib/public-share.functions.ts`
-- `src/routes/p.$token.tsx`
-- `src/routes/_authenticated/deals_.$id.tsx`
+## 5. Manual verification
+Use an existing template that contains an H1/H2, a bulleted list, a numbered list, an inserted logo, and the signature table. Open it in:
+1. The template editor preview dialog.
+2. The internal deal contract preview.
+3. `/c/:token` in an incognito tab.
+
+Confirm identical rendering (lists show bullets/numbers, headings sized, logo image visible, signature table intact) and that no template name appears on the client page.
+
+## Out of scope
+No visual restyle of contracts, no changes to `renderContract`/placeholder logic, no changes to the manager-side wording.
