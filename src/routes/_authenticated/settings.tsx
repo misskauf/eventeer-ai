@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ContractTemplatesEditor } from "@/components/contracts-panel";
+import { InvoiceTemplatesEditor } from "@/components/invoice-templates-panel";
 import { LeadFormsEditor } from "@/components/lead-forms-editor";
 
 
@@ -58,6 +59,8 @@ function SettingsPage() {
         contact_phone: (fd.get("contact_phone") as string) || null,
         website: (fd.get("website") as string) || null,
         require_deal_approval: fd.get("require_deal_approval") === "on",
+        invoice_mode: (fd.get("invoice_mode") as string) || "external",
+        invoice_notes: (fd.get("invoice_notes") as string) || null,
       } as any)
       .eq("id", company.id);
     if (error) return toast.error(error.message);
@@ -149,6 +152,52 @@ function SettingsPage() {
                   </span>
                 </span>
               </label>
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="text-sm font-medium">Invoicing (optional)</div>
+                <p className="text-xs text-muted-foreground">Choose how invoices are handled after a deal is signed.</p>
+                <div className="grid gap-2">
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="invoice_mode"
+                      value="external"
+                      defaultChecked={(company as any).invoice_mode !== "template"}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="font-medium">External</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Invoice from your own tool. EventFlow only tracks the status.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="invoice_mode"
+                      value="template"
+                      defaultChecked={(company as any).invoice_mode === "template"}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="font-medium">EventFlow template</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Generate an invoice document from the accepted proposal. Print to PDF from your browser.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-xs font-medium">Default invoice notes (optional)</label>
+                  <textarea
+                    name="invoice_notes"
+                    defaultValue={(company as any).invoice_notes ?? ""}
+                    rows={2}
+                    placeholder="Payment terms, bank details, thank-you note…"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
               <Button className="w-full">Save brand</Button>
             </form>
 
@@ -192,6 +241,17 @@ function SettingsPage() {
             <CardHeader><CardTitle>Contract templates</CardTitle></CardHeader>
             <CardContent>
               <ContractTemplatesEditor companyId={company.id} />
+            </CardContent>
+          </Card>
+        )}
+        {company?.id && (company as any).invoice_mode === "template" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoice templates</CardTitle>
+              <p className="text-sm text-muted-foreground">Used when generating invoices from a signed deal.</p>
+            </CardHeader>
+            <CardContent>
+              <InvoiceTemplatesEditor companyId={company.id} />
             </CardContent>
           </Card>
         )}

@@ -46,6 +46,7 @@ import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/de
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 import { ContractsPanel } from "@/components/contracts-panel";
+import { InvoicePanel } from "@/components/invoice-panel";
 
 
 
@@ -128,6 +129,8 @@ function DealDetail() {
     { id: string; client_name: string; client_company: string | null; stage: string }[]
   >([]);
   const [requireApproval, setRequireApproval] = useState(false);
+  const [invoiceMode, setInvoiceMode] = useState<"external" | "template">("external");
+  const [invoiceNotes, setInvoiceNotes] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
@@ -147,7 +150,7 @@ function DealDetail() {
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
-      supabase.from("companies").select("currency, require_deal_approval").eq("id", d.company_id).maybeSingle(),
+      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
 
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
@@ -164,6 +167,8 @@ function DealDetail() {
     setMinRevRules(rules);
     if (co.data?.currency) setCurrency(co.data.currency);
     setRequireApproval(!!(co.data as any)?.require_deal_approval);
+    setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
+    setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
 
     setActivities(ac.data ?? []);
     if (pr.data) {
@@ -1453,6 +1458,38 @@ function DealDetail() {
                     ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
                     : undefined,
                   event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+                }}
+              />
+            </div>
+            <div id="invoice-panel" className="border-t bg-background/95 p-3 scroll-mt-4">
+              <InvoicePanel
+                companyId={deal.company_id}
+                dealId={deal.id}
+                invoiceMode={invoiceMode}
+                invoiceNotes={invoiceNotes}
+                visible={["signed", "waiting_payment", "invoice_sent", "done", "client_approved"].includes(deal.stage)}
+                ctx={{
+                  deal,
+                  company: { name: undefined, currency },
+                  spaces: spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => ({ name: s.name })),
+                  foodPackages: foodPackages.filter((p) => selectedPackages.includes(p.id)).map((p) => ({ name: p.name })),
+                  beveragePackages: beveragePackages
+                    .filter((p) => selectedPackages.includes(p.id))
+                    .map((p) => ({ name: p.name, included_hours: p.included_hours })),
+                  extras: extras
+                    .filter((e) => selectedExtras.includes(e.id))
+                    .map((e) => ({ name: e.name })),
+                  totals: totals
+                    ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
+                    : undefined,
+                  event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+                  line_items: totals?.lines.map((l) => ({
+                    label: l.label,
+                    qty: l.qty,
+                    line_total: l.gross,
+                  })),
+                  service_charge: totals?.gratuity_gross,
+                  invoice_notes: invoiceNotes,
                 }}
               />
             </div>

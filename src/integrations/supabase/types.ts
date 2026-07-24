@@ -23,6 +23,8 @@ export type Database = {
           created_by: string
           currency: string
           id: string
+          invoice_mode: string
+          invoice_notes: string | null
           logo_url: string | null
           name: string
           primary_color: string
@@ -39,6 +41,8 @@ export type Database = {
           created_by: string
           currency?: string
           id?: string
+          invoice_mode?: string
+          invoice_notes?: string | null
           logo_url?: string | null
           name: string
           primary_color?: string
@@ -55,6 +59,8 @@ export type Database = {
           created_by?: string
           currency?: string
           id?: string
+          invoice_mode?: string
+          invoice_notes?: string | null
           logo_url?: string | null
           name?: string
           primary_color?: string
@@ -565,6 +571,111 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: true
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_templates: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          body_html: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          id: string
+          issued_at: string | null
+          mode: string
+          status: string
+          template_id: string | null
+          template_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          id?: string
+          issued_at?: string | null
+          mode?: string
+          status?: string
+          template_id?: string | null
+          template_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          id?: string
+          issued_at?: string | null
+          mode?: string
+          status?: string
+          template_id?: string | null
+          template_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_templates"
             referencedColumns: ["id"]
           },
         ]

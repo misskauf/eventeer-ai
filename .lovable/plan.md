@@ -1,46 +1,83 @@
-## Goal
-One shared renderer for contract HTML so the template editor, the internal deal preview, and the client signing page can never drift apart — and stop leaking the internal template name to the client.
 
-## 1. New shared component
-Create `src/components/contract-document.tsx`:
+# Optional Invoicing (Document generation only)
 
-- Props: `{ html: string | null | undefined; className?: string }`.
-- Runs `ensureHtml()` (from `@/lib/contracts`) then `DOMPurify.sanitize()` with an explicit allow-list:
-  - `ALLOWED_TAGS`: `ul, ol, li, h1, h2, h3, h4, p, hr, table, thead, tbody, tr, td, th, img, a, strong, em, u, br, div, span`
-  - `ALLOWED_ATTR`: `style, href, src, alt, target, colspan, rowspan, class`
-  - `ADD_ATTR: ['style','target']`
-- Renders a single `<div className="contract-html prose prose-sm max-w-none dark:prose-invert ...">` with `dangerouslySetInnerHTML`.
-- Keeps the existing `.contract-html` CSS hooks in `src/styles.css` so bullets/headings render even without the typography plugin.
+Add an optional "Invoice" step to signed deals. No payment collection, no numbering guarantees, no bank details, no paid tracking. Two modes chosen in Settings:
 
-## 2. Tailwind typography plugin
-`@tailwindcss/typography` is not currently installed (Tailwind v4 CSS-first config, no plugin registered). Add it so `prose` classes work as first-class styling:
+- **External** — venue invoices in their own tool; EventFlow just marks the stage.
+- **EventFlow template** — generate an invoice document from the accepted proposal, rendered via the shared `ContractDocument` component, printable to PDF from the browser.
 
-- `bun add -d @tailwindcss/typography`
-- In `src/styles.css`, add `@plugin "@tailwindcss/typography";` near the top (after `@import "tailwindcss"`).
-- Leave the existing `.contract-html` fallback rules in place as a safety net.
+## Data model (single migration)
 
-## 3. Replace the three inline renderers
-Swap each `<div className="prose ..." dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ensureHtml(...)) }} />` for `<ContractDocument html={...} />`:
+- `companies` — add:
+  - `invoice_mode text not null default 'external'` — `'external' | 'template'`
+  - `invoice_notes text` — optional footer notes (e.g. "Payment due within 14 days")
+- `invoice_templates` — new table (mirrors `contract_templates`):
+  - `company_id`, `name`, `body_html`, `is_default boolean`, timestamps. RLS + GRANTs per company membership (same pattern as `contract_templates`).
+- `invoices` — new table:
+  - `company_id`, `deal_id`, `template_id nullable`, `body_html` (rendered snapshot), `mode text` (`'external'|'template'`), `status text` (`'draft'|'sent'|'done'`), `issued_at nullable`, timestamps. RLS + GRANTs by company membership.
+- Reuse existing `invoice_sent` value on `deal_stage` enum — no enum change.
 
-- `src/components/contracts-panel.tsx` — the template editor preview / viewer dialog (line ~516). Keep the plain-text sanitize (line ~657) that strips all tags for the card excerpt — unrelated.
-- `src/routes/_authenticated/deals_.$id.tsx` — the internal deal-side contract preview (inside `ContractsPanel` usage, only if a second inline renderer exists there; otherwise no change since `ContractsPanel` already owns it).
-- `src/routes/c.$token.tsx` — the client signing page body (line ~130).
+## Placeholder system
 
-## 4. Hide the internal template name from the client
-In `src/routes/c.$token.tsx`:
+Extend the existing contract placeholder renderer (`src/lib/contracts.ts`) OR add a sibling `src/lib/invoices.ts` that shares the token map. Placeholders available:
 
-- Remove the `<h1>{contract.template_name || "Event contract"}</h1>` header.
-- Header block shows only: company logo + company name, and a neutral title — prefer `deal.client_name ? \`Event Agreement — ${deal.client_name}\` : "Event Agreement"`.
-- Also update the browser tab: `head: () => ({ meta: [{ title: "Event Agreement" }] })` (no template name).
-- The dialog title inside `contracts-panel.tsx` (manager view) keeps `template_name` — that side is internal.
+- Client: `{{client_name}}`, `{{client_email}}`, `{{client_company}}`
+- Event: `{{event_name}}`, `{{event_date}}`, `{{event_start}}`, `{{event_end}}`, `{{guest_count}}`, `{{venue}}`
+- Line items table: `{{line_items_table}}` — HTML table of accepted proposal selections (space, food, beverages incl. extra hours, extras) with qty, unit price, line total.
+- Totals: `{{subtotal}}`, `{{service_charge}}`, `{{tax}}`, `{{total}}`, `{{currency}}`
+- Meta: `{{today}}`, `{{invoice_notes}}`
+- Company: `{{company_name}}`, `{{company_address}}`, `{{company_logo}}`, `{{company_email}}`
 
-## 5. Manual verification
-Use an existing template that contains an H1/H2, a bulleted list, a numbered list, an inserted logo, and the signature table. Open it in:
-1. The template editor preview dialog.
-2. The internal deal contract preview.
-3. `/c/:token` in an incognito tab.
+Line items and totals derive from the **accepted `proposal_selections`** row via the existing pricing engine — no re-computation logic invented.
 
-Confirm identical rendering (lists show bullets/numbers, headings sized, logo image visible, signature table intact) and that no template name appears on the client page.
+## Settings UI (`src/routes/_authenticated/settings.tsx`)
 
-## Out of scope
-No visual restyle of contracts, no changes to `renderContract`/placeholder logic, no changes to the manager-side wording.
+New "Invoicing" card:
+- Radio: **External** / **EventFlow template**. Clearly labeled "Optional".
+- If template: manage invoice templates (list + New + Duplicate + Upload — reusing `ContractUploadDialog` and `RichTextEditor`), pick a default. Free-text "Invoice notes" field.
+
+## Invoice templates editor
+
+New page or panel `src/components/invoice-templates-panel.tsx`, mirroring `contracts-panel.tsx`: TipTap rich-text editor with the "Insert placeholder" toolbar bound to the invoice placeholder list. Upload flow reuses the existing document import → HTML conversion.
+
+## Deal detail (`src/routes/_authenticated/deals_.$id.tsx`)
+
+Add an **Invoice** section, only shown when `stage ∈ {signed, waiting_payment, invoice_sent, downpayment_received, paid_in_full}`. Clearly labeled "Optional — invoicing".
+
+- **External mode**: single button **Mark invoice sent** → server fn sets `invoices.status='sent'`, moves stage to `invoice_sent`, calls `notifyDeal({kind:'invoice_sent'})`. Second button **Mark done**.
+- **Template mode**: template picker (defaults to the company default) → **Generate invoice** renders placeholders into `invoices.body_html` snapshot → preview via `<ContractDocument>` → **Print / Save PDF** (browser print), **Mark invoice sent**, **Mark done**. Regenerate re-snapshots.
+
+No client-facing signing page. No email of the invoice itself in v1 — venue downloads/prints and sends outside the app (matches "no payment collection").
+
+## Print stylesheet
+
+Add a scoped `@media print` block in `src/styles.css` (or a small `print.css` imported by the invoice preview) that:
+- Hides app chrome (`.no-print`, sidebar, headers, buttons).
+- Sets white background, black text, A4 page size, sensible margins.
+- Preserves the `prose` typography used by `ContractDocument`.
+
+The preview page wraps the document in a `.printable` container so `window.print()` yields a clean PDF.
+
+## Server functions (`src/lib/invoices.functions.ts`)
+
+- `listInvoiceTemplates`, `upsertInvoiceTemplate`, `duplicateInvoiceTemplate`, `deleteInvoiceTemplate`
+- `generateInvoice({dealId, templateId?})` — renders snapshot, upserts `invoices` row (draft).
+- `updateInvoiceStatus({invoiceId, status})` — updates status + deal stage + `notifyDeal`.
+
+All use `requireSupabaseAuth`; RLS scoped by `is_member_of(auth.uid(), company_id)`.
+
+## Notifications
+
+Extend `notifyDeal` kinds with `invoice_sent` (deal activity + email to team using existing Resend flow). Reuse existing pattern; no new infra.
+
+## Out of scope (explicit)
+
+- No Stripe / payment intents / bank details / IBAN fields.
+- No sequential invoice numbers (users can type their own in the template if wanted).
+- No "paid" tracking beyond the existing stage badges.
+- No client portal for invoices.
+
+## Files touched
+
+- New: migration; `src/lib/invoices.functions.ts`; `src/lib/invoices.ts` (placeholder renderer); `src/components/invoice-templates-panel.tsx`; `src/components/invoice-panel.tsx` (deal-detail section).
+- Edited: `src/routes/_authenticated/settings.tsx` (Invoicing card); `src/routes/_authenticated/deals_.$id.tsx` (mount InvoicePanel); `src/lib/notifications.server.ts` (new kind); `src/styles.css` (print rules).
