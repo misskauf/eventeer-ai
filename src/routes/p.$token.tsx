@@ -1064,6 +1064,7 @@ function BeverageHoursField({
   overageRate,
   currency,
   onHoursChange,
+  lang,
 }: {
   packageId: string;
   includedHours: number;
@@ -1071,10 +1072,15 @@ function BeverageHoursField({
   overageRate: number;
   currency: string;
   onHoursChange: (id: string, v: number) => void;
+  lang: Lang;
 }) {
+  const eventHours = lang === "de" ? "Veranstaltungsstunden" : "Event hours";
+  const standard = lang === "de" ? "Standard" : "standard";
+  const extra = lang === "de" ? "Std. zusätzlich" : "h extra";
+  const perGuestHour = lang === "de" ? "/Gast/Std." : "/guest/h";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-muted-foreground">Event hours</span>
+      <span className="text-muted-foreground">{eventHours}</span>
       <Input
         type="number"
         min={includedHours}
@@ -1083,26 +1089,31 @@ function BeverageHoursField({
         onChange={(e) => onHoursChange(packageId, Math.max(includedHours, Number(e.target.value) || includedHours))}
         className="h-7 w-20"
       />
-      <span className="text-muted-foreground">standard {includedHours}h</span>
+      <span className="text-muted-foreground">{standard} {includedHours}h</span>
       {overageRate > 0 && (
-        <span className="text-muted-foreground">+{money(overageRate, currency)}/guest/h</span>
+        <span className="text-muted-foreground">+{money(overageRate, currency)}{perGuestHour}</span>
       )}
       {currentHours > includedHours && (
-        <span className="font-medium text-foreground">+{currentHours - includedHours}h extra</span>
+        <span className="font-medium text-foreground">+{currentHours - includedHours}{lang === "de" ? " " : ""}{extra}</span>
       )}
     </div>
   );
 }
 
 function NoteToggle({
-  itemId, open, value, onToggle, onChange,
+  itemId, open, value, onToggle, onChange, lang,
 }: {
   itemId: string;
   open: boolean;
   value: string;
   onToggle: () => void;
   onChange: (v: string) => void;
+  lang: Lang;
 }) {
+  const hide = lang === "de" ? "Notiz ausblenden" : "Hide note";
+  const edit = lang === "de" ? "Notiz bearbeiten" : "Edit note";
+  const add = lang === "de" ? "Notiz hinzufügen" : "Add a note";
+  const placeholder = lang === "de" ? "Hinterlassen Sie eine Notiz zu diesem Artikel" : "Leave a note about this item";
   return (
     <div className="mt-2">
       <button
@@ -1110,20 +1121,21 @@ function NoteToggle({
         onClick={onToggle}
         className="text-[11px] text-muted-foreground underline hover:text-foreground"
       >
-        {open ? "Hide note" : value ? "Edit note" : "Add a note"}
+        {open ? hide : value ? edit : add}
       </button>
       {open && (
         <Textarea
           rows={2}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Leave a note about this item"
+          placeholder={placeholder}
           className="mt-1 text-xs"
         />
       )}
     </div>
   );
 }
+
 
 function Row({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return <div className="flex justify-between"><span>{label}</span><span className="tabular-nums">{value}</span></div>;
