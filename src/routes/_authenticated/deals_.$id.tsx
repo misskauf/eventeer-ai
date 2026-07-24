@@ -1461,6 +1461,38 @@ function DealDetail() {
                 }}
               />
             </div>
+            <div id="invoice-panel" className="border-t bg-background/95 p-3 scroll-mt-4">
+              <InvoicePanel
+                companyId={deal.company_id}
+                dealId={deal.id}
+                invoiceMode={invoiceMode}
+                invoiceNotes={invoiceNotes}
+                visible={["signed", "waiting_payment", "invoice_sent", "done", "client_approved"].includes(deal.stage)}
+                ctx={{
+                  deal,
+                  company: { name: undefined, currency },
+                  spaces: spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => ({ name: s.name })),
+                  foodPackages: foodPackages.filter((p) => selectedPackages.includes(p.id)).map((p) => ({ name: p.name })),
+                  beveragePackages: beveragePackages
+                    .filter((p) => selectedPackages.includes(p.id))
+                    .map((p) => ({ name: p.name, included_hours: p.included_hours })),
+                  extras: extras
+                    .filter((e) => selectedExtras.includes(e.id))
+                    .map((e) => ({ name: e.name })),
+                  totals: totals
+                    ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
+                    : undefined,
+                  event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+                  line_items: totals?.lines.map((l) => ({
+                    label: l.label,
+                    qty: l.qty,
+                    line_total: l.gross,
+                  })),
+                  service_charge: totals?.gratuity_gross,
+                  invoice_notes: invoiceNotes,
+                }}
+              />
+            </div>
 
           </Card>
 
