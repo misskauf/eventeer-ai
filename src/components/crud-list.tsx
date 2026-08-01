@@ -16,7 +16,7 @@ export type Field = {
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
-  defaultValue?: string | number;
+  defaultValue?: string | number | boolean;
   nullable?: boolean;
   hint?: string;
   rows?: number;
