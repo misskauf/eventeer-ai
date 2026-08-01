@@ -9,6 +9,7 @@ import {
   MEASURE_MAP,
   isItemDimension,
   suggestedTitle,
+  type CustomFilters,
   type CustomWidget,
   type Dimension,
   type Measure,
@@ -24,6 +25,10 @@ export type WidgetConfig = {
   chart_type: string | null;
   size: WidgetSize;
   date_range_override: WidgetRangeOverride;
+  /** Per-card filters (built-in cards; custom widgets keep theirs in `custom.filters`). */
+  filters?: CustomFilters;
+  /** Overlay / compare against the previous equivalent period. */
+  compare_previous?: boolean;
   /** Present only for user-built widgets (`widget_key` = `custom:<id>`). */
   custom?: CustomWidget;
 };
@@ -190,8 +195,20 @@ export function newCustomWidget(partial?: Partial<CustomWidget>): CustomWidget {
       space_ids: partial?.filters?.space_ids ?? [],
       owner_ids: partial?.filters?.owner_ids ?? [],
       event_types: partial?.filters?.event_types ?? [],
+      sources: partial?.filters?.sources ?? [],
+      package_ids: partial?.filters?.package_ids ?? [],
     },
   };
+}
+
+export function emptyFilters(): CustomFilters {
+  return { stages: [], space_ids: [], owner_ids: [], event_types: [], sources: [], package_ids: [] };
+}
+
+/** True when a card carries at least one active filter. */
+export function hasActiveFilters(f?: CustomFilters) {
+  if (!f) return false;
+  return Object.values(f).some((v) => Array.isArray(v) && v.length > 0);
 }
 
 export function defaultEntry(def: WidgetDef): WidgetConfig {
@@ -201,6 +218,8 @@ export function defaultEntry(def: WidgetDef): WidgetConfig {
     chart_type: def.defaultChartType,
     size: def.defaultSize,
     date_range_override: null,
+    filters: emptyFilters(),
+    compare_previous: false,
     ...(def.custom ? { custom: def.custom } : {}),
   };
 }
@@ -228,7 +247,21 @@ function parseCustom(raw: any): CustomWidget | null {
       space_ids: arr(raw.filters?.space_ids),
       owner_ids: arr(raw.filters?.owner_ids),
       event_types: arr(raw.filters?.event_types),
+      sources: arr(raw.filters?.sources),
+      package_ids: arr(raw.filters?.package_ids),
     },
+  };
+}
+
+function normalizeFilters(raw: any): CustomFilters {
+  const arr = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+  return {
+    stages: arr(raw?.stages),
+    space_ids: arr(raw?.space_ids),
+    owner_ids: arr(raw?.owner_ids),
+    event_types: arr(raw?.event_types),
+    sources: arr(raw?.sources),
+    package_ids: arr(raw?.package_ids),
   };
 }
 
@@ -269,6 +302,8 @@ export function normalizeConfig(raw: unknown): WidgetConfig[] {
           ? chart
           : def.defaultChartType,
       size: SIZES.includes(size) ? size : def.defaultSize,
+      filters: normalizeFilters((item as any)?.filters),
+      compare_previous: (item as any)?.compare_previous === true,
       date_range_override:
         override && typeof override?.mode === "string"
           ? { mode: override.mode, from: String(override.from ?? ""), to: String(override.to ?? "") }
