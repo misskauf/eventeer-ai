@@ -306,7 +306,7 @@ export function runQuery(input: {
   const bucket = (key: string, label: string, order: number) => {
     let b = buckets.get(key);
     if (!b) {
-      b = { key, label, order, deals: [], revenue: 0, cost: 0, dealIds: new Set() };
+      b = { key, label, order, deals: [], revenue: 0, gross: 0, cost: 0, dealIds: new Set() };
       buckets.set(key, b);
     }
     return b;
@@ -320,6 +320,7 @@ export function runQuery(input: {
       const key = i.item_id ?? i.item_name;
       const b = bucket(key, i.item_name || "—", 0);
       b.revenue += num(i.line_total);
+      b.gross += num(i.line_gross ?? i.line_total);
       b.cost += num(i.line_cost);
       if (!b.dealIds.has(i.deal_id)) {
         b.dealIds.add(i.deal_id);
