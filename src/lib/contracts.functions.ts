@@ -161,11 +161,15 @@ export const sendContractToClient = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: contract, error: fetchErr } = await context.supabase
       .from("contracts")
-      .select("id, status, signing_token, signing_token_expires_at")
+      .select("id, company_id, status, signing_token, signing_token_expires_at")
       .eq("id", data.contract_id)
       .maybeSingle();
     if (fetchErr) throw new Error(fetchErr.message);
     if (!contract) throw new Error("Contract not found");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, (contract as any).company_id as string, "contracts", "edit");
+    }
     if (contract.status === "signed") throw new Error("Contract already signed");
     if (contract.status === "voided") throw new Error("Contract has been voided");
 
@@ -215,6 +219,10 @@ export const markContractSignedManually = createServerFn({ method: "POST" })
       .eq("id", data.contract_id)
       .maybeSingle();
     if (!contract) throw new Error("Contract not found");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, (contract as any).company_id as string, "contracts", "edit");
+    }
     if (contract.status === "signed") throw new Error("Contract already signed");
 
     const now = new Date().toISOString();
@@ -254,6 +262,10 @@ export const voidContract = createServerFn({ method: "POST" })
       .eq("id", data.contract_id)
       .maybeSingle();
     if (!contract) throw new Error("Contract not found");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, (contract as any).company_id as string, "contracts", "edit");
+    }
 
     const { error } = await context.supabase
       .from("contracts")

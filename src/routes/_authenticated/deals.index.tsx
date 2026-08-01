@@ -36,10 +36,16 @@ import {
 import { formatEventDate } from "@/lib/date-format";
 import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/lib/use-permissions";
+import { RequirePermission } from "@/components/permission-guard";
 
 
 export const Route = createFileRoute("/_authenticated/deals/")({
-  component: DealsPage,
+  component: () => (
+    <RequirePermission module="deals">
+      <DealsPage />
+    </RequirePermission>
+  ),
 });
 
 type Deal = {
@@ -67,6 +73,9 @@ function DealsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
+  const { scope, can, loading: permLoading } = usePermissions();
+  const dealScope = scope("deals");
+  const canEditDeals = can("deals", "edit");
 
   async function refresh() {
     const { data: userData } = await supabase.auth.getUser();
@@ -77,20 +86,24 @@ function DealsPage() {
       .limit(1)
       .maybeSingle();
     setRequireApproval(!!(co as any)?.require_deal_approval);
-    const { data } = await supabase
+    let query = supabase
       .from("deals")
       .select(
         "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by",
       )
       .order("updated_at", { ascending: false });
+    // Roles scoped to "own records" only see the deals they own.
+    if (dealScope === "own" && userData.user?.id) query = query.eq("owner_id", userData.user.id);
+    const { data } = await query;
     setDeals((data as Deal[]) ?? []);
     setLoading(false);
   }
 
 
   useEffect(() => {
-    refresh();
-  }, []);
+    if (!permLoading) refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permLoading, dealScope]);
 
   async function updateStage(dealId: string, next: string) {
     const prev = deals.find((d) => d.id === dealId)?.stage;
@@ -407,6 +420,9 @@ function StageChip({
 function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { can } = usePermissions();
+  const canCreate = can("deals", "edit");
+
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -456,6 +472,8 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
     setOpen(false);
     onCreated(deal.id);
   }
+
+  if (!canCreate) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

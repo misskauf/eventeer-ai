@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { usePermissions } from "@/lib/use-permissions";
+import type { PermissionModule } from "@/lib/permissions";
 
 export type Field = {
   name: string;
@@ -35,6 +37,7 @@ export function CrudList<T extends { id: string }>({
   filter,
   staticValues,
   extraFormContent,
+  module = "catalog",
 }: {
   table: string;
   companyId: string | null;
@@ -44,7 +47,10 @@ export function CrudList<T extends { id: string }>({
   filter?: Record<string, any>; // eq() filters applied on load
   staticValues?: Record<string, any>; // merged into every insert/update payload
   extraFormContent?: (row: T | null) => ReactNode;
+  module?: PermissionModule;
 }) {
+  const { can } = usePermissions();
+  const canEdit = can(module, "edit");
   const [rows, setRows] = useState<T[]>([]);
   const [editing, setEditing] = useState<T | null>(null);
   const [open, setOpen] = useState(false);
@@ -100,7 +106,7 @@ export function CrudList<T extends { id: string }>({
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className={`mb-4 flex justify-end ${canEdit ? "" : "hidden"}`}>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditing(null)}>
@@ -198,7 +204,7 @@ export function CrudList<T extends { id: string }>({
               {rows.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">{render(r)}</div>
-                  <div className="flex gap-1">
+                  <div className={`flex gap-1 ${canEdit ? "" : "hidden"}`}>
                     <Button
                       size="icon"
                       variant="ghost"

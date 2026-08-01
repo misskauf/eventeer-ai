@@ -21,6 +21,10 @@ export const updateInvoiceStatus = createServerFn({ method: "POST" })
       .eq("id", data.invoice_id)
       .maybeSingle();
     if (!inv) throw new Error("Invoice not found");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, (inv as any).company_id as string, "invoices", "edit");
+    }
 
     const now = new Date().toISOString();
     const patch: Record<string, unknown> = { status: data.status };

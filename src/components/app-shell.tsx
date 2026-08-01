@@ -6,6 +6,8 @@ import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles, BarChart3 } from
 import { useQueryClient } from "@tanstack/react-query";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { useTranslation, applyStoredLanguage } from "@/i18n";
+import { usePermissions } from "@/lib/use-permissions";
+import type { PermissionModule } from "@/lib/permissions";
 
 type Company = {
   id: string;
@@ -21,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [company, setCompany] = useState<Company | null>(null);
+  const { can, loading: permLoading } = usePermissions();
 
   useEffect(() => {
     applyStoredLanguage();
@@ -55,12 +58,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     await navigate({ to: "/auth", replace: true });
   }
 
-  const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; match?: string }> = [
-    { to: "/deals", label: t("nav.deals"), icon: LayoutDashboard },
-    { to: "/analytics", label: "Analytics", icon: BarChart3 },
-    { to: "/catalog/spaces", label: t("nav.catalog"), icon: BookOpen, match: "/catalog" },
-    { to: "/settings", label: t("nav.settings"), icon: Settings },
-  ];
+  type NavItem = {
+    to: string;
+    label: string;
+    icon: typeof LayoutDashboard;
+    match?: string;
+    modules: PermissionModule[];
+  };
+  const nav: NavItem[] = ([
+    { to: "/deals", label: t("nav.deals"), icon: LayoutDashboard, modules: ["deals"] },
+    { to: "/analytics", label: "Analytics", icon: BarChart3, modules: ["analytics"] },
+    {
+      to: "/catalog/spaces",
+      label: t("nav.catalog"),
+      icon: BookOpen,
+      match: "/catalog",
+      modules: ["catalog"],
+    },
+    {
+      to: "/settings",
+      label: t("nav.settings"),
+      icon: Settings,
+      modules: ["settings", "team", "invoices", "lead_forms", "contracts"],
+    },
+  ] as NavItem[]).filter((n) => permLoading || n.modules.some((m) => can(m, "view")));
 
 
   return (

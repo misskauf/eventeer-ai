@@ -55,6 +55,10 @@ export const sendBriefToManager = createServerFn({ method: "POST" })
       .eq("id", data.deal_id)
       .maybeSingle();
     if (error || !deal) throw new Error("Deal not found or not accessible");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, deal.company_id as string, "event_briefs", "edit");
+    }
 
     const { data: brief } = await context.supabase
       .from("event_briefs")

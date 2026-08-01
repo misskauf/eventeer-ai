@@ -4,10 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useCompanySettings } from "@/components/settings-shared";
-import { NON_OWNER_ROLES, useCompanyRole } from "@/lib/cost-visibility";
 import { PermissionMatrixCard } from "@/components/permission-matrix";
 
 export const Route = createFileRoute("/_authenticated/settings/team")({
@@ -66,62 +64,6 @@ function TeamSettings() {
 
     <PermissionMatrixCard />
 
-    <CostVisibilityCard companyId={company.id} initial={company.cost_visible_roles ?? []} />
     </div>
   );
 }
-
-function CostVisibilityCard({ companyId, initial }: { companyId: string; initial: string[] }) {
-  const { isOwner, loading } = useCompanyRole();
-  const [roles, setRoles] = useState<string[]>(initial);
-  const [saving, setSaving] = useState(false);
-
-  function toggle(role: string) {
-    setRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
-  }
-
-  async function save() {
-    setSaving(true);
-    const { error } = await supabase
-      .from("companies")
-      .update({ cost_visible_roles: roles } as any)
-      .eq("id", companyId);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Cost visibility saved");
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Cost visibility</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Internal costs and margins are never shown to clients. Choose which roles can see them.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="text-sm text-muted-foreground">Owners always see costs.</div>
-        <div className="space-y-2">
-          {NON_OWNER_ROLES.map((r) => (
-            <label key={r.value} className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={roles.includes(r.value)}
-                disabled={!isOwner || loading}
-                onCheckedChange={() => toggle(r.value)}
-              />
-              {r.label}
-            </label>
-          ))}
-        </div>
-        {isOwner ? (
-          <Button size="sm" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save"}
-          </Button>
-        ) : (
-          <p className="text-xs text-muted-foreground">Only the owner can change this setting.</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-

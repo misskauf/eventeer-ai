@@ -20,9 +20,14 @@ import {
   stageLabel,
 } from "@/lib/deal-stages";
 import { cn } from "@/lib/utils";
+import { RequirePermission } from "@/components/permission-guard";
 
 export const Route = createFileRoute("/_authenticated/deals/calendar")({
-  component: DealsCalendarPage,
+  component: () => (
+    <RequirePermission module="deals">
+      <DealsCalendarPage />
+    </RequirePermission>
+  ),
 });
 
 type CalDeal = {
