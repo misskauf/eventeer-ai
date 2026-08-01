@@ -98,11 +98,14 @@ type Deal = {
   owner_id: string;
   stage: string;
   source: string | null;
+  event_type: string | null;
+  guest_count: number | null;
   estimated_value: number;
   created_at: string;
   updated_at: string;
   event_date: string | null;
 };
+
 
 type Activity = { deal_id: string; kind: string; meta: any; created_at: string };
 type Proposal = { deal_id: string; created_at: string; sent_at: string | null };
