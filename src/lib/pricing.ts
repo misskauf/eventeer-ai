@@ -243,20 +243,22 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
 
   const staffIds = selection.staff_ids ?? [];
   for (const st of (offer.staff ?? []).filter((x) => staffIds.includes(x.id))) {
+    const cfg = selection.staff_config?.[st.id] ?? {};
+    const count = Math.max(1, Number(cfg.count ?? 1));
     let amount = 0;
     let qty = "";
     if (st.pricing_type === "per_person") {
       amount = st.price * selection.guest_count;
       qty = `${selection.guest_count} × ${money(st.price, cur)}`;
     } else if (st.pricing_type === "per_hour") {
-      const h = st.hours ?? 1;
-      amount = st.price * h;
-      qty = `${h}h × ${money(st.price, cur)}`;
+      const h = Number(cfg.hours ?? st.hours ?? 1);
+      amount = st.price * h * count;
+      qty = `${count} × ${h}h × ${money(st.price, cur)}`;
     } else {
-      amount = st.price;
-      qty = "flat";
+      amount = st.price * count;
+      qty = count > 1 ? `${count} × ${money(st.price, cur)}` : "flat";
     }
-    lines.push(lineFor(amount, st, defaults, "staff", `Staff: ${st.name}`, qty, "staff", st.id));
+    lines.push(lineFor(amount, st, defaults, "staff", `Staffing: ${st.name}`, qty, "staff", st.id));
   }
 
   if (offer.fees.cleaning_fee > 0) {
