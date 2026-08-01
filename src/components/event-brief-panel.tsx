@@ -293,6 +293,71 @@ export function EventBriefPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={sendOpen} onOpenChange={setSendOpen}>
+        <DialogContent className="no-print sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send brief to event manager</DialogTitle>
+            <DialogDescription>
+              Sends the brief as it currently reads, plus a link to open the deal for the live
+              version.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Recipient</Label>
+              <Select value={pickedEmail} onValueChange={setPickedEmail}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a recipient" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipients.map((r) => (
+                    <SelectItem key={r.user_id} value={r.email}>
+                      {r.email} · {r.role}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__custom__">Other email…</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {pickedEmail === "__custom__" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="brief-custom-email">Email address</Label>
+                <Input
+                  id="brief-custom-email"
+                  type="email"
+                  value={customEmail}
+                  onChange={(e) => setCustomEmail(e.target.value)}
+                  placeholder="name@venue.com"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="brief-note">Message (optional)</Label>
+              <Textarea
+                id="brief-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Anything the team should know…"
+                rows={3}
+              />
+            </div>
+            {dirty && (
+              <p className="text-xs text-muted-foreground">
+                You have unsaved edits — they will be included in the email.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendOpen(false)} disabled={sending}>
+              Cancel
+            </Button>
+            <Button onClick={doSend} disabled={sending}>
+              {sending ? "Sending…" : "Send brief"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
