@@ -59,6 +59,14 @@ export const WIDGETS: WidgetDef[] = [
     supportsRange: false,
   },
   {
+    key: "goals",
+    label: "Revenue goals",
+    chartTypes: [],
+    defaultChartType: null,
+    defaultSize: "lg",
+    supportsRange: false,
+  },
+  {
     key: "leads",
     label: "Leads over time",
     chartTypes: [
