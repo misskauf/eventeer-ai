@@ -159,6 +159,46 @@ export function EventBriefPanel({
     toast.info("Brief rebuilt from the current deal — review and save.");
   }
 
+  async function openSend() {
+    setSendOpen(true);
+    if (recipients.length === 0) {
+      try {
+        const res = await listBriefRecipients({ data: { company_id: companyId } });
+        setRecipients(res.recipients);
+        const manager = res.recipients.find((r) => r.role === "manager");
+        setPickedEmail(manager?.email ?? res.recipients[0]?.email ?? "__custom__");
+      } catch (err: any) {
+        toast.error(err?.message ?? "Could not load team members");
+        setPickedEmail("__custom__");
+      }
+    }
+  }
+
+  async function doSend() {
+    const to = pickedEmail === "__custom__" ? customEmail.trim() : pickedEmail;
+    if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      return toast.error("Enter a valid email address");
+    }
+    setSending(true);
+    try {
+      await sendBriefToManager({
+        data: {
+          deal_id: dealId,
+          to_email: to,
+          message: note.trim() || undefined,
+          body_html: DOMPurify.sanitize(body),
+        },
+      });
+      setSendOpen(false);
+      setNote("");
+      toast.success(`Brief sent to ${to}`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not send the brief");
+    } finally {
+      setSending(false);
+    }
+  }
+
   if (loading) return <div className="text-sm text-muted-foreground">Loading brief…</div>;
 
   return (
