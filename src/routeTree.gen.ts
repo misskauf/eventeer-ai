@@ -36,6 +36,7 @@ import { Route as AuthenticatedSettingsCompanyRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsBrandRouteImport } from './routes/_authenticated/settings.brand'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals_.$id'
 import { Route as AuthenticatedDealsCalendarRouteImport } from './routes/_authenticated/deals.calendar'
+import { Route as AuthenticatedCatalogStaffRouteImport } from './routes/_authenticated/catalog.staff'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
 import { Route as AuthenticatedCatalogRulesRouteImport } from './routes/_authenticated/catalog.rules'
 import { Route as AuthenticatedCatalogFoodRouteImport } from './routes/_authenticated/catalog.food'
@@ -191,6 +192,12 @@ const AuthenticatedDealsCalendarRoute =
     path: '/calendar',
     getParentRoute: () => AuthenticatedDealsRoute,
   } as any)
+const AuthenticatedCatalogStaffRoute =
+  AuthenticatedCatalogStaffRouteImport.update({
+    id: '/staff',
+    path: '/staff',
+    getParentRoute: () => AuthenticatedCatalogRoute,
+  } as any)
 const AuthenticatedCatalogSpacesRoute =
   AuthenticatedCatalogSpacesRouteImport.update({
     id: '/spaces',
@@ -254,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/catalog/staff': typeof AuthenticatedCatalogStaffRoute
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
   '/settings/brand': typeof AuthenticatedSettingsBrandRoute
@@ -287,6 +295,7 @@ export interface FileRoutesByTo {
   '/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/catalog/staff': typeof AuthenticatedCatalogStaffRoute
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
   '/settings/brand': typeof AuthenticatedSettingsBrandRoute
@@ -324,6 +333,7 @@ export interface FileRoutesById {
   '/_authenticated/catalog/food': typeof AuthenticatedCatalogFoodRoute
   '/_authenticated/catalog/rules': typeof AuthenticatedCatalogRulesRoute
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
+  '/_authenticated/catalog/staff': typeof AuthenticatedCatalogStaffRoute
   '/_authenticated/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/_authenticated/deals_/$id': typeof AuthenticatedDealsIdRoute
   '/_authenticated/settings/brand': typeof AuthenticatedSettingsBrandRoute
@@ -361,6 +371,7 @@ export interface FileRouteTypes {
     | '/catalog/food'
     | '/catalog/rules'
     | '/catalog/spaces'
+    | '/catalog/staff'
     | '/deals/calendar'
     | '/deals/$id'
     | '/settings/brand'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/catalog/food'
     | '/catalog/rules'
     | '/catalog/spaces'
+    | '/catalog/staff'
     | '/deals/calendar'
     | '/deals/$id'
     | '/settings/brand'
@@ -430,6 +442,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog/food'
     | '/_authenticated/catalog/rules'
     | '/_authenticated/catalog/spaces'
+    | '/_authenticated/catalog/staff'
     | '/_authenticated/deals/calendar'
     | '/_authenticated/deals_/$id'
     | '/_authenticated/settings/brand'
@@ -652,6 +665,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDealsCalendarRouteImport
       parentRoute: typeof AuthenticatedDealsRoute
     }
+    '/_authenticated/catalog/staff': {
+      id: '/_authenticated/catalog/staff'
+      path: '/staff'
+      fullPath: '/catalog/staff'
+      preLoaderRoute: typeof AuthenticatedCatalogStaffRouteImport
+      parentRoute: typeof AuthenticatedCatalogRoute
+    }
     '/_authenticated/catalog/spaces': {
       id: '/_authenticated/catalog/spaces'
       path: '/spaces'
@@ -710,6 +730,7 @@ interface AuthenticatedCatalogRouteChildren {
   AuthenticatedCatalogFoodRoute: typeof AuthenticatedCatalogFoodRoute
   AuthenticatedCatalogRulesRoute: typeof AuthenticatedCatalogRulesRoute
   AuthenticatedCatalogSpacesRoute: typeof AuthenticatedCatalogSpacesRoute
+  AuthenticatedCatalogStaffRoute: typeof AuthenticatedCatalogStaffRoute
 }
 
 const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
@@ -718,6 +739,7 @@ const AuthenticatedCatalogRouteChildren: AuthenticatedCatalogRouteChildren = {
   AuthenticatedCatalogFoodRoute: AuthenticatedCatalogFoodRoute,
   AuthenticatedCatalogRulesRoute: AuthenticatedCatalogRulesRoute,
   AuthenticatedCatalogSpacesRoute: AuthenticatedCatalogSpacesRoute,
+  AuthenticatedCatalogStaffRoute: AuthenticatedCatalogStaffRoute,
 }
 
 const AuthenticatedCatalogRouteWithChildren =

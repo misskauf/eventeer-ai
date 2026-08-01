@@ -64,8 +64,21 @@ export type ExtraSel = {
   long_description_de?: string | null;
 };
 
+export type StaffSel = {
+  id: string;
+  name: string;
+  name_de?: string | null;
+  pricing_type: "per_person" | "flat" | "per_hour";
+  price: number;
+  hours?: number;
+  basis?: "net" | "gross" | null;
+  tax_rate_pct?: number | null;
+  long_description?: string | null;
+  long_description_de?: string | null;
+};
+
 export type DiscountTarget = {
-  kind: "space" | "package" | "extra";
+  kind: "space" | "package" | "extra" | "staff";
   id: string;
 };
 
@@ -73,6 +86,7 @@ export type Offer = {
   spaces: SpaceSel[];
   packages: PackageSel[];
   extras: ExtraSel[];
+  staff?: StaffSel[];
   fees: {
     service_charge_pct: number;
     tax_pct: number; // legacy fallback if a category default is 0
@@ -96,6 +110,7 @@ export type Selection = {
   space_ids: string[];
   package_ids: string[];
   extra_ids: string[];
+  staff_ids?: string[];
   package_guests?: Record<string, number>; // override per package
   package_hours?: Record<string, number>; // override event hours per package
   event_date?: string | null; // ISO date, used for weekday-based pricing
@@ -111,7 +126,7 @@ export type LineItem = {
   gross: number;
   tax_rate_pct: number;
   basis: "net" | "gross";
-  sourceKind?: "space" | "package" | "extra" | "package_overtime" | "fee";
+  sourceKind?: "space" | "package" | "extra" | "staff" | "package_overtime" | "fee";
   sourceId?: string;
   original_gross?: number;
   original_net?: number;
@@ -222,6 +237,24 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
       qty = "flat";
     }
     lines.push(lineFor(amount, e, defaults, "extra", `Extra: ${e.name}`, qty, "extra", e.id));
+  }
+
+  const staffIds = selection.staff_ids ?? [];
+  for (const st of (offer.staff ?? []).filter((x) => staffIds.includes(x.id))) {
+    let amount = 0;
+    let qty = "";
+    if (st.pricing_type === "per_person") {
+      amount = st.price * selection.guest_count;
+      qty = `${selection.guest_count} × ${money(st.price, cur)}`;
+    } else if (st.pricing_type === "per_hour") {
+      const h = st.hours ?? 1;
+      amount = st.price * h;
+      qty = `${h}h × ${money(st.price, cur)}`;
+    } else {
+      amount = st.price;
+      qty = "flat";
+    }
+    lines.push(lineFor(amount, st, defaults, "staff", `Staff: ${st.name}`, qty, "staff", st.id));
   }
 
   if (offer.fees.cleaning_fee > 0) {

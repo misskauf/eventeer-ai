@@ -1,7 +1,7 @@
 // Net / Tax / Gross helpers. Item-level basis/rate override category defaults.
 
 export type Basis = "net" | "gross";
-export type Category = "food" | "beverage" | "extra" | "rental";
+export type Category = "food" | "beverage" | "extra" | "rental" | "staff";
 
 export type CategoryDefaults = {
   default_basis_food?: Basis;
@@ -12,6 +12,8 @@ export type CategoryDefaults = {
   tax_rate_extra?: number;
   default_basis_rental?: Basis;
   tax_rate_rental?: number;
+  default_basis_staff?: Basis;
+  tax_rate_staff?: number;
   default_hours_food?: number;
   default_hours_beverage?: number;
 };

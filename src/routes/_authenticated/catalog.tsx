@@ -12,6 +12,7 @@ function CatalogLayout() {
     { to: "/catalog/food", label: "Food" },
     { to: "/catalog/beverages", label: "Beverages" },
     { to: "/catalog/extras", label: "Extras" },
+    { to: "/catalog/staff", label: "Staff" },
     { to: "/catalog/rules", label: "Pricing rules" },
   ];
   return (
