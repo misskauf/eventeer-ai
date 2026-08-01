@@ -138,6 +138,10 @@ function QuoteNumberingCard({ company, reload }: { company: any; reload: () => v
   );
 }
 
+function InvoicingSettings() {
+  const { company, loading, reload } = useCompanySettings();
+  const [mode, setMode] = useState<string | null>(null);
+  const currentMode = mode ?? (company as any)?.invoice_mode ?? "external";
 
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
