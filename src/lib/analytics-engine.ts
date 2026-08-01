@@ -10,6 +10,8 @@ export type Measure =
   | "won_deals"
   | "conversion"
   | "revenue"
+  | "revenue_net"
+  | "revenue_gross"
   | "margin"
   | "margin_pct"
   | "avg_deal_size"
