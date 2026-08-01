@@ -160,6 +160,7 @@ export function InvoicePanel({ companyId, dealId, invoiceMode, invoiceNotes, ctx
         mode: "external",
         status: "sent",
         issued_at: new Date().toISOString(),
+        quote_number: withNotes.quote_number ?? null,
         created_by: userData.user?.id ?? null,
       } as any)
       .select("id")
