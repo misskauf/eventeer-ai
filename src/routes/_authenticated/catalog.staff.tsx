@@ -101,6 +101,13 @@ function StaffPage() {
             nullable: true,
             hint: "Used when the deal language is German. Falls back to the English text.",
           },
+          {
+            name: "active",
+            label: "Active",
+            type: "checkbox",
+            defaultValue: true,
+            hint: "Inactive roles stay in the catalog but are not offered on new proposals.",
+          },
         ]}
         render={(r: any) => {
           const amount =
