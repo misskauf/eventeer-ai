@@ -25,6 +25,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedDealsIndexRouteImport } from './routes/_authenticated/deals.index'
+import { Route as AuthenticatedSettingsCompanyRouteImport } from './routes/_authenticated/settings.company'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals_.$id'
 import { Route as AuthenticatedDealsCalendarRouteImport } from './routes/_authenticated/deals.calendar'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
@@ -117,6 +118,12 @@ const AuthenticatedDealsIndexRoute = AuthenticatedDealsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedDealsRoute,
 } as any)
+const AuthenticatedSettingsCompanyRoute =
+  AuthenticatedSettingsCompanyRouteImport.update({
+    id: '/company',
+    path: '/company',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedDealsIdRoute = AuthenticatedDealsIdRouteImport.update({
   id: '/deals_/$id',
   path: '/deals/$id',
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
+  '/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/deals/': typeof AuthenticatedDealsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -217,6 +225,7 @@ export interface FileRoutesByTo {
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
+  '/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/deals': typeof AuthenticatedDealsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
@@ -245,6 +254,7 @@ export interface FileRoutesById {
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/_authenticated/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/_authenticated/deals_/$id': typeof AuthenticatedDealsIdRoute
+  '/_authenticated/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/_authenticated/deals/': typeof AuthenticatedDealsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/catalog/spaces'
     | '/deals/calendar'
     | '/deals/$id'
+    | '/settings/company'
     | '/deals/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/catalog/spaces'
     | '/deals/calendar'
     | '/deals/$id'
+    | '/settings/company'
     | '/deals'
     | '/settings'
   id:
@@ -324,6 +336,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog/spaces'
     | '/_authenticated/deals/calendar'
     | '/_authenticated/deals_/$id'
+    | '/_authenticated/settings/company'
     | '/_authenticated/deals/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDealsIndexRouteImport
       parentRoute: typeof AuthenticatedDealsRoute
     }
+    '/_authenticated/settings/company': {
+      id: '/_authenticated/settings/company'
+      path: '/company'
+      fullPath: '/settings/company'
+      preLoaderRoute: typeof AuthenticatedSettingsCompanyRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/deals_/$id': {
       id: '/_authenticated/deals_/$id'
       path: '/deals/$id'
@@ -557,10 +577,12 @@ const AuthenticatedDealsRouteWithChildren =
   AuthenticatedDealsRoute._addFileChildren(AuthenticatedDealsRouteChildren)
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsCompanyRoute: typeof AuthenticatedSettingsCompanyRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsCompanyRoute: AuthenticatedSettingsCompanyRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 
