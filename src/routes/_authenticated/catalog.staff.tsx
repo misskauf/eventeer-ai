@@ -101,6 +101,13 @@ function StaffPage() {
             nullable: true,
             hint: "Used when the deal language is German. Falls back to the English text.",
           },
+          {
+            name: "active",
+            label: "Active",
+            type: "checkbox",
+            defaultValue: true,
+            hint: "Inactive roles stay in the catalog but are not offered on new proposals.",
+          },
         ]}
         render={(r: any) => {
           const amount =
@@ -111,7 +118,14 @@ function StaffPage() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-3">
                 <div>
-                  <div className="font-medium">{r.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{r.name}</span>
+                    {!r.active && (
+                      <span className="rounded border px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {money(Number(r.price), currency)} · {r.pricing_type?.replace("_", " ")} ·{" "}
                     {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
