@@ -148,6 +148,52 @@ export const WIDGETS: WidgetDef[] = [
 
 export const WIDGET_MAP = new Map(WIDGETS.map((w) => [w.key, w]));
 
+export const CUSTOM_PREFIX = "custom:";
+
+export function isCustomKey(key: string) {
+  return key.startsWith(CUSTOM_PREFIX);
+}
+
+/** Turns a stored custom widget into the same WidgetDef shape the shell renders. */
+export function customDef(custom: CustomWidget): WidgetDef {
+  const measure = MEASURE_MAP.get(custom.measure);
+  return {
+    key: `${CUSTOM_PREFIX}${custom.id}`,
+    label: custom.title || suggestedTitle(custom.measure, custom.dimension),
+    chartTypes: CHART_TYPES.filter(
+      (c) => custom.dimension !== "none" || c.value === "kpi" || c.value === "table",
+    ).map((c) => ({ value: c.value as string, label: c.label })),
+    defaultChartType: custom.dimension === "none" ? "kpi" : "bar",
+    defaultSize: custom.dimension === "none" ? "sm" : "md",
+    supportsRange: true,
+    requiresCosts: measure?.requiresCosts,
+    custom,
+  };
+}
+
+/** Resolves the def for any config entry, built-in or custom. */
+export function defFor(entry: WidgetConfig): WidgetDef | undefined {
+  if (entry.custom) return customDef(entry.custom);
+  return WIDGET_MAP.get(entry.widget_key);
+}
+
+export function newCustomWidget(partial?: Partial<CustomWidget>): CustomWidget {
+  const measure = (partial?.measure ?? "leads") as Measure;
+  const dimension = (partial?.dimension ?? "month") as Dimension;
+  return {
+    id: partial?.id ?? crypto.randomUUID(),
+    title: partial?.title ?? suggestedTitle(measure, dimension),
+    measure,
+    dimension,
+    filters: {
+      stages: partial?.filters?.stages ?? [],
+      space_ids: partial?.filters?.space_ids ?? [],
+      owner_ids: partial?.filters?.owner_ids ?? [],
+      event_types: partial?.filters?.event_types ?? [],
+    },
+  };
+}
+
 export function defaultEntry(def: WidgetDef): WidgetConfig {
   return {
     widget_key: def.key,
@@ -155,6 +201,7 @@ export function defaultEntry(def: WidgetDef): WidgetConfig {
     chart_type: def.defaultChartType,
     size: def.defaultSize,
     date_range_override: null,
+    ...(def.custom ? { custom: def.custom } : {}),
   };
 }
 
@@ -164,9 +211,30 @@ export function defaultConfig(): WidgetConfig[] {
 
 const SIZES: WidgetSize[] = ["sm", "md", "lg"];
 
+function parseCustom(raw: any): CustomWidget | null {
+  if (!raw || typeof raw !== "object") return null;
+  const measure = raw.measure;
+  const dimension = raw.dimension;
+  if (!MEASURE_MAP.has(measure) || !DIMENSION_MAP.has(dimension)) return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  const arr = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+  return {
+    id: raw.id,
+    title: typeof raw.title === "string" && raw.title ? raw.title : suggestedTitle(measure, dimension),
+    measure,
+    dimension,
+    filters: {
+      stages: arr(raw.filters?.stages),
+      space_ids: arr(raw.filters?.space_ids),
+      owner_ids: arr(raw.filters?.owner_ids),
+      event_types: arr(raw.filters?.event_types),
+    },
+  };
+}
+
 /**
- * Drops unknown widget keys, repairs bad values, and appends any widget that
- * did not exist when the layout was saved so new widgets still show up.
+ * Drops unknown widget keys, repairs bad values, keeps user-built widgets, and
+ * appends any built-in widget that did not exist when the layout was saved.
  */
 export function normalizeConfig(raw: unknown): WidgetConfig[] {
   const list = Array.isArray(raw) ? raw : [];
@@ -175,9 +243,21 @@ export function normalizeConfig(raw: unknown): WidgetConfig[] {
 
   for (const item of list) {
     const key = (item as any)?.widget_key;
-    const def = typeof key === "string" ? WIDGET_MAP.get(key) : undefined;
-    if (!def || seen.has(def.key)) continue;
+    if (typeof key !== "string" || seen.has(key)) continue;
+
+    let def: WidgetDef | undefined;
+    let custom: CustomWidget | undefined;
+    if (isCustomKey(key)) {
+      const parsed = parseCustom((item as any)?.custom);
+      if (!parsed || `${CUSTOM_PREFIX}${parsed.id}` !== key) continue;
+      custom = parsed;
+      def = customDef(parsed);
+    } else {
+      def = WIDGET_MAP.get(key);
+    }
+    if (!def) continue;
     seen.add(def.key);
+
     const chart = (item as any)?.chart_type;
     const size = (item as any)?.size;
     const override = (item as any)?.date_range_override;
@@ -193,12 +273,19 @@ export function normalizeConfig(raw: unknown): WidgetConfig[] {
         override && typeof override?.mode === "string"
           ? { mode: override.mode, from: String(override.from ?? ""), to: String(override.to ?? "") }
           : null,
+      ...(custom ? { custom } : {}),
     });
   }
 
   for (const def of WIDGETS) if (!seen.has(def.key)) out.push(defaultEntry(def));
   return out;
 }
+
+/** Item-level custom widgets need deal_items snapshots to be present. */
+export function customNeedsItems(custom: CustomWidget) {
+  return isItemDimension(custom.dimension) || Boolean(MEASURE_MAP.get(custom.measure)?.requiresItems);
+}
+
 
 export function sizeClass(size: WidgetSize) {
   if (size === "sm") return "xl:col-span-1";
