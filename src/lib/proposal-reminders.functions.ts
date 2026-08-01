@@ -17,7 +17,7 @@ export const sendProposalReminder = createServerFn({ method: "POST" })
     // Verify caller can access the deal (RLS enforces company membership).
     const { data: deal, error: dealErr } = await supabase
       .from("deals")
-      .select("id, company_id, client_name, client_email, event_date")
+      .select("id, company_id, client_name, client_email, event_date, language")
       .eq("id", data.dealId)
       .maybeSingle();
     if (dealErr) throw new Error(dealErr.message);
@@ -61,22 +61,23 @@ export const sendProposalReminder = createServerFn({ method: "POST" })
       ? `${appOrigin.replace(/\/$/, "")}/p/${token.token}`
       : `/p/${token.token}`;
 
-    // Templated copy — English default. When a per-deal/company language field
-    // exists, swap this for a language-keyed map.
+    // Templated copy in the deal's language (shared i18n resources).
+    const { tFor } = await import("@/i18n");
+    const tc = tFor((deal as any).language);
     const clientFirstName = (deal.client_name ?? "").split(" ")[0] || "there";
-    const subject = `Following up on your event proposal`;
+    const subject = tc("client.reminder_subject") as string;
     const bodyLines = [
-      `Hi ${clientFirstName},`,
+      `${tc("client.reminder_greeting")} ${clientFirstName},`,
       ``,
-      `Just checking in on the event proposal we shared with you${
-        deal.event_date ? ` for ${new Date(deal.event_date).toLocaleDateString()}` : ""
+      `${tc("client.reminder_body_line")}${
+        deal.event_date ? ` (${new Date(deal.event_date).toLocaleDateString()})` : ""
       }.`,
       ``,
-      `You can review it here: ${shareUrl}`,
+      `${tc("client.reminder_view_here")} ${shareUrl}`,
       ``,
-      `If you have any questions or would like adjustments, just reply to this email — happy to help.`,
+      `${tc("client.reminder_reply_note")}`,
       ``,
-      `Thanks!`,
+      `${tc("client.reminder_thanks")}`,
     ];
     const body = bodyLines.join("\n");
 

@@ -11,6 +11,7 @@ import { formatEventDate } from "@/lib/date-format";
 import { toast } from "sonner";
 import { CheckCircle2, FileText, Download, Eraser } from "lucide-react";
 import { ContractDocument } from "@/components/contract-document";
+import { tFor } from "@/i18n";
 
 export const Route = createFileRoute("/c/$token")({
   ssr: false,
@@ -43,6 +44,7 @@ function ClientSigning() {
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
   const [mode, setMode] = useState<SignatureMode>("draw");
   const [hasDrawn, setHasDrawn] = useState(false);
+  const tc = tFor(state?.deal?.language);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
@@ -161,7 +163,7 @@ function ClientSigning() {
     if (!canSubmit) return;
     const image = mode === "draw" ? exportDrawnPng() : exportTypedPng();
     if (!image) {
-      toast.error("Please provide a signature");
+      toast.error(tc("client.signature_required") as string);
       return;
     }
     setBusy(true);
@@ -184,10 +186,10 @@ function ClientSigning() {
           const fresh: any = await resolve({ data: { token } });
           if (fresh?.ok) setState(fresh);
         } catch {}
-        toast.success("Contract signed");
+        toast.success(tc("client.contract_signed") as string);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to sign");
+      toast.error(e?.message ?? (tc("client.sign_failed") as string));
     } finally {
       setBusy(false);
     }
@@ -196,20 +198,20 @@ function ClientSigning() {
   if (error) {
     return (
       <div className="mx-auto max-w-xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Link not available</h1>
+        <h1 className="text-2xl font-semibold">{tc("client.link_not_available")}</h1>
         <p className="mt-2 text-muted-foreground">
           {error === "expired"
-            ? "This signing link has expired. Please contact the event manager for a fresh link."
+            ? tc("client.link_expired_body")
             : error === "not_available"
-              ? "This contract is no longer available for signing."
-              : "We couldn't find this contract."}
+              ? tc("client.link_not_available_body")
+              : tc("client.link_not_found_body")}
         </p>
       </div>
     );
   }
 
   if (!state) {
-    return <div className="mx-auto max-w-xl px-6 py-16 text-center text-muted-foreground">Loading…</div>;
+    return <div className="mx-auto max-w-xl px-6 py-16 text-center text-muted-foreground">{tc("client.contract_loading")}</div>;
   }
 
   const { contract, company, deal } = state;
@@ -237,12 +239,14 @@ function ClientSigning() {
         <div className="min-w-0 flex-1">
           <div className="text-sm text-muted-foreground">{company?.name}</div>
           <h1 className="text-xl font-semibold">
-            {deal?.client_name ? `Event Agreement — ${deal.client_name}` : "Event Agreement"}
+            {deal?.client_name
+              ? `${tc("client.event_agreement")} — ${deal.client_name}`
+              : tc("client.event_agreement")}
           </h1>
         </div>
         <div className="no-print">
           <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Download className="mr-1 h-4 w-4" /> Download PDF
+            <Download className="mr-1 h-4 w-4" /> {tc("client.download_pdf")}
           </Button>
         </div>
       </div>
@@ -252,21 +256,21 @@ function ClientSigning() {
         <Card className="mb-4">
           <CardContent className="grid grid-cols-2 gap-3 py-3 text-sm sm:grid-cols-4">
             <div>
-              <div className="text-xs text-muted-foreground">Client</div>
+              <div className="text-xs text-muted-foreground">{tc("client.client")}</div>
               <div className="font-medium">{deal.client_name || "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Company</div>
+              <div className="text-xs text-muted-foreground">{tc("client.company")}</div>
               <div className="font-medium">{deal.client_company || "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Event date</div>
+              <div className="text-xs text-muted-foreground">{tc("client.event_date")}</div>
               <div className="font-medium">
                 {deal.event_date ? formatEventDate(deal.event_date) : "—"}
               </div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Guests</div>
+              <div className="text-xs text-muted-foreground">{tc("client.guest_count")}</div>
               <div className="font-medium">{deal.guest_count ?? "—"}</div>
             </div>
           </CardContent>
@@ -275,7 +279,7 @@ function ClientSigning() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Contract</CardTitle>
+          <CardTitle className="text-base">{tc("client.contract_title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ContractDocument
@@ -290,12 +294,14 @@ function ClientSigning() {
           <CardContent className="flex items-start gap-3 py-4">
             <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
             <div className="flex-1 text-sm">
-              <div className="font-medium">Contract signed</div>
+              <div className="font-medium">{tc("client.contract_signed")}</div>
               <div className="text-muted-foreground">
-                Signed by {contract.signed_by_name ?? typedName} on{" "}
-                {new Date(signedAt!).toLocaleString()}
-                {contract.signed_place ? ` in ${contract.signed_place}` : ""}. A copy has been
-                saved by {company?.name}.
+                {tc("client.signed_by_on")} {contract.signed_by_name ?? typedName}{" "}
+                {tc("client.signed_on")} {new Date(signedAt!).toLocaleString()}
+                {contract.signed_place
+                  ? ` ${tc("client.signed_in")} ${contract.signed_place}`
+                  : ""}
+                . {tc("client.copy_saved_by")} {company?.name}.
               </div>
               {signatureImage && (
                 <div className="mt-3 rounded-md border bg-background p-2 inline-block">
@@ -312,30 +318,30 @@ function ClientSigning() {
       ) : (
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle className="text-base">Sign contract</CardTitle>
+            <CardTitle className="text-base">{tc("client.sign_contract")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="typed">Full legal name</Label>
+                <Label htmlFor="typed">{tc("client.full_legal_name")}</Label>
                 <Input
                   id="typed"
                   value={typedName}
                   onChange={(e) => setTypedName(e.target.value)}
-                  placeholder="Your full name"
+                  placeholder={tc("client.full_legal_name_placeholder") as string}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="place">Place / city</Label>
+                <Label htmlFor="place">{tc("client.place_label")}</Label>
                 <Input
                   id="place"
                   value={signedPlace}
                   onChange={(e) => setSignedPlace(e.target.value)}
-                  placeholder="e.g. Berlin"
+                  placeholder={tc("client.place_placeholder") as string}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="sdate">Date</Label>
+                <Label htmlFor="sdate">{tc("client.date_label")}</Label>
                 <Input
                   id="sdate"
                   type="date"
@@ -347,21 +353,21 @@ function ClientSigning() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Signature</Label>
+                <Label>{tc("client.signature_label")}</Label>
                 <div className="flex items-center gap-2 text-xs">
                   <button
                     type="button"
                     className={`rounded px-2 py-1 ${mode === "draw" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
                     onClick={() => setMode("draw")}
                   >
-                    Draw
+                    {tc("client.signature_draw")}
                   </button>
                   <button
                     type="button"
                     className={`rounded px-2 py-1 ${mode === "type" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
                     onClick={() => setMode("type")}
                   >
-                    Type instead
+                    {tc("client.signature_type")}
                   </button>
                 </div>
               </div>
@@ -386,7 +392,7 @@ function ClientSigning() {
                     />
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Sign with your mouse or finger.</span>
+                    <span>{tc("client.signature_draw_hint")}</span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -394,7 +400,7 @@ function ClientSigning() {
                       onClick={clearCanvas}
                       disabled={!hasDrawn}
                     >
-                      <Eraser className="mr-1 h-3.5 w-3.5" /> Clear
+                      <Eraser className="mr-1 h-3.5 w-3.5" /> {tc("client.signature_clear")}
                     </Button>
                   </div>
                 </div>
@@ -409,7 +415,7 @@ function ClientSigning() {
                   >
                     {typedName || (
                       <span className="text-muted-foreground text-base not-italic">
-                        Type your name above — it will be used as your signature.
+                        {tc("client.signature_type_hint")}
                       </span>
                     )}
                   </span>
@@ -424,13 +430,12 @@ function ClientSigning() {
                 className="mt-0.5"
               />
               <span>
-                I have read the contract above and agree to be legally bound by its terms. My
-                signature, name, place and date constitute my electronic signature.
+                {tc("client.sign_agreement_text")}
               </span>
             </label>
             <div className="flex justify-end">
               <Button onClick={onSign} disabled={!canSubmit}>
-                {busy ? "Signing…" : "Sign contract"}
+                {busy ? tc("client.signing_now") : tc("client.sign_contract")}
               </Button>
             </div>
           </CardContent>

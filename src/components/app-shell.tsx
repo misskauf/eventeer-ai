@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { useTranslation, applyStoredLanguage } from "@/i18n";
 
 type Company = {
   id: string;
@@ -17,8 +18,14 @@ type Company = {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [company, setCompany] = useState<Company | null>(null);
+
+  useEffect(() => {
+    applyStoredLanguage();
+  }, []);
+
 
   useEffect(() => {
     (async () => {
@@ -49,10 +56,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; match?: string }> = [
-    { to: "/deals", label: "Deals", icon: LayoutDashboard },
-    { to: "/catalog/spaces", label: "Catalog", icon: BookOpen, match: "/catalog" },
-    { to: "/settings", label: "Settings", icon: Settings },
+    { to: "/deals", label: t("nav.deals"), icon: LayoutDashboard },
+    { to: "/catalog/spaces", label: t("nav.catalog"), icon: BookOpen, match: "/catalog" },
+    { to: "/settings", label: t("nav.settings"), icon: Settings },
   ];
+
 
   return (
     <div className="min-h-screen bg-muted/20">
@@ -69,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{company?.name ?? "Workspace"}</div>
+            <div className="truncate text-sm font-semibold">{company?.name ?? t("nav.workspace")}</div>
           </div>
         </div>
         <nav className="flex-1 space-y-1 p-2">
@@ -97,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="w-full justify-start text-muted-foreground"
             onClick={signOut}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
+            <LogOut className="mr-2 h-4 w-4" /> {t("nav.sign_out")}
           </Button>
         </div>
       </aside>
