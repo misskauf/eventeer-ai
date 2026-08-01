@@ -1,8 +1,13 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { AppShell, PageHeader } from "@/components/app-shell";
+import { RequirePermission } from "@/components/permission-guard";
 
 export const Route = createFileRoute("/_authenticated/catalog")({
-  component: CatalogLayout,
+  component: () => (
+    <RequirePermission module="catalog">
+      <CatalogLayout />
+    </RequirePermission>
+  ),
 });
 
 function CatalogLayout() {

@@ -1,9 +1,14 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import { useTranslation } from "@/i18n";
+import { RequirePermission } from "@/components/permission-guard";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  component: SettingsLayout,
+  component: () => (
+    <RequirePermission module={["settings", "team"]}>
+      <SettingsLayout />
+    </RequirePermission>
+  ),
 });
 
 const SECTIONS = [

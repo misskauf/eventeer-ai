@@ -51,11 +51,16 @@ import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/l
 import { ContractsPanel } from "@/components/contracts-panel";
 import { InvoicePanel } from "@/components/invoice-panel";
 import { EventBriefPanel } from "@/components/event-brief-panel";
+import { RequirePermission } from "@/components/permission-guard";
 
 
 
 export const Route = createFileRoute("/_authenticated/deals_/$id")({
-  component: DealDetail,
+  component: () => (
+    <RequirePermission module="deals">
+      <DealDetail />
+    </RequirePermission>
+  ),
 });
 
 type Deal = {

@@ -31,9 +31,14 @@ import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { stageLabel, STAGE_ORDER } from "@/lib/deal-stages";
 import { useCanViewCosts } from "@/lib/cost-visibility";
 import { ItemAnalytics } from "@/components/analytics-items";
+import { RequirePermission } from "@/components/permission-guard";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
-  component: AnalyticsPage,
+  component: () => (
+    <RequirePermission module="analytics">
+      <AnalyticsPage />
+    </RequirePermission>
+  ),
   head: () => ({
     meta: [
       { title: "Analytics — Event Pipeline Insights" },

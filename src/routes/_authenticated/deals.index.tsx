@@ -36,10 +36,15 @@ import {
 import { formatEventDate } from "@/lib/date-format";
 import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
+import { RequirePermission } from "@/components/permission-guard";
 
 
 export const Route = createFileRoute("/_authenticated/deals/")({
-  component: DealsPage,
+  component: () => (
+    <RequirePermission module="deals">
+      <DealsPage />
+    </RequirePermission>
+  ),
 });
 
 type Deal = {
