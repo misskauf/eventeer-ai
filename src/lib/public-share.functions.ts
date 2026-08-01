@@ -219,6 +219,15 @@ export const submitClientSelection = createServerFn({ method: "POST" })
       });
     }
 
+    if (action === "confirmed") {
+      try {
+        const { snapshotDealItemsAdmin } = await import("@/lib/deal-items.server");
+        await snapshotDealItemsAdmin(tok.deal_id as string);
+      } catch {
+        /* analytics snapshot is best-effort */
+      }
+    }
+
     return { ok: true as const, action };
   });
 

@@ -1,42 +1,52 @@
 ## Goal
 
-Track an internal cost on every catalog item, show cost/margin only to permitted roles, and never expose costs to clients.
+Capture what was actually sold on each won deal as one row per item, then use those rows to power item-level revenue, margin, and attach-rate analytics. Costs stay internal and gated.
 
-## 1. Database migration
+## 1. Migration: `deal_items`
 
-- `spaces`, `fb_packages`, `extras`, `staff_roles` (the staff catalog table): add `cost numeric NULL DEFAULT 0`. Same unit as that item's price — per person for food/beverage packages, per event for a space's rental fee, matching `pricing_type` for extras and staff lines.
-- `companies`: add `cost_visible_roles text[] NOT NULL DEFAULT '{}'` — non-owner roles allowed to see costs.
-- Extend the `app_role` enum with `accounting` so it can be granted (current roles: owner, manager, sales).
-- No RLS changes needed: all four catalog tables and `companies` are already company-scoped and internal-only; clients never authenticate.
+Columns: `id`, `company_id`, `deal_id`, `proposal_id`, `item_type` (`space|package|extra|staff`), `item_id` (nullable — catalog item may be deleted later), `item_name` (snapshot), `space_id` (nullable, for grouping non-space lines under the booked space), `qty numeric`, `unit_price numeric`, `line_total numeric` (net), `line_gross numeric`, `unit_cost numeric`, `line_cost numeric`, `captured_at`, `created_at`.
 
-## 2. Permission helper
+Indexes on `(company_id, deal_id)` and `(company_id, item_type, item_id)`. Unique on `(deal_id, item_type, item_id)` so re-snapshot is an upsert.
 
-New `useCanViewCosts()` hook (in `src/lib/auth-hooks.ts`):
-- Reads the current user's `user_roles.role` and the company's `cost_visible_roles`.
-- Returns `true` when role is `owner` (admin), or when the role is listed in `cost_visible_roles`.
-- Also exposes `role` so Settings can gate the editor to owners.
+Access rules:
+- Rows readable and writable only by members of the same company (existing `is_member_of` pattern), plus service role.
+- Cost columns are not protected by column-level RLS (Postgres RLS is row-level). Instead: a security-definer view `deal_items_visible` that returns `unit_cost`/`line_cost` as NULL unless the caller is owner or their role is in `companies.cost_visible_roles`, backed by a new `can_view_costs(uid)` SQL function. Analytics reads the view; the base table stays company-scoped.
 
-## 3. Catalog forms and lists
+## 2. Snapshot logic
 
-For each of `catalog.spaces.tsx`, `catalog.food.tsx` / `catalog.beverages.tsx` (via `catalog-packages-page.tsx`), `catalog.extras.tsx`, `catalog.staff.tsx`:
-- Add an "Internal cost" number field next to the price field, hint: "Not shown to clients."
-- In the list row, when `useCanViewCosts()` is true, show cost plus margin: `price − cost` and margin % (`(price − cost) / price × 100`), styled like the existing muted meta line. When false, render nothing — the cost field is also hidden from the add/edit form.
+New `src/lib/deal-items.functions.ts` (`createServerFn` + `requireSupabaseAuth`), `snapshotDealItems({ dealId })`:
+- Loads the deal, its latest accepted proposal (`proposals.offer`) and the client's `proposal_selections.selection`.
+- Expands the selection through the same rules the pricing engine uses (`computeTotals` line output, using `sourceKind`/`sourceId`) so amounts always match the quoted totals — one row per selected space, package (plus its overtime folded into the package row), extra, and staff line. Fees/gratuity/discount lines are skipped.
+- Cost: read `cost` from the catalog row (`spaces.cost`, `fb_packages.cost`, `extras.cost`, `staff_roles.cost`) and multiply by the same quantity basis as the price (per person × guests, per hour × hours × count, flat × count, per event for spaces). There is no separate `item_costs` table in this project; the item's `cost` column is the source.
+- `space_id` = the booked space on the deal, so packages/extras/staff group under it.
+- Deletes rows for that deal that are no longer selected, upserts the rest — so re-running is idempotent.
 
-## 4. Settings — Cost visibility
+Triggers for re-snapshot:
+- Called when a deal moves to `client_approved` or `signed`.
+- Called when the accepted proposal or the client selection changes on an already-won deal.
 
-Add a "Cost visibility" card under Settings → Team & users (`settings.team.tsx`):
-- Checkboxes for each non-owner role (Manager, Sales, Accounting) writing to `companies.cost_visible_roles`.
-- Owner always sees costs (shown as a fixed, disabled note).
-- Only owners can edit; other roles see it read-only.
+## 3. Backfill
 
-## 5. Client-side safety
+A one-time owner-only server fn `backfillDealItems()` that runs the same snapshot over every deal currently in `client_approved`, `signed`, or later payment stages. Exposed as a "Rebuild item analytics" button on the Analytics page (owner only) with a result summary (deals processed, rows written). I will run it and report the counts before we treat the item numbers as authoritative.
 
-- No `cost` added to any column list in `public-share.functions.ts` (these already use explicit column lists, so nothing leaks by default).
-- No cost in the client proposal page, contract rendering, invoices, or PDF output.
-- Pricing engine untouched — cost never enters totals.
+## 4. Analytics additions
+
+New "Items & margin" section in `src/routes/_authenticated/analytics.tsx`, respecting the existing period filter (by deal event date, falling back to won date):
+
+Always visible:
+- Best-selling packages, extras, and staff — count of bookings and € contribution, top 10 each.
+- Space bookings count / utilization.
+- Attach rate: % of booked deals with ≥1 extra and ≥1 staff line, plus average add-on value per booked deal.
+
+Gated behind `useCanViewCosts()`:
+- Revenue and margin per space (grouped bar: revenue, cost, margin).
+- Gross margin % overall, over time (by month), and by space.
+- Margin € and % columns on the best-seller tables.
+
+When the user cannot see costs, the cost columns come back NULL from the view and those widgets are not rendered at all.
 
 ## Technical notes
 
-- `spaces` cost pairs with `base_rental_fee`; `fb_packages` cost pairs with `price_per_person`; `extras`/`staff_roles` cost pairs with `price`.
-- `CrudList` already supports nullable number fields, so the cost field needs no component changes; conditional inclusion happens where the `fields` array is built.
-- Margin % is hidden when price is 0 to avoid divide-by-zero.
+- Aggregation stays client-side over `deal_items`, consistent with the existing dashboard; a few thousand rows is fine.
+- No change to the pricing engine, client proposal page, contract, invoice, or any public server function — costs never enter client-visible paths.
+- Snapshot rows are historical: later catalog price/cost edits do not rewrite past bookings unless the deal's accepted proposal itself changes.
