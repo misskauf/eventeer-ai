@@ -4,10 +4,11 @@ import { money } from "@/lib/pricing";
 import type { Field } from "@/components/crud-list";
 
 export const NON_OWNER_ROLES = [
-  { value: "manager", label: "Manager" },
-  { value: "sales", label: "Sales manager" },
+  { value: "sales_manager", label: "Sales manager" },
+  { value: "event_manager", label: "Event manager" },
   { value: "accounting", label: "Accounting" },
 ];
+
 
 /** Current user's role in their company + which roles may see internal costs. */
 export function useCompanyRole() {

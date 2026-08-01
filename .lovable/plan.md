@@ -1,38 +1,72 @@
-## Event Brief per deal
+## Goal
 
-An internal, editable operations brief attached to each deal — auto-drafted from data you already captured (proposal, catalog, contacts) and completed by the team.
+Data model + helpers for a real roles & permissions system. No UI or enforcement yet (that's 16b–16c).
 
-### 1. Migration — `event_briefs`
+## 1. Migration
 
-Columns: `id`, `company_id`, `deal_id` (unique), `body` (HTML text), `generated_at`, `updated_at`, `created_by`, `created_at`.
-- Grants for `authenticated` + `service_role`, RLS on, policies scoped with the existing `is_member_of(auth.uid(), company_id)` pattern (no anon access — briefs are internal only).
-- `updated_at` trigger reusing `set_updated_at()`.
+**Roles enum**
+- Add `sales_manager` and `event_manager` to `app_role`. (Enum values are added in their own statement first, then used in a later statement, so the migration is split into two blocks.)
+- Migrate existing rows: `sales → sales_manager`, `manager → event_manager`. `owner` and `accounting` unchanged.
+- Old values `sales` / `manager` stay in the enum, unused (dropping enum values is unsafe).
 
-### 2. Brief generation (`src/lib/event-brief.ts`)
+**`role_permissions`**
+- `id`, `company_id` → companies, `role app_role`, `module text`, `level text` (`none|view|edit|admin`), `scope text` nullable (`own|all`), timestamps.
+- Unique on `(company_id, role, module)`; check constraints on `level`, `scope`, and the allowed module list: deals, proposals, contracts, invoices, catalog, staff, costs, analytics, event_briefs, lead_forms, settings, team.
+- GRANTs to `authenticated` + `service_role`; RLS: members of the company can read; only owners can write.
 
-Reuses the contract's `ContractContext` / `buildPlaceholderValues` so names, dates, packages, extras and staff read exactly as they do on the contract. Produces HTML with these sections:
+**`user_roles` additions**
+- `active boolean not null default true`
+- `status text not null default 'active'` (`active|invited|disabled`).
 
-- **Event overview** — client name + company, event type, date, guest count, deal stage/status.
-- **Contacts** — client email (phone if present), deal owner.
-- **Space & timing** — selected space(s), event hours; blank prompt lines for arrival/setup, guest start, end, teardown.
-- **Food & beverage** — food package, drinks package, menu selections, allergen/dietary notes pulled from `fb_packages.allergen_notes`, plus a blank line for client-specific dietary requests.
-- **Extras & staffing** — selected extras and staff with counts/hours.
-- **Team notes / run-of-show** — empty editable section with a short prompt.
+**`company_invites`**
+- `id`, `company_id`, `email`, `role app_role`, `token text unique`, `invited_by`, `expires_at`, `accepted_at`, `created_at`.
+- RLS: owners of the company manage; token lookup happens server-side (no anon policy). GRANTs as above.
 
-Blank fields render as a labelled line so they're obvious in print.
+**`permission_audit`**
+- `id`, `company_id`, `actor_id`, `action text`, `target text`, `detail jsonb default '{}'`, `created_at`.
+- RLS: owners of the company can read; inserts happen server-side. GRANTs as above.
 
-### 3. Server functions (`src/lib/event-brief.functions.ts`)
+**Default presets**
+Seeded for every existing company, and for new companies via an update to `create_company_workspace` (plus a helper `seed_role_permissions(_company_id)` so both paths share one definition):
 
-`getEventBrief(dealId)`, `saveEventBrief(dealId, body)`, `regenerateEventBrief(dealId)` — all behind `requireSupabaseAuth`, gathering the same deal/proposal/catalog rows the contract renderer uses. First open auto-creates the brief if none exists.
+| module | owner | sales_manager | event_manager | accounting |
+|---|---|---|---|---|
+| deals | admin | edit (scope all) | view | view |
+| proposals | admin | edit | view | none |
+| contracts | admin | edit | view | none |
+| invoices | admin | view | none | edit |
+| catalog | admin | view | view | none |
+| staff | admin | none | edit | none |
+| costs | admin | none | none | view |
+| analytics | admin | view | view | view |
+| event_briefs | admin | edit | edit | none |
+| lead_forms | admin | edit | none | none |
+| settings | admin | none | none | none |
+| team | admin | none | none | none |
 
-### 4. Deal detail UI
+Owner rows are seeded as `admin` everywhere for completeness, but owner is short-circuited in code and never editable.
 
-- New **Brief** tab alongside the existing tabs on `deals_.$id.tsx` (and `deals-tabs.tsx` where relevant).
-- Write / Preview sub-tabs: editing uses the existing `RichTextEditor`, preview uses the shared `ContractDocument` so formatting matches contracts.
-- Save button writes to `event_briefs.body`.
-- **Regenerate from deal** button with a confirm dialog warning that manual edits will be overwritten.
-- **Download PDF** button using the same `window.print()` + `.printable` / `no-print` stylesheet approach as the contract page, with the venue logo and company details in a branded header.
+**`has_permission(_company_id uuid, _module text, _min_level text)`**
+SECURITY DEFINER, STABLE, `search_path = public`. Returns true if the caller is `owner` of that company; otherwise compares the caller's `role_permissions.level` against `_min_level` using the ordering none(0) < view(1) < edit(2) < admin(3). Requires the caller's `user_roles` row to be `active`. Companion `permission_level(_company_id, _module)` returning the effective level text (`'admin'` for owner) for UI use.
 
-### Technical notes
+## 2. Server helper
 
-No new editor, no redesign, no new dependencies. Reuses `contracts.ts` data gathering, `RichTextEditor`, `ContractDocument`, the existing print CSS pattern, and current RLS helpers.
+`src/lib/permissions.server.ts`
+- `LEVELS` ordering + `Module` / `Level` types.
+- `requirePermission(supabase, companyId, module, minLevel)` — calls the SQL function via `rpc`, throws `Error('Forbidden: <module> requires <level>')` when false.
+- `getCallerCompanyId(supabase, userId)` convenience (reuses the `user_roles` lookup) so server fns can do `await requirePermission(...)` in one line.
+- `logPermissionAudit(...)` writing a `permission_audit` row.
+No existing server functions are changed in this prompt.
+
+## 3. Client hook
+
+`src/lib/permissions.tsx`
+- `usePermissions()` → `{ role, companyId, isOwner, levels, can(module, level), scope(module), loading }`.
+- Loads the user's `user_roles` row and that company's `role_permissions` rows in two queries; owner short-circuits `can()` to `true`.
+- Module/level constants and human labels exported here for the 16b settings UI.
+- Existing `useCompanyRole` / `useCanViewCosts` stay as-is so nothing breaks; `costs` module coexists with `cost_visible_roles` until 16c consolidates them.
+
+## Notes
+
+- `NON_OWNER_ROLES` in `src/lib/cost-visibility.tsx` is updated to the new role values so the existing Team settings checkboxes keep matching real roles.
+- Nothing gets enforced yet — existing pages behave exactly as today.
