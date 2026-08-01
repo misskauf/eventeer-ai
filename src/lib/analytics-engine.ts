@@ -385,6 +385,10 @@ export function runQuery(input: {
         return itemDim
           ? b.revenue
           : won.reduce((s, d) => s + num(d.estimated_value), 0);
+      case "revenue_net":
+        return b.revenue;
+      case "revenue_gross":
+        return b.gross;
       case "margin":
         return b.revenue - b.cost;
       case "margin_pct":
@@ -431,6 +435,7 @@ export function runQuery(input: {
     order: 0,
     deals: itemDim ? [] : scoped,
     revenue: 0,
+    gross: 0,
     cost: 0,
     dealIds: new Set(),
   };
@@ -439,6 +444,7 @@ export function runQuery(input: {
     for (const i of scopedItems) {
       if (i.item_type !== itemDim) continue;
       allBucket.revenue += num(i.line_total);
+      allBucket.gross += num(i.line_gross ?? i.line_total);
       allBucket.cost += num(i.line_cost);
       if (!allBucket.dealIds.has(i.deal_id)) {
         allBucket.dealIds.add(i.deal_id);
@@ -452,6 +458,7 @@ export function runQuery(input: {
       const it = perDeal.get(d.id);
       if (it) {
         allBucket.revenue += it.revenue;
+        allBucket.gross += it.gross;
         allBucket.cost += it.cost;
       }
     }
