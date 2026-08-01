@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url" | "custom";
+  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url" | "custom" | "checkbox";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
