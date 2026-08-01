@@ -150,7 +150,7 @@ export function WidgetBuilderDialog({
   }
 
   const toggle = (field: keyof CustomWidget["filters"]) => (value: string) => {
-    const cur = draft.filters[field];
+    const cur = draft.filters[field] ?? [];
     patch({
       filters: {
         ...draft.filters,
