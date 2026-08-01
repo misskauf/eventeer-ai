@@ -58,13 +58,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     await navigate({ to: "/auth", replace: true });
   }
 
-  const nav: Array<{
+  type NavItem = {
     to: string;
     label: string;
     icon: typeof LayoutDashboard;
     match?: string;
     modules: PermissionModule[];
-  }> = [
+  };
+  const nav: NavItem[] = ([
     { to: "/deals", label: t("nav.deals"), icon: LayoutDashboard, modules: ["deals"] },
     { to: "/analytics", label: "Analytics", icon: BarChart3, modules: ["analytics"] },
     {
@@ -80,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       icon: Settings,
       modules: ["settings", "team", "invoices", "lead_forms", "contracts"],
     },
-  ].filter((n) => permLoading || n.modules.some((m) => can(m, "view")));
+  ] as NavItem[]).filter((n) => permLoading || n.modules.some((m) => can(m, "view")));
 
 
   return (
