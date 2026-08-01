@@ -1021,7 +1021,14 @@ function DealDetail() {
       <div>
       {/* PROPOSAL SECTION */}
       <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
-        <h2 className="text-lg font-semibold">Proposal</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Proposal</h2>
+          {existingProposal?.quote_number && (
+            <span className="rounded border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+              {existingProposal.quote_number}
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={previewAsClient}>
             <Eye className="mr-1 h-4 w-4" /> Preview as client
