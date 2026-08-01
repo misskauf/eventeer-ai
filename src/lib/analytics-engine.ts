@@ -41,6 +41,10 @@ export type CustomFilters = {
   space_ids: string[];
   owner_ids: string[];
   event_types: string[];
+  /** Lead source: "manual" | "lead_form" | … */
+  sources?: string[];
+  /** F&B package item ids (from deal_items snapshots). */
+  package_ids?: string[];
 };
 
 export type CustomWidget = {
@@ -64,6 +68,8 @@ export const MEASURES: {
   { value: "won_deals", label: "Won deals", format: "count" },
   { value: "conversion", label: "Conversion rate", format: "percent", dealOnly: true },
   { value: "revenue", label: "Revenue", format: "currency" },
+  { value: "revenue_net", label: "Net revenue", format: "currency", requiresItems: true },
+  { value: "revenue_gross", label: "Gross revenue", format: "currency", requiresItems: true },
   { value: "margin", label: "Margin", format: "currency", requiresCosts: true, requiresItems: true },
   { value: "margin_pct", label: "Margin %", format: "percent", requiresCosts: true, requiresItems: true },
   { value: "avg_deal_size", label: "Average deal size", format: "currency" },
