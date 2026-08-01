@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 
-import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel } from "@/lib/pricing";
+import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel, type StaffSel } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { formatEventDate } from "@/lib/date-format";
 import { Markdown } from "@/components/markdown";
@@ -513,6 +513,40 @@ function ClientProposal() {
                 onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
                 lang={lang}
               />
+            )}
+
+            {staffItems.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">{t(lang, "section_staffing")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {staffItems.map((x) => {
+                    const cfg = staffConfig[x.id] ?? {};
+                    const count = Math.max(1, Number(cfg.count ?? 1));
+                    const hours = Number(cfg.hours ?? 1);
+                    const details = pickLocalized(x, lang, "long_description");
+                    const line = totals?.lines.find((l) => l.sourceKind === "staff" && l.sourceId === x.id);
+                    const meta =
+                      x.pricing_type === "per_person"
+                        ? `${state.deal.guest_count} × ${money(x.price, currency)}`
+                        : x.pricing_type === "per_hour"
+                        ? `${count} × ${hours}h × ${money(x.price, currency)}`
+                        : `${count} × ${money(x.price, currency)}`;
+                    return (
+                      <div key={x.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                        <div className="min-w-0">
+                          <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
+                          <div className="text-xs text-muted-foreground">{meta}</div>
+                          {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+                        </div>
+                        {line && <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>}
+                      </div>
+                    );
+                  })}
+                  <div className="text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Overall message */}

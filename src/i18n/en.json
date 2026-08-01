@@ -124,6 +124,8 @@
     "reminder_body_line": "Just checking in on the event proposal we shared with you",
     "reminder_view_here": "You can review it here:",
     "reminder_reply_note": "If you have any questions or would like adjustments, just reply to this email — happy to help.",
-    "reminder_thanks": "Thanks!"
+    "reminder_thanks": "Thanks!",
+    "section_staffing": "Staffing",
+    "staffing_included_note": "Staffing is arranged by the venue and included in the total."
   }
 }
