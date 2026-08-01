@@ -1263,6 +1263,10 @@ function AnalyticsPage() {
                 Edit dashboard
               </Button>
             )}
+            <Button size="sm" variant="outline" onClick={printSnapshot} disabled={loading}>
+              <FileDown className="mr-1 h-3.5 w-3.5" />
+              Export PDF
+            </Button>
             <Button
               size="sm"
               onClick={() => {
@@ -1305,6 +1309,21 @@ function AnalyticsPage() {
                 editing={editing}
                 onChange={(patch) => patchEntry(entry.widget_key, patch)}
                 extraControls={custom ? null : extraControlsFor(entry.widget_key)}
+                filtersControl={
+                  custom || entry.widget_key === "items" ? null : (
+                    <CardFilters
+                      value={entry.filters}
+                      onChange={(filters) => patchEntry(entry.widget_key, { filters })}
+                      options={filterOptions}
+                    />
+                  )
+                }
+                supportsCompare={!custom && COMPARABLE.has(entry.widget_key)}
+                onExport={
+                  !custom && EXPORTABLE.has(entry.widget_key)
+                    ? () => exportCard(entry.widget_key)
+                    : undefined
+                }
                 editActions={
                   custom ? (
                     <>
@@ -1355,6 +1374,14 @@ function AnalyticsPage() {
           })}
         </WidgetGrid>
       )}
+
+      <DealDrilldownSheet
+        drilldown={drilldown}
+        onOpenChange={(open) => {
+          if (!open) setDrilldown(null);
+        }}
+        currency={currency}
+      />
 
       <WidgetBuilderDialog
         open={builderOpen}
