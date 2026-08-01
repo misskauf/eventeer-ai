@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles, BarChart3 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { useTranslation, applyStoredLanguage } from "@/i18n";
@@ -57,6 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; match?: string }> = [
     { to: "/deals", label: t("nav.deals"), icon: LayoutDashboard },
+    { to: "/analytics", label: "Analytics", icon: BarChart3 },
     { to: "/catalog/spaces", label: t("nav.catalog"), icon: BookOpen, match: "/catalog" },
     { to: "/settings", label: t("nav.settings"), icon: Settings },
   ];
