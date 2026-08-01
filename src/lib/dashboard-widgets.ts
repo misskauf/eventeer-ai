@@ -3,6 +3,17 @@
  * The charts themselves are unchanged — this only describes layout/config.
  */
 
+import {
+  CHART_TYPES,
+  DIMENSION_MAP,
+  MEASURE_MAP,
+  isItemDimension,
+  suggestedTitle,
+  type CustomWidget,
+  type Dimension,
+  type Measure,
+} from "@/lib/analytics-engine";
+
 export type WidgetSize = "sm" | "md" | "lg";
 
 export type WidgetRangeOverride = { mode: string; from: string; to: string } | null;
@@ -13,6 +24,8 @@ export type WidgetConfig = {
   chart_type: string | null;
   size: WidgetSize;
   date_range_override: WidgetRangeOverride;
+  /** Present only for user-built widgets (`widget_key` = `custom:<id>`). */
+  custom?: CustomWidget;
 };
 
 export type WidgetDef = {
@@ -26,7 +39,10 @@ export type WidgetDef = {
   supportsRange: boolean;
   /** Only shown to users who can view costs/margins. */
   requiresCosts?: boolean;
+  /** Set for user-built widgets. */
+  custom?: CustomWidget;
 };
+
 
 export const WIDGETS: WidgetDef[] = [
   {
