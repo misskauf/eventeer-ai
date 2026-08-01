@@ -162,6 +162,8 @@ function InvoicingSettings() {
 
   return (
     <div className="space-y-6">
+      <QuoteNumberingCard key={company.id + String(company.quote_next_seq)} company={company} reload={reload} />
+
       <Card>
         <CardHeader>
           <CardTitle>Invoicing (optional)</CardTitle>
