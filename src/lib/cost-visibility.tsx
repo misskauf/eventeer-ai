@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
-import { usePermissions } from "@/lib/permissions";
+import { usePermissions } from "@/lib/use-permissions";
 import type { Field } from "@/components/crud-list";
 
 export const NON_OWNER_ROLES = [
