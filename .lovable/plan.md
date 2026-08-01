@@ -1,27 +1,42 @@
-## What already exists (verified)
+## Goal
 
-Most of this prompt was already built in the previous turn:
+Track an internal cost on every catalog item, show cost/margin only to permitted roles, and never expose costs to clients.
 
-- Table `staff_roles` (same shape as the requested `staff` table): `id`, `company_id`, `name`, `name_de`, `category` (default `'staff'`), `description`, `long_description`, `long_description_de`, `pricing_type` (`extra_pricing_type`, default `per_hour`), `price`, `basis`, `tax_rate_pct`, `active` (default true), `created_at`, `updated_at` — with the company RLS pattern.
-- Route `src/routes/_authenticated/catalog.staff.tsx` with the Extras-style CRUD UI (EN/DE fields, pricing type, basis, tax, preview breakdown, category defaults bar).
-- "Staff" tab already in `catalog.tsx`.
-- Generated Supabase types already include `staff_roles`.
+## 1. Database migration
 
-No new migration is needed. Renaming the table to `staff` would break the code already wired to `staff_roles` for no benefit, so I'd keep the current name.
+- `spaces`, `fb_packages`, `extras`, `staff_roles` (the staff catalog table): add `cost numeric NULL DEFAULT 0`. Same unit as that item's price — per person for food/beverage packages, per event for a space's rental fee, matching `pricing_type` for extras and staff lines.
+- `companies`: add `cost_visible_roles text[] NOT NULL DEFAULT '{}'` — non-owner roles allowed to see costs.
+- Extend the `app_role` enum with `accounting` so it can be granted (current roles: owner, manager, sales).
+- No RLS changes needed: all four catalog tables and `companies` are already company-scoped and internal-only; clients never authenticate.
 
-## What's actually missing
+## 2. Permission helper
 
-1. **Activate / deactivate.** Neither the Extras page nor the Staff page can toggle `active` — the field just defaults to true. Add a boolean field type to `src/components/crud-list.tsx` (a checkbox rendered like the other fields, written into the insert/update payload as a real boolean).
-2. **Staff page uses it.** Add an "Active" checkbox to the field list in `catalog.staff.tsx`, defaulting to true, and show an "Inactive" badge in the row renderer for rows where `active` is false.
-3. **German short description parity.** The Staff page currently offers `name_de` and `long_description_de` but not a German short description. `staff_roles` has no `description_de` column. Two options — I'd do (a) unless you say otherwise:
-   - (a) Leave it: short `description` is internal-facing only, so no DE needed (matches Extras).
-   - (b) Add `description_de` via a small migration and a paired field.
+New `useCanViewCosts()` hook (in `src/lib/auth-hooks.ts`):
+- Reads the current user's `user_roles.role` and the company's `cost_visible_roles`.
+- Returns `true` when role is `owner` (admin), or when the role is listed in `cost_visible_roles`.
+- Also exposes `role` so Settings can gate the editor to owners.
+
+## 3. Catalog forms and lists
+
+For each of `catalog.spaces.tsx`, `catalog.food.tsx` / `catalog.beverages.tsx` (via `catalog-packages-page.tsx`), `catalog.extras.tsx`, `catalog.staff.tsx`:
+- Add an "Internal cost" number field next to the price field, hint: "Not shown to clients."
+- In the list row, when `useCanViewCosts()` is true, show cost plus margin: `price − cost` and margin % (`(price − cost) / price × 100`), styled like the existing muted meta line. When false, render nothing — the cost field is also hidden from the add/edit form.
+
+## 4. Settings — Cost visibility
+
+Add a "Cost visibility" card under Settings → Team & users (`settings.team.tsx`):
+- Checkboxes for each non-owner role (Manager, Sales, Accounting) writing to `companies.cost_visible_roles`.
+- Owner always sees costs (shown as a fixed, disabled note).
+- Only owners can edit; other roles see it read-only.
+
+## 5. Client-side safety
+
+- No `cost` added to any column list in `public-share.functions.ts` (these already use explicit column lists, so nothing leaks by default).
+- No cost in the client proposal page, contract rendering, invoices, or PDF output.
+- Pricing engine untouched — cost never enters totals.
 
 ## Technical notes
 
-- `crud-list.tsx` gains `type: "checkbox"`; submit path converts `fd.get(name)` presence to `true/false` (unchecked checkboxes are absent from FormData, so it must be handled explicitly, not via the generic string branch).
-- Inactive rows stay visible in the manager list; filtering by `active` belongs to the proposal builder, which is out of scope here.
-
-## Out of scope
-
-No changes to the proposal builder, client proposal page, contracts, or invoices.
+- `spaces` cost pairs with `base_rental_fee`; `fb_packages` cost pairs with `price_per_person`; `extras`/`staff_roles` cost pairs with `price`.
+- `CrudList` already supports nullable number fields, so the cost field needs no component changes; conditional inclusion happens where the `fields` array is built.
+- Margin % is hidden when price is 0 to avoid divide-by-zero.
