@@ -115,6 +115,7 @@ export function InvoicePanel({ companyId, dealId, invoiceMode, invoiceNotes, ctx
         body_html: rendered,
         mode: "template",
         status: "draft",
+        quote_number: withNotes.quote_number ?? null,
         created_by: userData.user?.id ?? null,
       } as any)
       .select("id, template_id, template_name, body_html, mode, status, issued_at, created_at, updated_at")
