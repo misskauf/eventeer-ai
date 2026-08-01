@@ -19,7 +19,6 @@ export type Database = {
           address: string | null
           contact_email: string | null
           contact_phone: string | null
-          cost_visible_roles: string[]
           created_at: string
           created_by: string
           currency: string
@@ -40,7 +39,6 @@ export type Database = {
           address?: string | null
           contact_email?: string | null
           contact_phone?: string | null
-          cost_visible_roles?: string[]
           created_at?: string
           created_by: string
           currency?: string
@@ -61,7 +59,6 @@ export type Database = {
           address?: string | null
           contact_email?: string | null
           contact_phone?: string | null
-          cost_visible_roles?: string[]
           created_at?: string
           created_by?: string
           currency?: string
@@ -1626,6 +1623,10 @@ export type Database = {
         Returns: boolean
       }
       permission_level: {
+        Args: { _company_id: string; _module: string }
+        Returns: string
+      }
+      record_scope: {
         Args: { _company_id: string; _module: string }
         Returns: string
       }
