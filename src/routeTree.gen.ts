@@ -25,7 +25,15 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedDealsIndexRouteImport } from './routes/_authenticated/deals.index'
+import { Route as AuthenticatedSettingsWorkflowRouteImport } from './routes/_authenticated/settings.workflow'
+import { Route as AuthenticatedSettingsTeamRouteImport } from './routes/_authenticated/settings.team'
+import { Route as AuthenticatedSettingsLeadFormsRouteImport } from './routes/_authenticated/settings.lead-forms'
+import { Route as AuthenticatedSettingsLanguageRouteImport } from './routes/_authenticated/settings.language'
+import { Route as AuthenticatedSettingsInvoicingRouteImport } from './routes/_authenticated/settings.invoicing'
+import { Route as AuthenticatedSettingsFeesRouteImport } from './routes/_authenticated/settings.fees'
+import { Route as AuthenticatedSettingsContractTemplatesRouteImport } from './routes/_authenticated/settings.contract-templates'
 import { Route as AuthenticatedSettingsCompanyRouteImport } from './routes/_authenticated/settings.company'
+import { Route as AuthenticatedSettingsBrandRouteImport } from './routes/_authenticated/settings.brand'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals_.$id'
 import { Route as AuthenticatedDealsCalendarRouteImport } from './routes/_authenticated/deals.calendar'
 import { Route as AuthenticatedCatalogSpacesRouteImport } from './routes/_authenticated/catalog.spaces'
@@ -118,10 +126,58 @@ const AuthenticatedDealsIndexRoute = AuthenticatedDealsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedDealsRoute,
 } as any)
+const AuthenticatedSettingsWorkflowRoute =
+  AuthenticatedSettingsWorkflowRouteImport.update({
+    id: '/workflow',
+    path: '/workflow',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsTeamRoute =
+  AuthenticatedSettingsTeamRouteImport.update({
+    id: '/team',
+    path: '/team',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsLeadFormsRoute =
+  AuthenticatedSettingsLeadFormsRouteImport.update({
+    id: '/lead-forms',
+    path: '/lead-forms',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsLanguageRoute =
+  AuthenticatedSettingsLanguageRouteImport.update({
+    id: '/language',
+    path: '/language',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsInvoicingRoute =
+  AuthenticatedSettingsInvoicingRouteImport.update({
+    id: '/invoicing',
+    path: '/invoicing',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsFeesRoute =
+  AuthenticatedSettingsFeesRouteImport.update({
+    id: '/fees',
+    path: '/fees',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsContractTemplatesRoute =
+  AuthenticatedSettingsContractTemplatesRouteImport.update({
+    id: '/contract-templates',
+    path: '/contract-templates',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsCompanyRoute =
   AuthenticatedSettingsCompanyRouteImport.update({
     id: '/company',
     path: '/company',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsBrandRoute =
+  AuthenticatedSettingsBrandRouteImport.update({
+    id: '/brand',
+    path: '/brand',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedDealsIdRoute = AuthenticatedDealsIdRouteImport.update({
@@ -200,7 +256,15 @@ export interface FileRoutesByFullPath {
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
+  '/settings/brand': typeof AuthenticatedSettingsBrandRoute
   '/settings/company': typeof AuthenticatedSettingsCompanyRoute
+  '/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
+  '/settings/fees': typeof AuthenticatedSettingsFeesRoute
+  '/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
+  '/settings/language': typeof AuthenticatedSettingsLanguageRoute
+  '/settings/lead-forms': typeof AuthenticatedSettingsLeadFormsRoute
+  '/settings/team': typeof AuthenticatedSettingsTeamRoute
+  '/settings/workflow': typeof AuthenticatedSettingsWorkflowRoute
   '/deals/': typeof AuthenticatedDealsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -225,7 +289,15 @@ export interface FileRoutesByTo {
   '/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
+  '/settings/brand': typeof AuthenticatedSettingsBrandRoute
   '/settings/company': typeof AuthenticatedSettingsCompanyRoute
+  '/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
+  '/settings/fees': typeof AuthenticatedSettingsFeesRoute
+  '/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
+  '/settings/language': typeof AuthenticatedSettingsLanguageRoute
+  '/settings/lead-forms': typeof AuthenticatedSettingsLeadFormsRoute
+  '/settings/team': typeof AuthenticatedSettingsTeamRoute
+  '/settings/workflow': typeof AuthenticatedSettingsWorkflowRoute
   '/deals': typeof AuthenticatedDealsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
@@ -254,7 +326,15 @@ export interface FileRoutesById {
   '/_authenticated/catalog/spaces': typeof AuthenticatedCatalogSpacesRoute
   '/_authenticated/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/_authenticated/deals_/$id': typeof AuthenticatedDealsIdRoute
+  '/_authenticated/settings/brand': typeof AuthenticatedSettingsBrandRoute
   '/_authenticated/settings/company': typeof AuthenticatedSettingsCompanyRoute
+  '/_authenticated/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
+  '/_authenticated/settings/fees': typeof AuthenticatedSettingsFeesRoute
+  '/_authenticated/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
+  '/_authenticated/settings/language': typeof AuthenticatedSettingsLanguageRoute
+  '/_authenticated/settings/lead-forms': typeof AuthenticatedSettingsLeadFormsRoute
+  '/_authenticated/settings/team': typeof AuthenticatedSettingsTeamRoute
+  '/_authenticated/settings/workflow': typeof AuthenticatedSettingsWorkflowRoute
   '/_authenticated/deals/': typeof AuthenticatedDealsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
@@ -283,7 +363,15 @@ export interface FileRouteTypes {
     | '/catalog/spaces'
     | '/deals/calendar'
     | '/deals/$id'
+    | '/settings/brand'
     | '/settings/company'
+    | '/settings/contract-templates'
+    | '/settings/fees'
+    | '/settings/invoicing'
+    | '/settings/language'
+    | '/settings/lead-forms'
+    | '/settings/team'
+    | '/settings/workflow'
     | '/deals/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -308,7 +396,15 @@ export interface FileRouteTypes {
     | '/catalog/spaces'
     | '/deals/calendar'
     | '/deals/$id'
+    | '/settings/brand'
     | '/settings/company'
+    | '/settings/contract-templates'
+    | '/settings/fees'
+    | '/settings/invoicing'
+    | '/settings/language'
+    | '/settings/lead-forms'
+    | '/settings/team'
+    | '/settings/workflow'
     | '/deals'
     | '/settings'
   id:
@@ -336,7 +432,15 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog/spaces'
     | '/_authenticated/deals/calendar'
     | '/_authenticated/deals_/$id'
+    | '/_authenticated/settings/brand'
     | '/_authenticated/settings/company'
+    | '/_authenticated/settings/contract-templates'
+    | '/_authenticated/settings/fees'
+    | '/_authenticated/settings/invoicing'
+    | '/_authenticated/settings/language'
+    | '/_authenticated/settings/lead-forms'
+    | '/_authenticated/settings/team'
+    | '/_authenticated/settings/workflow'
     | '/_authenticated/deals/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
@@ -471,11 +575,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDealsIndexRouteImport
       parentRoute: typeof AuthenticatedDealsRoute
     }
+    '/_authenticated/settings/workflow': {
+      id: '/_authenticated/settings/workflow'
+      path: '/workflow'
+      fullPath: '/settings/workflow'
+      preLoaderRoute: typeof AuthenticatedSettingsWorkflowRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/team': {
+      id: '/_authenticated/settings/team'
+      path: '/team'
+      fullPath: '/settings/team'
+      preLoaderRoute: typeof AuthenticatedSettingsTeamRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/lead-forms': {
+      id: '/_authenticated/settings/lead-forms'
+      path: '/lead-forms'
+      fullPath: '/settings/lead-forms'
+      preLoaderRoute: typeof AuthenticatedSettingsLeadFormsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/language': {
+      id: '/_authenticated/settings/language'
+      path: '/language'
+      fullPath: '/settings/language'
+      preLoaderRoute: typeof AuthenticatedSettingsLanguageRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/invoicing': {
+      id: '/_authenticated/settings/invoicing'
+      path: '/invoicing'
+      fullPath: '/settings/invoicing'
+      preLoaderRoute: typeof AuthenticatedSettingsInvoicingRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/fees': {
+      id: '/_authenticated/settings/fees'
+      path: '/fees'
+      fullPath: '/settings/fees'
+      preLoaderRoute: typeof AuthenticatedSettingsFeesRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/contract-templates': {
+      id: '/_authenticated/settings/contract-templates'
+      path: '/contract-templates'
+      fullPath: '/settings/contract-templates'
+      preLoaderRoute: typeof AuthenticatedSettingsContractTemplatesRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/company': {
       id: '/_authenticated/settings/company'
       path: '/company'
       fullPath: '/settings/company'
       preLoaderRoute: typeof AuthenticatedSettingsCompanyRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/brand': {
+      id: '/_authenticated/settings/brand'
+      path: '/brand'
+      fullPath: '/settings/brand'
+      preLoaderRoute: typeof AuthenticatedSettingsBrandRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/deals_/$id': {
@@ -577,12 +737,29 @@ const AuthenticatedDealsRouteWithChildren =
   AuthenticatedDealsRoute._addFileChildren(AuthenticatedDealsRouteChildren)
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsBrandRoute: typeof AuthenticatedSettingsBrandRoute
   AuthenticatedSettingsCompanyRoute: typeof AuthenticatedSettingsCompanyRoute
+  AuthenticatedSettingsContractTemplatesRoute: typeof AuthenticatedSettingsContractTemplatesRoute
+  AuthenticatedSettingsFeesRoute: typeof AuthenticatedSettingsFeesRoute
+  AuthenticatedSettingsInvoicingRoute: typeof AuthenticatedSettingsInvoicingRoute
+  AuthenticatedSettingsLanguageRoute: typeof AuthenticatedSettingsLanguageRoute
+  AuthenticatedSettingsLeadFormsRoute: typeof AuthenticatedSettingsLeadFormsRoute
+  AuthenticatedSettingsTeamRoute: typeof AuthenticatedSettingsTeamRoute
+  AuthenticatedSettingsWorkflowRoute: typeof AuthenticatedSettingsWorkflowRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsBrandRoute: AuthenticatedSettingsBrandRoute,
   AuthenticatedSettingsCompanyRoute: AuthenticatedSettingsCompanyRoute,
+  AuthenticatedSettingsContractTemplatesRoute:
+    AuthenticatedSettingsContractTemplatesRoute,
+  AuthenticatedSettingsFeesRoute: AuthenticatedSettingsFeesRoute,
+  AuthenticatedSettingsInvoicingRoute: AuthenticatedSettingsInvoicingRoute,
+  AuthenticatedSettingsLanguageRoute: AuthenticatedSettingsLanguageRoute,
+  AuthenticatedSettingsLeadFormsRoute: AuthenticatedSettingsLeadFormsRoute,
+  AuthenticatedSettingsTeamRoute: AuthenticatedSettingsTeamRoute,
+  AuthenticatedSettingsWorkflowRoute: AuthenticatedSettingsWorkflowRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 
