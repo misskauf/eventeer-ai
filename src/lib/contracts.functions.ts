@@ -40,7 +40,7 @@ export const getContractByToken = createServerFn({ method: "GET" })
         .maybeSingle(),
       supabaseAdmin
         .from("deals")
-        .select("id, client_name, client_company, event_date, guest_count")
+        .select("id, client_name, client_company, event_date, guest_count, language")
         .eq("id", contract.deal_id)
         .maybeSingle(),
     ]);
