@@ -134,7 +134,12 @@ export function InvoicePanel({ companyId, dealId, invoiceMode, invoiceNotes, ctx
     const rendered = renderInvoice(tpl.body || DEFAULT_INVOICE_TEMPLATE, withNotes);
     const { error } = await supabase
       .from("invoices" as any)
-      .update({ body_html: rendered, template_name: tpl.name, template_id: tpl.id } as any)
+      .update({
+        body_html: rendered,
+        template_name: tpl.name,
+        template_id: tpl.id,
+        quote_number: withNotes.quote_number ?? null,
+      } as any)
       .eq("id", inv.id);
     if (error) return toast.error(error.message);
     toast.success("Invoice regenerated from latest data");
