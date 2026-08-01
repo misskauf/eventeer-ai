@@ -1,72 +1,52 @@
 ## Goal
 
-Data model + helpers for a real roles & permissions system. No UI or enforcement yet (that's 16b–16c).
+Every proposal gets a human-readable quote number (e.g. `BB-2026-0042`) the first time it is sent, with `-v2`, `-v3` … on later re-sent revisions of the same deal.
 
 ## 1. Migration
 
-**Roles enum**
-- Add `sales_manager` and `event_manager` to `app_role`. (Enum values are added in their own statement first, then used in a later statement, so the migration is split into two blocks.)
-- Migrate existing rows: `sales → sales_manager`, `manager → event_manager`. `owner` and `accounting` unchanged.
-- Old values `sales` / `manager` stay in the enum, unused (dropping enum values is unsafe).
+**`companies` — new columns**
+- `quote_format text not null default '{venue}-{YYYY}-{seq}'`
+- `venue_code text` (nullable, e.g. `BB`)
+- `quote_next_seq int not null default 1`
+- `quote_seq_padding int not null default 4`
+- `quote_reset_yearly boolean not null default true`
+- `quote_seq_year int` (year the counter belongs to)
 
-**`role_permissions`**
-- `id`, `company_id` → companies, `role app_role`, `module text`, `level text` (`none|view|edit|admin`), `scope text` nullable (`own|all`), timestamps.
-- Unique on `(company_id, role, module)`; check constraints on `level`, `scope`, and the allowed module list: deals, proposals, contracts, invoices, catalog, staff, costs, analytics, event_briefs, lead_forms, settings, team.
-- GRANTs to `authenticated` + `service_role`; RLS: members of the company can read; only owners can write.
+**`proposals`**
+- `quote_number text` nullable
+- Unique index on `(company_id, quote_number)` where not null.
 
-**`user_roles` additions**
-- `active boolean not null default true`
-- `status text not null default 'active'` (`active|invited|disabled`).
+**`next_quote_number(_company_id uuid) returns text`**
+SECURITY DEFINER, `search_path = public`.
+- Requires `public.has_permission(_company_id, 'proposals', 'edit')` — otherwise raises.
+- `SELECT ... FOR UPDATE` on the company row (atomic under concurrency).
+- If `quote_reset_yearly` and `quote_seq_year` is null or ≠ current year → set seq to 1 and `quote_seq_year` to current year.
+- Formats `quote_format`, replacing `{venue}` (venue_code, empty string when null), `{YYYY}`, `{YY}`, `{MM}`, `{seq}` (`lpad` to `quote_seq_padding`). Collapses any duplicated `--` left by an empty venue code.
+- Increments `quote_next_seq`, returns the string.
 
-**`company_invites`**
-- `id`, `company_id`, `email`, `role app_role`, `token text unique`, `invited_by`, `expires_at`, `accepted_at`, `created_at`.
-- RLS: owners of the company manage; token lookup happens server-side (no anon policy). GRANTs as above.
+Grant execute to `authenticated`.
 
-**`permission_audit`**
-- `id`, `company_id`, `actor_id`, `action text`, `target text`, `detail jsonb default '{}'`, `created_at`.
-- RLS: owners of the company can read; inserts happen server-side. GRANTs as above.
+## 2. Assignment on send
 
-**Default presets**
-Seeded for every existing company, and for new companies via an update to `create_company_workspace` (plus a helper `seed_role_permissions(_company_id)` so both paths share one definition):
+In `saveProposal(send)` in `src/routes/_authenticated/deals_.$id.tsx` (the existing insert path), when `send` is true:
+- Look up the most recent prior proposal for this deal that has a `quote_number`.
+- **No prior number** → `supabase.rpc('next_quote_number', { _company_id })`, store as-is (first version, no suffix).
+- **Prior number exists** → strip any `-vN`, and store `<base>-v<N+1>` (first re-send gives `-v2`). The counter is not advanced.
+- Drafts never get a number; the number is written on the proposal row in the same insert (RPC first, then insert).
 
-| module | owner | sales_manager | event_manager | accounting |
-|---|---|---|---|---|
-| deals | admin | edit (scope all) | view | view |
-| proposals | admin | edit | view | none |
-| contracts | admin | edit | view | none |
-| invoices | admin | view | none | edit |
-| catalog | admin | view | view | none |
-| staff | admin | none | edit | none |
-| costs | admin | none | none | view |
-| analytics | admin | view | view | view |
-| event_briefs | admin | edit | edit | none |
-| lead_forms | admin | edit | none | none |
-| settings | admin | none | none | none |
-| team | admin | none | none | none |
+## 3. Settings UI — Numbering
 
-Owner rows are seeded as `admin` everywhere for completeness, but owner is short-circuited in code and never editable.
+New "Quote numbering" card in `src/routes/_authenticated/settings.invoicing.tsx` (Invoicing page), visible only with **admin on the `settings` module** (`can('settings','admin')`); read-only otherwise.
 
-**`has_permission(_company_id uuid, _module text, _min_level text)`**
-SECURITY DEFINER, STABLE, `search_path = public`. Returns true if the caller is `owner` of that company; otherwise compares the caller's `role_permissions.level` against `_min_level` using the ordering none(0) < view(1) < edit(2) < admin(3). Requires the caller's `user_roles` row to be `active`. Companion `permission_level(_company_id, _module)` returning the effective level text (`'admin'` for owner) for UI use.
+Fields: format string (with a token legend), venue code, padding, yearly reset toggle. Live preview computed client-side with the same token rules using the current `quote_next_seq`, e.g. `Next: BB-2026-0042`. Save via the existing `companies` update pattern.
 
-## 2. Server helper
+## 4. Display
 
-`src/lib/permissions.server.ts`
-- `LEVELS` ordering + `Module` / `Level` types.
-- `requirePermission(supabase, companyId, module, minLevel)` — calls the SQL function via `rpc`, throws `Error('Forbidden: <module> requires <level>')` when false.
-- `getCallerCompanyId(supabase, userId)` convenience (reuses the `user_roles` lookup) so server fns can do `await requirePermission(...)` in one line.
-- `logPermissionAudit(...)` writing a `permission_audit` row.
-No existing server functions are changed in this prompt.
-
-## 3. Client hook
-
-`src/lib/permissions.tsx`
-- `usePermissions()` → `{ role, companyId, isOwner, levels, can(module, level), scope(module), loading }`.
-- Loads the user's `user_roles` row and that company's `role_permissions` rows in two queries; owner short-circuits `can()` to `true`.
-- Module/level constants and human labels exported here for the 16b settings UI.
-- Existing `useCompanyRole` / `useCanViewCosts` stay as-is so nothing breaks; `costs` module coexists with `cost_visible_roles` until 16c consolidates them.
+- **Internal deal view** (`deals_.$id.tsx`): show the current proposal's quote number as a small mono badge next to the proposal version/status.
+- **Client page** (`src/routes/p.$token.tsx`): show it in the header near the cover title — `resolveProposalToken` already returns the full proposal row, so no server change is needed beyond the field existing.
+- **PDF**: the client page prints via the existing print stylesheet, so the header badge is included automatically; it is styled to stay visible in print.
 
 ## Notes
 
-- `NON_OWNER_ROLES` in `src/lib/cost-visibility.tsx` is updated to the new role values so the existing Team settings checkboxes keep matching real roles.
-- Nothing gets enforced yet — existing pages behave exactly as today.
+- Contracts and invoices are untouched.
+- Existing sent proposals keep `quote_number = null`; the UI simply omits the badge for them.
