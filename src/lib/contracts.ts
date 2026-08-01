@@ -21,6 +21,7 @@ export type ContractContext = {
 
 export const CONTRACT_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   { key: "client_name", label: "Client name" },
+  { key: "quote_number", label: "Quote number" },
   { key: "client_company", label: "Client company" },
   { key: "client_email", label: "Client email" },
   { key: "event_date", label: "Event date" },
