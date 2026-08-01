@@ -13,6 +13,7 @@ import {
   type CustomFieldDef,
 } from "@/lib/lead-forms";
 import { toast } from "sonner";
+import { useTranslation, applyStoredLanguage } from "@/i18n";
 
 export const Route = createFileRoute("/f/$slug")({
   ssr: false,
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/f/$slug")({
 
 function PublicLeadForm() {
   const { slug } = Route.useParams();
+  const { t } = useTranslation();
   const resolve = useServerFn(resolveLeadForm);
   const submit = useServerFn(submitLeadForm);
 
@@ -43,9 +45,13 @@ function PublicLeadForm() {
   const [done, setDone] = useState<{ msg: string | null } | null>(null);
 
   useEffect(() => {
+    applyStoredLanguage();
+  }, []);
+
+  useEffect(() => {
     resolve({ data: { slug } })
       .then(setState)
-      .catch((e) => setError(e?.message ?? "Form unavailable"));
+      .catch((e) => setError(e?.message ?? t("leadForm.unavailable")));
   }, [slug]);
 
   if (error) {
@@ -56,7 +62,7 @@ function PublicLeadForm() {
     );
   }
   if (!state) {
-    return <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">{t("leadForm.loading")}</div>;
   }
 
   const { form, company } = state;
@@ -66,7 +72,7 @@ function PublicLeadForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!consent) return toast.error("Please accept the consent");
+    if (!consent) return toast.error(t("leadForm.consent_required"));
     setBusy(true);
     try {
       const payload: Record<string, unknown> = {};
@@ -89,9 +95,9 @@ function PublicLeadForm() {
         window.location.href = res.redirect_url;
         return;
       }
-      setDone({ msg: res.success_text ?? "Thanks — we've received your inquiry and will be in touch shortly." });
+      setDone({ msg: res.success_text ?? t("leadForm.default_success") });
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to submit");
+      toast.error(err?.message ?? t("leadForm.submit_failed"));
     } finally {
       setBusy(false);
     }
@@ -103,7 +109,7 @@ function PublicLeadForm() {
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center space-y-3">
             {company?.logo_url && <img src={company.logo_url} alt="" className="mx-auto max-h-16" />}
-            <div className="text-lg font-semibold" style={{ color: brand }}>Thank you</div>
+            <div className="text-lg font-semibold" style={{ color: brand }}>{t("leadForm.thank_you")}</div>
             <p className="text-sm text-muted-foreground whitespace-pre-line">{done.msg}</p>
           </CardContent>
         </Card>
@@ -174,7 +180,7 @@ function PublicLeadForm() {
               </label>
 
               <Button type="submit" disabled={busy} className="w-full" style={{ backgroundColor: brand }}>
-                {busy ? "Sending…" : "Send inquiry"}
+                {busy ? t("leadForm.sending") : t("leadForm.send_inquiry")}
               </Button>
             </form>
           </CardContent>
