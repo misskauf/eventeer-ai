@@ -526,6 +526,7 @@ export type Database = {
           created_at: string
           description: string | null
           details_url: string | null
+          event_types: string[]
           id: string
           included_hours: number | null
           kind: string
@@ -552,6 +553,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           details_url?: string | null
+          event_types?: string[]
           id?: string
           included_hours?: number | null
           kind?: string
@@ -578,6 +580,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           details_url?: string | null
+          event_types?: string[]
           id?: string
           included_hours?: number | null
           kind?: string
@@ -1177,6 +1180,7 @@ export type Database = {
           created_at: string
           description: string | null
           details_url: string | null
+          event_types: string[]
           features: string[]
           id: string
           long_description: string | null
@@ -1202,6 +1206,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           details_url?: string | null
+          event_types?: string[]
           features?: string[]
           id?: string
           long_description?: string | null
@@ -1227,6 +1232,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           details_url?: string | null
+          event_types?: string[]
           features?: string[]
           id?: string
           long_description?: string | null
