@@ -429,11 +429,11 @@ function AnalyticsPage() {
                     <>
                       <Legend />
                       {sources.map((s, i) => (
-                        <Bar key={s} dataKey={s} stackId="s" fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        <Bar key={s} dataKey={s} stackId="s" fill={CHART_COLORS[i % CHART_COLORS.length]} maxBarSize={64} />
                       ))}
                     </>
                   ) : (
-                    <Bar dataKey="total" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="total" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} maxBarSize={64} />
                   )}
                 </BarChart>
               </ResponsiveContainer>
@@ -532,7 +532,7 @@ function AnalyticsPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} width={80} />
                   <RTooltip formatter={(v: any) => money(Number(v), currency)} />
-                  <Line type="monotone" dataKey="value" stroke={CHART_COLORS[0]} strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="value" stroke={CHART_COLORS[0]} strokeWidth={2} dot />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -550,7 +550,7 @@ function AnalyticsPage() {
                     <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                     <RTooltip />
-                    <Bar dataKey="requests" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="requests" radius={[4, 4, 0, 0]} maxBarSize={48}>
                       {requestsByWeekday.map((_, i) => (
                         <Cell key={i} fill={CHART_COLORS[0]} />
                       ))}
@@ -571,7 +571,7 @@ function AnalyticsPage() {
                     <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} width={80} />
                     <RTooltip formatter={(v: any) => money(Number(v), currency)} />
-                    <Bar dataKey="revenue" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="revenue" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} maxBarSize={48} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -589,7 +589,7 @@ function AnalyticsPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} width={80} />
                   <RTooltip formatter={(v: any) => money(Number(v), currency)} />
-                  <Bar dataKey="revenue" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} maxBarSize={48} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
