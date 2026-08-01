@@ -68,6 +68,13 @@ import { CardFilters, applyCardFilters } from "@/components/analytics-card-filte
 import { DealDrilldownSheet, type Drilldown } from "@/components/analytics-drilldown";
 import { downloadCsv, printSnapshot, toCsv } from "@/lib/analytics-export";
 import { WidgetBuilderDialog } from "@/components/widget-builder-dialog";
+import { GoalsCard } from "@/components/analytics-goals";
+import {
+  METRIC_LABEL,
+  currentPeriodStart,
+  periodLabel,
+  type Goal,
+} from "@/lib/goals";
 import type { CustomWidget, EngineItem } from "@/lib/analytics-engine";
 
 
