@@ -1208,6 +1208,25 @@ function AnalyticsPage() {
   }
 
   function extraControlsFor(key: string): React.ReactNode {
+    if (key === "goals")
+      return (
+        <Select
+          value={goalEntry.goal_id ?? "current"}
+          onValueChange={(v) => patchEntry("goals", { goal_id: v === "current" ? null : v })}
+        >
+          <SelectTrigger className="h-8 w-[220px] text-xs" aria-label="Goal shown">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="current">Current period goals</SelectItem>
+            {goals.map((g) => (
+              <SelectItem key={g.id} value={g.id}>
+                {METRIC_LABEL[g.metric]} · {periodLabel(g.period_start, g.period_type)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
     if (key === "stage")
       return (
         <ChartTypeToggle
