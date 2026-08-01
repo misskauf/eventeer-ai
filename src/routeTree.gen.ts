@@ -32,6 +32,7 @@ import { Route as AuthenticatedSettingsTeamRouteImport } from './routes/_authent
 import { Route as AuthenticatedSettingsLeadFormsRouteImport } from './routes/_authenticated/settings.lead-forms'
 import { Route as AuthenticatedSettingsLanguageRouteImport } from './routes/_authenticated/settings.language'
 import { Route as AuthenticatedSettingsInvoicingRouteImport } from './routes/_authenticated/settings.invoicing'
+import { Route as AuthenticatedSettingsGoalsRouteImport } from './routes/_authenticated/settings.goals'
 import { Route as AuthenticatedSettingsFeesRouteImport } from './routes/_authenticated/settings.fees'
 import { Route as AuthenticatedSettingsContractTemplatesRouteImport } from './routes/_authenticated/settings.contract-templates'
 import { Route as AuthenticatedSettingsCompanyRouteImport } from './routes/_authenticated/settings.company'
@@ -169,6 +170,12 @@ const AuthenticatedSettingsInvoicingRoute =
     path: '/invoicing',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsGoalsRoute =
+  AuthenticatedSettingsGoalsRouteImport.update({
+    id: '/goals',
+    path: '/goals',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsFeesRoute =
   AuthenticatedSettingsFeesRouteImport.update({
     id: '/fees',
@@ -282,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
   '/settings/fees': typeof AuthenticatedSettingsFeesRoute
+  '/settings/goals': typeof AuthenticatedSettingsGoalsRoute
   '/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
   '/settings/language': typeof AuthenticatedSettingsLanguageRoute
   '/settings/lead-forms': typeof AuthenticatedSettingsLeadFormsRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByTo {
   '/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
   '/settings/fees': typeof AuthenticatedSettingsFeesRoute
+  '/settings/goals': typeof AuthenticatedSettingsGoalsRoute
   '/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
   '/settings/language': typeof AuthenticatedSettingsLanguageRoute
   '/settings/lead-forms': typeof AuthenticatedSettingsLeadFormsRoute
@@ -358,6 +367,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/_authenticated/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
   '/_authenticated/settings/fees': typeof AuthenticatedSettingsFeesRoute
+  '/_authenticated/settings/goals': typeof AuthenticatedSettingsGoalsRoute
   '/_authenticated/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
   '/_authenticated/settings/language': typeof AuthenticatedSettingsLanguageRoute
   '/_authenticated/settings/lead-forms': typeof AuthenticatedSettingsLeadFormsRoute
@@ -398,6 +408,7 @@ export interface FileRouteTypes {
     | '/settings/company'
     | '/settings/contract-templates'
     | '/settings/fees'
+    | '/settings/goals'
     | '/settings/invoicing'
     | '/settings/language'
     | '/settings/lead-forms'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/settings/company'
     | '/settings/contract-templates'
     | '/settings/fees'
+    | '/settings/goals'
     | '/settings/invoicing'
     | '/settings/language'
     | '/settings/lead-forms'
@@ -473,6 +485,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/company'
     | '/_authenticated/settings/contract-templates'
     | '/_authenticated/settings/fees'
+    | '/_authenticated/settings/goals'
     | '/_authenticated/settings/invoicing'
     | '/_authenticated/settings/language'
     | '/_authenticated/settings/lead-forms'
@@ -662,6 +675,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsInvoicingRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/goals': {
+      id: '/_authenticated/settings/goals'
+      path: '/goals'
+      fullPath: '/settings/goals'
+      preLoaderRoute: typeof AuthenticatedSettingsGoalsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/fees': {
       id: '/_authenticated/settings/fees'
       path: '/fees'
@@ -802,6 +822,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsCompanyRoute: typeof AuthenticatedSettingsCompanyRoute
   AuthenticatedSettingsContractTemplatesRoute: typeof AuthenticatedSettingsContractTemplatesRoute
   AuthenticatedSettingsFeesRoute: typeof AuthenticatedSettingsFeesRoute
+  AuthenticatedSettingsGoalsRoute: typeof AuthenticatedSettingsGoalsRoute
   AuthenticatedSettingsInvoicingRoute: typeof AuthenticatedSettingsInvoicingRoute
   AuthenticatedSettingsLanguageRoute: typeof AuthenticatedSettingsLanguageRoute
   AuthenticatedSettingsLeadFormsRoute: typeof AuthenticatedSettingsLeadFormsRoute
@@ -816,6 +837,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsContractTemplatesRoute:
     AuthenticatedSettingsContractTemplatesRoute,
   AuthenticatedSettingsFeesRoute: AuthenticatedSettingsFeesRoute,
+  AuthenticatedSettingsGoalsRoute: AuthenticatedSettingsGoalsRoute,
   AuthenticatedSettingsInvoicingRoute: AuthenticatedSettingsInvoicingRoute,
   AuthenticatedSettingsLanguageRoute: AuthenticatedSettingsLanguageRoute,
   AuthenticatedSettingsLeadFormsRoute: AuthenticatedSettingsLeadFormsRoute,
