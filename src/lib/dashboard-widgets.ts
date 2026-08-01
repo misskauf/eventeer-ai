@@ -315,6 +315,7 @@ export function normalizeConfig(raw: unknown): WidgetConfig[] {
       size: SIZES.includes(size) ? size : def.defaultSize,
       filters: normalizeFilters((item as any)?.filters),
       compare_previous: (item as any)?.compare_previous === true,
+      goal_id: typeof (item as any)?.goal_id === "string" ? (item as any).goal_id : null,
       date_range_override:
         override && typeof override?.mode === "string"
           ? { mode: override.mode, from: String(override.from ?? ""), to: String(override.to ?? "") }
