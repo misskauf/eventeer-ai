@@ -524,6 +524,7 @@ export type Database = {
           default_basis_extra: string
           default_basis_food: string
           default_basis_rental: string
+          default_basis_staff: string
           default_hours_beverage: number
           default_hours_food: number
           gratuity_default_pct: number
@@ -540,6 +541,7 @@ export type Database = {
           tax_rate_extra: number
           tax_rate_food: number
           tax_rate_rental: number
+          tax_rate_staff: number
           updated_at: string
         }
         Insert: {
@@ -549,6 +551,7 @@ export type Database = {
           default_basis_extra?: string
           default_basis_food?: string
           default_basis_rental?: string
+          default_basis_staff?: string
           default_hours_beverage?: number
           default_hours_food?: number
           gratuity_default_pct?: number
@@ -565,6 +568,7 @@ export type Database = {
           tax_rate_extra?: number
           tax_rate_food?: number
           tax_rate_rental?: number
+          tax_rate_staff?: number
           updated_at?: string
         }
         Update: {
@@ -574,6 +578,7 @@ export type Database = {
           default_basis_extra?: string
           default_basis_food?: string
           default_basis_rental?: string
+          default_basis_staff?: string
           default_hours_beverage?: number
           default_hours_food?: number
           gratuity_default_pct?: number
@@ -590,6 +595,7 @@ export type Database = {
           tax_rate_extra?: number
           tax_rate_food?: number
           tax_rate_rental?: number
+          tax_rate_staff?: number
           updated_at?: string
         }
         Relationships: [
@@ -1145,6 +1151,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "spaces_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_roles: {
+        Row: {
+          active: boolean
+          basis: string | null
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          long_description: string | null
+          long_description_de: string | null
+          name: string
+          name_de: string | null
+          price: number
+          pricing_type: Database["public"]["Enums"]["extra_pricing_type"]
+          tax_rate_pct: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          basis?: string | null
+          category?: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          long_description?: string | null
+          long_description_de?: string | null
+          name: string
+          name_de?: string | null
+          price?: number
+          pricing_type?: Database["public"]["Enums"]["extra_pricing_type"]
+          tax_rate_pct?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          basis?: string | null
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          long_description?: string | null
+          long_description_de?: string | null
+          name?: string
+          name_de?: string | null
+          price?: number
+          pricing_type?: Database["public"]["Enums"]["extra_pricing_type"]
+          tax_rate_pct?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_roles_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
