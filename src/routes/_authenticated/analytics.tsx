@@ -1045,6 +1045,17 @@ function AnalyticsPage() {
                 Edit dashboard
               </Button>
             )}
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingCustom(null);
+                setBuilderOpen(true);
+              }}
+              disabled={configLoading || loading}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              New widget
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -1065,7 +1076,8 @@ function AnalyticsPage() {
           onReorder={reorder}
         >
           {visibleEntries.map((entry) => {
-            const def = WIDGET_MAP.get(entry.widget_key)!;
+            const def = defFor(entry)!;
+            const custom = entry.custom;
             return (
               <WidgetShell
                 key={entry.widget_key}
@@ -1074,14 +1086,82 @@ function AnalyticsPage() {
                 global={globalRange}
                 editing={editing}
                 onChange={(patch) => patchEntry(entry.widget_key, patch)}
-                extraControls={extraControlsFor(entry.widget_key)}
+                extraControls={custom ? null : extraControlsFor(entry.widget_key)}
+                editActions={
+                  custom ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => {
+                          setEditingCustom(entry);
+                          setBuilderOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1 h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs text-destructive"
+                        onClick={() => deleteCustomWidget(entry.widget_key)}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    </>
+                  ) : null
+                }
               >
-                {({ chartType }) => renderWidget(entry.widget_key, chartType)}
+                {({ range, chartType }) =>
+                  custom ? (
+                    <CustomWidgetView
+                      custom={custom}
+                      chartType={chartType}
+                      range={range}
+                      deals={deals}
+                      activities={activities}
+                      items={items}
+                      currency={currency}
+                      ownerLabel={ownerLabel}
+                      stageLabel={stageLabel}
+                    />
+                  ) : (
+                    renderWidget(entry.widget_key, chartType)
+                  )
+                }
               </WidgetShell>
             );
           })}
         </WidgetGrid>
       )}
+
+      <WidgetBuilderDialog
+        open={builderOpen}
+        onOpenChange={(v) => {
+          setBuilderOpen(v);
+          if (!v) setEditingCustom(null);
+        }}
+        initial={editingCustom?.custom}
+        initialChartType={editingCustom?.chart_type ?? undefined}
+        onSave={saveCustomWidget}
+        deals={deals}
+        activities={activities}
+        items={items}
+        currency={currency}
+        canViewCosts={canViewCosts}
+        hasItems={items.length > 0}
+        globalRange={globalRange}
+        stageOptions={stageOptions}
+        spaceOptions={spaceOptions}
+        ownerOptions={ownerOptions}
+        eventTypeOptions={eventTypeOptions}
+        ownerLabel={ownerLabel}
+        stageLabel={stageLabel}
+      />
     </AppShell>
   );
 }
+
