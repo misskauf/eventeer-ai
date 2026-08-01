@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { ChartTypeToggle, periodRange, type Range } from "@/components/analytics-widgets";
 import {
-  WIDGET_MAP,
+  defFor,
   defaultConfig,
   normalizeConfig,
   sizeClass,
@@ -31,6 +31,7 @@ import {
   type WidgetDef,
   type WidgetSize,
 } from "@/lib/dashboard-widgets";
+
 
 /* -------------------------------------------------------------------------- */
 /* Persistence                                                                */
