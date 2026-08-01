@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
+import { usePermissions } from "@/lib/permissions";
 import type { Field } from "@/components/crud-list";
 
 export const NON_OWNER_ROLES = [
@@ -9,55 +9,21 @@ export const NON_OWNER_ROLES = [
   { value: "accounting", label: "Accounting" },
 ];
 
+export { supabase };
 
-/** Current user's role in their company + which roles may see internal costs. */
+/** Current user's role + company (kept for existing callers). */
 export function useCompanyRole() {
-  const [role, setRole] = useState<string | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [visibleRoles, setVisibleRoles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const uid = auth.user?.id;
-      if (!uid) {
-        if (alive) setLoading(false);
-        return;
-      }
-      const { data: r } = await supabase
-        .from("user_roles")
-        .select("role, company_id")
-        .eq("user_id", uid)
-        .limit(1)
-        .maybeSingle();
-      if (!alive) return;
-      setRole((r?.role as string) ?? null);
-      setCompanyId(r?.company_id ?? null);
-      if (r?.company_id) {
-        const { data: c } = await supabase
-          .from("companies")
-          .select("cost_visible_roles")
-          .eq("id", r.company_id)
-          .maybeSingle();
-        if (alive) setVisibleRoles(((c as any)?.cost_visible_roles as string[]) ?? []);
-      }
-      if (alive) setLoading(false);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  return { role, companyId, visibleRoles, loading, isOwner: role === "owner" };
+  const { role, companyId, isOwner, loading } = usePermissions();
+  return { role, companyId, loading, isOwner };
 }
 
-/** True when the signed-in user may see internal costs and margins. */
+/**
+ * True when the signed-in user may see internal costs and margins.
+ * Driven by the Costs module in the permissions matrix (owner always passes).
+ */
 export function useCanViewCosts() {
-  const { role, visibleRoles, loading } = useCompanyRole();
-  const canViewCosts = role === "owner" || (!!role && visibleRoles.includes(role));
-  return { canViewCosts, loading };
+  const { can, loading } = usePermissions();
+  return { canViewCosts: can("costs", "view"), loading };
 }
 
 /** Internal cost form field, appended to a catalog CrudList field list. */
