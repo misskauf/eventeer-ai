@@ -19,6 +19,7 @@ export type Database = {
           address: string | null
           contact_email: string | null
           contact_phone: string | null
+          cost_visible_roles: string[]
           created_at: string
           created_by: string
           currency: string
@@ -39,6 +40,7 @@ export type Database = {
           address?: string | null
           contact_email?: string | null
           contact_phone?: string | null
+          cost_visible_roles?: string[]
           created_at?: string
           created_by: string
           currency?: string
@@ -59,6 +61,7 @@ export type Database = {
           address?: string | null
           contact_email?: string | null
           contact_phone?: string | null
+          cost_visible_roles?: string[]
           created_at?: string
           created_by?: string
           currency?: string
@@ -374,6 +377,7 @@ export type Database = {
           basis: string | null
           category: string
           company_id: string
+          cost: number | null
           created_at: string
           description: string | null
           id: string
@@ -391,6 +395,7 @@ export type Database = {
           basis?: string | null
           category?: string
           company_id: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -408,6 +413,7 @@ export type Database = {
           basis?: string | null
           category?: string
           company_id?: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -437,6 +443,7 @@ export type Database = {
           basis: string | null
           category: string
           company_id: string
+          cost: number | null
           created_at: string
           description: string | null
           details_url: string | null
@@ -462,6 +469,7 @@ export type Database = {
           basis?: string | null
           category?: string
           company_id: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           details_url?: string | null
@@ -487,6 +495,7 @@ export type Database = {
           basis?: string | null
           category?: string
           company_id?: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           details_url?: string | null
@@ -1085,6 +1094,7 @@ export type Database = {
           capacity_seated: number | null
           capacity_standing: number | null
           company_id: string
+          cost: number | null
           created_at: string
           description: string | null
           details_url: string | null
@@ -1109,6 +1119,7 @@ export type Database = {
           capacity_seated?: number | null
           capacity_standing?: number | null
           company_id: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           details_url?: string | null
@@ -1133,6 +1144,7 @@ export type Database = {
           capacity_seated?: number | null
           capacity_standing?: number | null
           company_id?: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           details_url?: string | null
@@ -1164,6 +1176,7 @@ export type Database = {
           basis: string | null
           category: string
           company_id: string
+          cost: number | null
           created_at: string
           description: string | null
           id: string
@@ -1181,6 +1194,7 @@ export type Database = {
           basis?: string | null
           category?: string
           company_id: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1198,6 +1212,7 @@ export type Database = {
           basis?: string | null
           category?: string
           company_id?: string
+          cost?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1268,7 +1283,7 @@ export type Database = {
       user_company_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "owner" | "manager" | "sales"
+      app_role: "owner" | "manager" | "sales" | "accounting"
       deal_stage:
         | "inquiry"
         | "proposal_draft"
@@ -1417,7 +1432,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "manager", "sales"],
+      app_role: ["owner", "manager", "sales", "accounting"],
       deal_stage: [
         "inquiry",
         "proposal_draft",
