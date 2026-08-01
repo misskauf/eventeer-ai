@@ -1,47 +1,38 @@
-## Goal
+## Event Brief per deal
 
-When a lead form submission creates a deal, also create a **draft** proposal with a sensible space + package suggestion, so the manager opens the deal and finds a starting point instead of a blank builder. Nothing is ever auto-sent to the client.
+An internal, editable operations brief attached to each deal — auto-drafted from data you already captured (proposal, catalog, contacts) and completed by the team.
 
-## 1. Migration
+### 1. Migration — `event_briefs`
 
-- `fb_packages.event_types text[] not null default '{}'`
-- `spaces.event_types text[] not null default '{}'` (same semantics, used for a mild tie-break on space choice)
+Columns: `id`, `company_id`, `deal_id` (unique), `body` (HTML text), `generated_at`, `updated_at`, `created_by`, `created_at`.
+- Grants for `authenticated` + `service_role`, RLS on, policies scoped with the existing `is_member_of(auth.uid(), company_id)` pattern (no anon access — briefs are internal only).
+- `updated_at` trigger reusing `set_updated_at()`.
 
-Empty array = "suits any event type". No RLS changes needed (both tables are already company-scoped).
+### 2. Brief generation (`src/lib/event-brief.ts`)
 
-## 2. Catalog editor
+Reuses the contract's `ContractContext` / `buildPlaceholderValues` so names, dates, packages, extras and staff read exactly as they do on the contract. Produces HTML with these sections:
 
-In the Food and Beverage package editor (`catalog-packages-page.tsx`, via the shared `crud-list` field set) add a **"Suits event types"** field using the existing `tags` field type — free-text chips, matching the free-text `event_type` on deals (Wedding, Corporate, Birthday, …), with the hint "Leave empty to suit all event types". Show the tags in the list row next to min-guests. Same optional field on spaces.
+- **Event overview** — client name + company, event type, date, guest count, deal stage/status.
+- **Contacts** — client email (phone if present), deal owner.
+- **Space & timing** — selected space(s), event hours; blank prompt lines for arrival/setup, guest start, end, teardown.
+- **Food & beverage** — food package, drinks package, menu selections, allergen/dietary notes pulled from `fb_packages.allergen_notes`, plus a blank line for client-specific dietary requests.
+- **Extras & staffing** — selected extras and staff with counts/hours.
+- **Team notes / run-of-show** — empty editable section with a short prompt.
 
-## 3. Suggestion engine
+Blank fields render as a labelled line so they're obvious in print.
 
-New server-only helper `src/lib/lead-suggest.server.ts` → `buildSuggestedProposal(companyId, deal)`, using the admin client (the lead-form flow is public/unauthenticated, like the existing deal insert).
+### 3. Server functions (`src/lib/event-brief.functions.ts`)
 
-Selection rules:
-- **Space**: active spaces only; smallest `capacity >= guest_count`; if none is big enough, the largest one; prefer a space whose `event_types` contains the deal's `event_type` (case-insensitive) when there is a tie. Skip if the venue has no spaces.
-- **Food package**: active, `min_guests <= guest_count`, and `event_types` empty or containing the event type. Pick the tagged match first, otherwise the untagged candidate that appears most recently in `updated_at`. Skip if no candidate.
-- **Beverage package**: same rule, applied to `kind = 'beverage'`.
-- Guest count of 0/unknown → skip the min-guests filter rather than suggesting nothing.
+`getEventBrief(dealId)`, `saveEventBrief(dealId, body)`, `regenerateEventBrief(dealId)` — all behind `requireSupabaseAuth`, gathering the same deal/proposal/catalog rows the contract renderer uses. First open auto-creates the brief if none exists.
 
-Offer JSON is built with exactly the shape the builder writes in `buildOfferConfig()`: `space_ids`, `package_ids`, `extra_ids: []`, `staff_ids: []`, `staff_config: {}`, `package_guests` seeded to `guest_count` for each chosen package, `package_hours: {}`, `season_id: "none"`, `discount: 0`, `discount_target: null`, `min_revenue_required` from the matching pricing rule (same helper logic as the builder), `service_charge_pct_override` from the company's `fee_config` gratuity default, `guest_count`, empty `alternative_groups` / menu maps. So the builder loads it with zero special-casing.
+### 4. Deal detail UI
 
-Then, in one transaction-ish sequence:
-- insert `proposals` row: `version: 1`, `status: 'draft'`, `sent_at: null`, `constraints: { intro_markdown: "", autodrafted: true }`
-- update the deal `stage` to `proposal_draft`
-- insert `deal_activities` row `kind: 'lead_autodrafted'` with the chosen space/package ids in `meta`
+- New **Brief** tab alongside the existing tabs on `deals_.$id.tsx` (and `deals-tabs.tsx` where relevant).
+- Write / Preview sub-tabs: editing uses the existing `RichTextEditor`, preview uses the shared `ContractDocument` so formatting matches contracts.
+- Save button writes to `event_briefs.body`.
+- **Regenerate from deal** button with a confirm dialog warning that manual edits will be overwritten.
+- **Download PDF** button using the same `window.print()` + `.printable` / `no-print` stylesheet approach as the contract page, with the venue logo and company details in a branded header.
 
-If neither a space nor any package can be suggested: do nothing at all — the deal stays as created, no proposal row, no stage change. Any failure inside the helper is caught and logged, never surfaced to the public form submitter.
+### Technical notes
 
-## 4. Hook into the lead form
-
-In `submitLeadForm` (`src/lib/lead-forms.functions.ts`), after the deal insert and its `deal_created` activity, call `buildSuggestedProposal` in a try/catch and pass its result into the notification: when a draft was created, the existing lead email/notification body gains a line "A suggested draft proposal is ready to review." (EN + DE strings alongside the existing lead notification copy).
-
-## 5. Manager review UX
-
-On `deals_.$id.tsx`: when the latest proposal is `status: 'draft'` with `constraints.autodrafted` and no later version exists, render a banner above the builder — **"Suggested draft from lead — review & adjust"**, with a short note that nothing has been sent yet and a button that scrolls to / opens the existing proposal builder with the draft already loaded (the loader already hydrates state from `proposals.offer`, so no new loading path). The banner disappears once the manager saves or sends a new version. No changes to send/approval logic.
-
-## Technical notes
-
-- Reuses the existing offer format and builder state hydration; no new proposal format or components.
-- Costs, client-visible payloads, and public server functions are untouched.
-- Suggestion runs server-side with admin access only inside the lead-form handler.
+No new editor, no redesign, no new dependencies. Reuses `contracts.ts` data gathering, `RichTextEditor`, `ContractDocument`, the existing print CSS pattern, and current RLS helpers.
