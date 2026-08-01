@@ -209,3 +209,12 @@ export async function sendClientEmailAndNotify(input: {
   if (notifErr) console.warn("[sendClientEmailAndNotify] notification insert failed", notifErr);
 }
 
+
+/** Send a plain HTML email (already-rendered body) via Resend. Server-only. */
+export async function sendHtmlEmail(opts: {
+  to: string[];
+  subject: string;
+  html: string;
+}): Promise<void> {
+  await sendResendEmail(opts);
+}
