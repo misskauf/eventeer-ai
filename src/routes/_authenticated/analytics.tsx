@@ -401,10 +401,14 @@ function AnalyticsPage() {
   const repsRange = rangeFor("reps");
 
   /* ---------------- KPIs ---------------- */
-  const kpiScoped = useMemo(() => byCreated(globalRange), [deals, globalRange.from, globalRange.to]);
+  const kpiFilters = JSON.stringify(filtersFor("kpis"));
+  const kpiScoped = useMemo(
+    () => byCreated(globalRange, dealsFor("kpis")),
+    [deals, items, kpiFilters, globalRange.from, globalRange.to],
+  );
   const kpiPrev = useMemo(
-    () => byCreated(previousRange(globalRange)),
-    [deals, globalRange.from, globalRange.to],
+    () => byCreated(previousRange(globalRange), dealsFor("kpis")),
+    [deals, items, kpiFilters, globalRange.from, globalRange.to],
   );
   const kpis = useMemo(() => computeKpis(kpiScoped, activities), [kpiScoped, activities]);
   const prevKpis = useMemo(() => computeKpis(kpiPrev, activities), [kpiPrev, activities]);
@@ -433,7 +437,15 @@ function AnalyticsPage() {
   );
 
   /* ---------------- Leads over time ---------------- */
-  const leadsScoped = useMemo(() => byCreated(leadsRange), [deals, leadsRange.from, leadsRange.to]);
+  const leadsFilters = JSON.stringify(filtersFor("leads"));
+  const leadsScoped = useMemo(
+    () => byCreated(leadsRange, dealsFor("leads")),
+    [deals, items, leadsFilters, leadsRange.from, leadsRange.to],
+  );
+  const leadsPrevScoped = useMemo(
+    () => byCreated(previousRange(leadsRange), dealsFor("leads")),
+    [deals, items, leadsFilters, leadsRange.from, leadsRange.to],
+  );
   const sources = useMemo(
     () => Array.from(new Set(leadsScoped.map((d) => d.source || "manual"))).slice(0, 6),
     [leadsScoped],
@@ -449,12 +461,25 @@ function AnalyticsPage() {
       map.set(k, row);
     }
     for (const row of map.values()) for (const s of sources) row[s] = row[s] ?? 0;
-    return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [leadsScoped, sources]);
+    const rows = Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
+    if (entryFor("leads").compare_previous) {
+      const prev = new Map<string, number>();
+      for (const d of leadsPrevScoped) {
+        const k = monthKey(d.created_at);
+        prev.set(k, (prev.get(k) ?? 0) + 1);
+      }
+      const prevRows = Array.from(prev.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+      rows.forEach((row, i) => {
+        row.prev = prevRows[i]?.[1] ?? 0;
+      });
+    }
+    return rows;
+  }, [leadsScoped, leadsPrevScoped, sources, active]);
 
   /* ---------------- Funnel ---------------- */
+  const funnelFilters = JSON.stringify(filtersFor("funnel"));
   const funnel = useMemo(() => {
-    const list = byCreated(funnelRange);
+    const list = byCreated(funnelRange, dealsFor("funnel"));
     const leads = list.length;
     const proposalSent = list.filter(
       (d) => proposals.some((p) => p.deal_id === d.id && p.sent_at) || SENT_STAGES.includes(d.stage),
@@ -476,11 +501,12 @@ function AnalyticsPage() {
       won: list.filter((d) => WON_STAGES.has(d.stage)).length,
       lost: list.filter((d) => LOST_STAGES.has(d.stage)).length,
     };
-  }, [deals, funnelRange.from, funnelRange.to, proposals]);
+  }, [deals, items, funnelFilters, funnelRange.from, funnelRange.to, proposals]);
 
   /* ---------------- Deal status ---------------- */
+  const stageFilters = JSON.stringify(filtersFor("stage"));
   const stageDistribution = useMemo(() => {
-    const list = byCreated(stageRange);
+    const list = byCreated(stageRange, dealsFor("stage"));
     const map = new Map<string, { stage: string; label: string; count: number; value: number }>();
     for (const d of list) {
       const row = map.get(d.stage) ?? { stage: d.stage, label: stageLabel(d.stage), count: 0, value: 0 };
@@ -494,12 +520,13 @@ function AnalyticsPage() {
       count: number;
       value: number;
     }[];
-  }, [deals, stageRange.from, stageRange.to]);
+  }, [deals, items, stageFilters, stageRange.from, stageRange.to]);
 
   /* ---------------- Revenue over time ---------------- */
+  const revenueFilters = JSON.stringify(filtersFor("revenue"));
   const revenueOverTime = useMemo(() => {
-    const map = new Map<string, { month: string; value: number }>();
-    for (const d of byEvent(revenueRange)) {
+    const map = new Map<string, { month: string; value: number; prev?: number }>();
+    for (const d of byEvent(revenueRange, dealsFor("revenue"))) {
       const isWon = WON_STAGES.has(d.stage);
       if (revenueMode === "booked" ? !isWon : isWon || LOST_STAGES.has(d.stage)) continue;
       const k = monthKey(d.event_date!);
@@ -507,32 +534,48 @@ function AnalyticsPage() {
       row.value += Number(d.estimated_value || 0);
       map.set(k, row);
     }
-    return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [deals, revenueRange.from, revenueRange.to, revenueMode]);
+    const rows = Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
+    if (entryFor("revenue").compare_previous) {
+      const prevMap = new Map<string, number>();
+      for (const d of byEvent(previousRange(revenueRange), dealsFor("revenue"))) {
+        const isWon = WON_STAGES.has(d.stage);
+        if (revenueMode === "booked" ? !isWon : isWon || LOST_STAGES.has(d.stage)) continue;
+        const k = monthKey(d.event_date!);
+        prevMap.set(k, (prevMap.get(k) ?? 0) + Number(d.estimated_value || 0));
+      }
+      const prevRows = Array.from(prevMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+      rows.forEach((row, i) => {
+        row.prev = prevRows[i]?.[1] ?? 0;
+      });
+    }
+    return rows;
+  }, [deals, items, revenueFilters, revenueRange.from, revenueRange.to, revenueMode, active]);
 
   /* ---------------- Weekday / month ---------------- */
   const weekdayRows = useMemo(() => {
     const rows = WEEKDAYS.map((w) => ({ day: w, requests: 0, revenue: 0 }));
-    for (const d of byCreated(weekdayRange)) rows[new Date(d.created_at).getDay()].requests += 1;
-    for (const d of byEvent(weekdayRange)) {
+    const list = dealsFor("weekday");
+    for (const d of byCreated(weekdayRange, list)) rows[new Date(d.created_at).getDay()].requests += 1;
+    for (const d of byEvent(weekdayRange, list)) {
       if (!WON_STAGES.has(d.stage)) continue;
       rows[new Date(d.event_date!).getDay()].revenue += Number(d.estimated_value || 0);
     }
     return rows;
-  }, [deals, weekdayRange.from, weekdayRange.to]);
+  }, [deals, items, JSON.stringify(filtersFor("weekday")), weekdayRange.from, weekdayRange.to]);
 
   const revenueByMonth = useMemo(() => {
     const rows = MONTHS.map((m) => ({ month: m, revenue: 0 }));
-    for (const d of byEvent(globalRange)) {
+    for (const d of byEvent(globalRange, dealsFor("revenue_month"))) {
       if (!WON_STAGES.has(d.stage)) continue;
       rows[new Date(d.event_date!).getMonth()].revenue += Number(d.estimated_value || 0);
     }
     return rows;
-  }, [deals, globalRange.from, globalRange.to]);
+  }, [deals, items, JSON.stringify(filtersFor("revenue_month")), globalRange.from, globalRange.to]);
 
   /* ---------------- Velocity ---------------- */
+  const velocityFilters = JSON.stringify(filtersFor("velocity"));
   const velocity = useMemo(() => {
-    const list = byCreated(velocityRange);
+    const list = byCreated(velocityRange, dealsFor("velocity"));
     const scopedIds = new Set(list.map((d) => d.id));
     const byDeal = new Map<string, Activity[]>();
     for (const a of activities) {
@@ -568,12 +611,12 @@ function AnalyticsPage() {
       }
     }
     return { rows, firstResponse: avg(responseDays) };
-  }, [deals, velocityRange.from, velocityRange.to, activities, proposals]);
+  }, [deals, items, velocityFilters, velocityRange.from, velocityRange.to, activities, proposals]);
 
   /* ---------------- Reps ---------------- */
   const reps = useMemo(() => {
     const map = new Map<string, { owner: string; deals: number; won: number; revenue: number }>();
-    for (const d of byCreated(repsRange)) {
+    for (const d of byCreated(repsRange, dealsFor("reps"))) {
       const row = map.get(d.owner_id) ?? { owner: d.owner_id, deals: 0, won: 0, revenue: 0 };
       row.deals += 1;
       if (WON_STAGES.has(d.stage)) {
@@ -585,7 +628,7 @@ function AnalyticsPage() {
     return Array.from(map.values())
       .map((r) => ({ ...r, name: `${r.owner.slice(0, 8)}…`, winPct: r.deals ? (r.won / r.deals) * 100 : 0 }))
       .sort((a, b) => b.revenue - a.revenue);
-  }, [deals, repsRange.from, repsRange.to]);
+  }, [deals, items, JSON.stringify(filtersFor("reps")), repsRange.from, repsRange.to]);
 
   const funnelMax = funnel.steps[0]?.value || 1;
 
