@@ -257,7 +257,7 @@ function AnalyticsPage() {
         if (!def) return false;
         if (def.requiresCosts && !canViewCosts) return false;
         if (def.key === "reps" && members.length <= 1) return false;
-        return editing || e.visible;
+        return e.visible;
       }),
     [active, canViewCosts, members.length, editing],
   );
