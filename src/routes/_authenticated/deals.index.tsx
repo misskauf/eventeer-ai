@@ -420,6 +420,9 @@ function StageChip({
 function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { can } = usePermissions();
+  const canCreate = can("deals", "edit");
+
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
