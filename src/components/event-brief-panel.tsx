@@ -96,8 +96,9 @@ export function EventBriefPanel({
     const value = nextBody ?? body;
     setSaving(true);
     const { data: userData } = await supabase.auth.getUser();
-    const payload: Record<string, unknown> = { body: value };
-    if (generated) payload.generated_at = new Date().toISOString();
+    const payload = generated
+      ? { body: value, generated_at: new Date().toISOString() }
+      : { body: value };
     let error;
     if (rowId) {
       ({ error } = await supabase.from("event_briefs").update(payload).eq("id", rowId));
