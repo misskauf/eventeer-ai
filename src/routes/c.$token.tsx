@@ -243,6 +243,11 @@ function ClientSigning() {
               ? `${tc("client.event_agreement")} — ${deal.client_name}`
               : tc("client.event_agreement")}
           </h1>
+          {state.quote_number && (
+            <div className="mt-1 inline-block rounded border px-2 py-0.5 font-mono text-xs text-muted-foreground">
+              {state.quote_number}
+            </div>
+          )}
         </div>
         <div className="no-print">
           <Button variant="outline" size="sm" onClick={() => window.print()}>
