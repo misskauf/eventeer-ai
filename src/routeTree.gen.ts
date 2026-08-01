@@ -23,6 +23,7 @@ import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedDealsIndexRouteImport } from './routes/_authenticated/deals.index'
 import { Route as AuthenticatedDealsIdRouteImport } from './routes/_authenticated/deals_.$id'
 import { Route as AuthenticatedDealsCalendarRouteImport } from './routes/_authenticated/deals.calendar'
@@ -105,6 +106,12 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedSettingsIndexRoute =
+  AuthenticatedSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedDealsIndexRoute = AuthenticatedDealsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -172,7 +179,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/deals': typeof AuthenticatedDealsRouteWithChildren
-  '/settings': typeof AuthenticatedSettingsRoute
+  '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/f/$slug': typeof FSlugRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
   '/deals/': typeof AuthenticatedDealsIndexRoute
+  '/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -196,7 +204,6 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/catalog': typeof AuthenticatedCatalogRouteWithChildren
-  '/settings': typeof AuthenticatedSettingsRoute
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/f/$slug': typeof FSlugRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/deals/$id': typeof AuthenticatedDealsIdRoute
   '/deals': typeof AuthenticatedDealsIndexRoute
+  '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -223,7 +231,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRouteWithChildren
   '/_authenticated/deals': typeof AuthenticatedDealsRouteWithChildren
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/c/$token': typeof CTokenRoute
   '/d/$token': typeof DTokenRoute
   '/f/$slug': typeof FSlugRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/_authenticated/deals/calendar': typeof AuthenticatedDealsCalendarRoute
   '/_authenticated/deals_/$id': typeof AuthenticatedDealsIdRoute
   '/_authenticated/deals/': typeof AuthenticatedDealsIndexRoute
+  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/deals/calendar'
     | '/deals/$id'
     | '/deals/'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -274,7 +284,6 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/catalog'
-    | '/settings'
     | '/c/$token'
     | '/d/$token'
     | '/f/$slug'
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/deals/calendar'
     | '/deals/$id'
     | '/deals'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -315,6 +325,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deals/calendar'
     | '/_authenticated/deals_/$id'
     | '/_authenticated/deals/'
+    | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -433,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/settings/': {
+      id: '/_authenticated/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/deals/': {
       id: '/_authenticated/deals/'
       path: '/'
@@ -538,17 +556,30 @@ const AuthenticatedDealsRouteChildren: AuthenticatedDealsRouteChildren = {
 const AuthenticatedDealsRouteWithChildren =
   AuthenticatedDealsRoute._addFileChildren(AuthenticatedDealsRouteChildren)
 
+interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+}
+
+const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+}
+
+const AuthenticatedSettingsRouteWithChildren =
+  AuthenticatedSettingsRoute._addFileChildren(
+    AuthenticatedSettingsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRouteWithChildren
   AuthenticatedDealsRoute: typeof AuthenticatedDealsRouteWithChildren
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedDealsIdRoute: typeof AuthenticatedDealsIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCatalogRoute: AuthenticatedCatalogRouteWithChildren,
   AuthenticatedDealsRoute: AuthenticatedDealsRouteWithChildren,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedDealsIdRoute: AuthenticatedDealsIdRoute,
 }
 
