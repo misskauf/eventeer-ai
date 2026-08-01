@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { useTranslation, applyStoredLanguage } from "@/i18n";
 
 type Company = {
   id: string;
