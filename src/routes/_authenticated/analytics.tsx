@@ -260,7 +260,7 @@ function AnalyticsPage() {
 
   useEffect(() => {
     (async () => {
-      const [d, a, p, m, it, sp] = await Promise.all([
+      const [d, a, p, m, it, sp, gl] = await Promise.all([
         supabase
           .from("deals")
           .select(
@@ -280,6 +280,11 @@ function AnalyticsPage() {
           .select("deal_id, item_type, item_id, item_name, space_id, line_total, line_gross, line_cost")
           .limit(20000),
         supabase.from("spaces").select("id, name").limit(500),
+        supabase
+          .from("goals")
+          .select("id, company_id, metric, period_type, period_start, target, owner_id, space_id")
+          .order("period_start", { ascending: false })
+          .limit(500),
       ]);
       setDeals((d.data as Deal[]) ?? []);
       setActivities((a.data as Activity[]) ?? []);
@@ -287,6 +292,7 @@ function AnalyticsPage() {
       setMembers((m.data as any[]) ?? []);
       setItems(((it.data as any[]) ?? []) as EngineItem[]);
       setSpaces(((sp.data as any[]) ?? []) as { id: string; name: string }[]);
+      setGoals(((gl.data as any[]) ?? []) as Goal[]);
       setLoading(false);
     })();
   }, []);
