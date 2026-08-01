@@ -18,7 +18,27 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { ContractDocument } from "@/components/contract-document";
 import { buildBriefHtml, type BriefExtras } from "@/lib/event-brief";
 import type { ContractContext } from "@/lib/contracts";
-import { Download, RefreshCw, Save } from "lucide-react";
+import { Download, Mail, RefreshCw, Save } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listBriefRecipients, sendBriefToManager } from "@/lib/event-brief.functions";
 
 type CompanyBrand = {
   name: string | null;
