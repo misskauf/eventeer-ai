@@ -1,357 +1,69 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import { AppShell, PageHeader } from "@/components/app-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { ContractTemplatesEditor } from "@/components/contracts-panel";
-import { InvoiceTemplatesEditor } from "@/components/invoice-templates-panel";
-import { LeadFormsEditor } from "@/components/lead-forms-editor";
-import { LogoUploader } from "@/components/logo-uploader";
-import { useTranslation, setAppLanguage, readStoredLang, type AppLang } from "@/i18n";
-
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  component: SettingsPage,
+  component: SettingsLayout,
 });
 
-function SettingsPage() {
+const SECTIONS = [
+  { to: "/settings/company", label: "Company" },
+  { to: "/settings/brand", label: "Brand" },
+  { to: "/settings/team", label: "Team & users" },
+  { to: "/settings/workflow", label: "Deals & workflow" },
+  { to: "/settings/fees", label: "Fees & tax" },
+  { to: "/settings/contract-templates", label: "Contract templates" },
+  { to: "/settings/invoicing", label: "Invoicing" },
+  { to: "/settings/lead-forms", label: "Lead forms" },
+  { to: "/settings/language", label: "Language" },
+];
+
+function SettingsLayout() {
   const { t } = useTranslation();
-  const [uiLang, setUiLang] = useState<AppLang>("en");
-  useEffect(() => { setUiLang(readStoredLang()); }, []);
-  const [company, setCompany] = useState<any>(null);
-  const [fees, setFees] = useState<any>(null);
-
-  async function load() {
-    const { data: auth } = await supabase.auth.getUser();
-    const uid = auth.user?.id;
-    if (!uid) return;
-    const { data: role } = await supabase
-      .from("user_roles")
-      .select("company_id")
-      .eq("user_id", uid)
-      .limit(1)
-      .maybeSingle();
-    if (!role?.company_id) return;
-    const { data: c } = await supabase
-      .from("companies")
-      .select("*")
-      .eq("id", role.company_id)
-      .maybeSingle();
-    setCompany(c);
-    if (c) {
-      const { data: f } = await supabase.from("fee_config").select("*").eq("company_id", c.id).maybeSingle();
-      setFees(f);
-    }
-  }
-  useEffect(() => { load(); }, []);
-
-  async function saveCompany(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const { error } = await supabase
-      .from("companies")
-      .update({
-        name: fd.get("name") as string,
-        primary_color: fd.get("primary_color") as string,
-        currency: fd.get("currency") as string,
-        logo_url: (fd.get("logo_url") as string) || null,
-        address: (fd.get("address") as string) || null,
-        contact_email: (fd.get("contact_email") as string) || null,
-        contact_phone: (fd.get("contact_phone") as string) || null,
-        website: (fd.get("website") as string) || null,
-        require_deal_approval: fd.get("require_deal_approval") === "on",
-        invoice_mode: (fd.get("invoice_mode") as string) || "external",
-        invoice_notes: (fd.get("invoice_notes") as string) || null,
-        proposal_reminder_days: Math.min(60, Math.max(1, Number(fd.get("proposal_reminder_days") ?? 5))),
-      } as any)
-      .eq("id", company.id);
-    if (error) return toast.error(error.message);
-    toast.success("Brand saved");
-    load();
-  }
-
-
-  async function saveFees(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const num = (k: string) => Number(fd.get(k) ?? 0);
-    const str = (k: string) => (fd.get(k) as string) || "net";
-    const { error } = await supabase
-      .from("fee_config")
-      .update({
-        service_charge_pct: num("service_charge_pct"),
-        tax_pct: num("tax_pct"),
-        cleaning_fee: num("cleaning_fee"),
-        overtime_fee_per_hour: num("overtime_fee_per_hour"),
-        default_basis_food: str("default_basis_food"),
-        tax_rate_food: num("tax_rate_food"),
-        default_basis_beverage: str("default_basis_beverage"),
-        tax_rate_beverage: num("tax_rate_beverage"),
-        default_basis_extra: str("default_basis_extra"),
-        tax_rate_extra: num("tax_rate_extra"),
-        default_basis_rental: str("default_basis_rental"),
-        tax_rate_rental: num("tax_rate_rental"),
-        default_hours_food: num("default_hours_food"),
-        default_hours_beverage: num("default_hours_beverage"),
-      })
-
-      .eq("company_id", company.id);
-    if (error) return toast.error(error.message);
-    toast.success("Fees saved");
-    load();
-  }
-
-  if (!company) return <AppShell><div>{t("common.loading")}</div></AppShell>;
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <AppShell>
       <PageHeader title={t("settings.title")} description={t("settings.description")} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>{t("settings.interface_language")}</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex gap-2">
-              {(["en", "de"] as AppLang[]).map((l) => (
-                <Button
-                  key={l}
-                  type="button"
-                  variant={uiLang === l ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setAppLanguage(l);
-                    setUiLang(l);
-                    toast.success(t("settings.language_saved"));
-                  }}
-                >
-                  {l === "en" ? t("common.english") : t("common.german")}
-                </Button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">{t("settings.interface_language_hint")}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>{t("settings.brand")}</CardTitle></CardHeader>
-          <CardContent>
-            <form className="space-y-3" onSubmit={saveCompany}>
-              <Field name="name" label="Company name" defaultValue={company.name} />
-              <LogoUploader
-                companyId={company.id}
-                logoUrl={company.logo_url}
-                onChange={(url) => setCompany({ ...company, logo_url: url })}
-              />
-              <input type="hidden" name="logo_url" value={company.logo_url ?? ""} />
-              <div className="grid grid-cols-2 gap-3">
-                <Field name="primary_color" label="Brand color" type="color" defaultValue={company.primary_color} />
-                <Field name="currency" label="Currency" defaultValue={company.currency} />
-              </div>
-              <div className="space-y-2 rounded-md border p-3">
-                <div className="text-sm font-medium">Company details for contracts</div>
-                <p className="text-xs text-muted-foreground">
-                  Used by the {`{{company_logo}}`}, {`{{company_address}}`}, {`{{company_email}}`},{" "}
-                  {`{{company_phone}}`} and {`{{company_website}}`} placeholders in contract
-                  templates.
-                </p>
-                <Field name="address" label="Address" defaultValue={company.address ?? ""} />
-                <div className="grid grid-cols-2 gap-3">
-                  <Field
-                    name="contact_email"
-                    label="Contact email"
-                    type="email"
-                    defaultValue={company.contact_email ?? ""}
-                  />
-                  <Field
-                    name="contact_phone"
-                    label="Contact phone"
-                    defaultValue={company.contact_phone ?? ""}
-                  />
-                </div>
-                <Field name="website" label="Website" defaultValue={company.website ?? ""} />
-              </div>
-              <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
-                <input
-                  type="checkbox"
-                  name="require_deal_approval"
-                  defaultChecked={!!company.require_deal_approval}
-                  className="mt-0.5"
-                />
-                <span>
-                  <span className="font-medium">Require internal approval before sending to client</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    When on, deals must be approved by another team member before the proposal can be sent to the client.
-                  </span>
-                </span>
-              </label>
-              <div className="space-y-2 rounded-md border p-3">
-                <div className="text-sm font-medium">Invoicing (optional)</div>
-                <p className="text-xs text-muted-foreground">Choose how invoices are handled after a deal is signed.</p>
-                <div className="grid gap-2">
-                  <label className="flex items-start gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="invoice_mode"
-                      value="external"
-                      defaultChecked={(company as any).invoice_mode !== "template"}
-                      className="mt-1"
-                    />
-                    <span>
-                      <span className="font-medium">External</span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        Invoice from your own tool. EventFlow only tracks the status.
-                      </span>
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="invoice_mode"
-                      value="template"
-                      defaultChecked={(company as any).invoice_mode === "template"}
-                      className="mt-1"
-                    />
-                    <span>
-                      <span className="font-medium">EventFlow template</span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        Generate an invoice document from the accepted proposal. Print to PDF from your browser.
-                      </span>
-                    </span>
-                  </label>
-                </div>
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-xs font-medium">Default invoice notes (optional)</label>
-                  <textarea
-                    name="invoice_notes"
-                    defaultValue={(company as any).invoice_notes ?? ""}
-                    rows={2}
-                    placeholder="Payment terms, bank details, thank-you note…"
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 rounded-md border p-3">
-                <div className="text-sm font-medium">Client follow-up</div>
-                <p className="text-xs text-muted-foreground">
-                  How many days after a proposal is sent before EventFlow suggests reminding the client.
-                </p>
-                <Field
-                  name="proposal_reminder_days"
-                  label="Remind client after (days)"
-                  type="number"
-                  defaultValue={(company as any).proposal_reminder_days ?? 5}
-                />
-              </div>
-              <Button className="w-full">Save brand</Button>
-            </form>
 
+      <div className="mb-6 md:hidden">
+        <select
+          value={SECTIONS.find((s) => pathname === s.to)?.to ?? "/settings/company"}
+          onChange={(e) => navigate({ to: e.target.value })}
+          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+        >
+          {SECTIONS.map((s) => (
+            <option key={s.to} value={s.to}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
-          </CardContent>
-        </Card>
-        {fees && (
-          <Card>
-            <CardHeader><CardTitle>Fees & tax defaults</CardTitle></CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={saveFees}>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field name="service_charge_pct" label="Service charge %" type="number" step="0.01" defaultValue={fees.service_charge_pct} />
-                  <Field name="tax_pct" label="Legacy tax % (fallback)" type="number" step="0.01" defaultValue={fees.tax_pct} />
-                  <Field name="cleaning_fee" label="Cleaning fee" type="number" step="0.01" defaultValue={fees.cleaning_fee} />
-                  <Field name="overtime_fee_per_hour" label="Overtime / hour" type="number" step="0.01" defaultValue={fees.overtime_fee_per_hour} />
-                </div>
-                <div className="space-y-2 rounded-md border p-3">
-                  <div className="text-sm font-medium">Category tax defaults</div>
-                  <p className="text-xs text-muted-foreground">Applied when an item leaves basis or tax blank.</p>
-                  <CategoryRow cat="food" label="Food" fees={fees} />
-                  <CategoryRow cat="beverage" label="Beverage" fees={fees} />
-                  <CategoryRow cat="extra" label="Extras" fees={fees} />
-                  <CategoryRow cat="rental" label="Rental / Spaces" fees={fees} />
-                </div>
-                <div className="space-y-2 rounded-md border p-3">
-                  <div className="text-sm font-medium">Standard event hours</div>
-                  <p className="text-xs text-muted-foreground">Used when a package doesn't set its own included hours. Overtime is billed per package.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field name="default_hours_food" label="Food (hours)" type="number" step="0.5" defaultValue={fees.default_hours_food ?? 2} />
-                    <Field name="default_hours_beverage" label="Beverage (hours)" type="number" step="0.5" defaultValue={fees.default_hours_beverage ?? 4} />
-                  </div>
-                </div>
-
-                <Button className="w-full">Save fees</Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-        {company?.id && (
-          <Card>
-            <CardHeader><CardTitle>Contract templates</CardTitle></CardHeader>
-            <CardContent>
-              <ContractTemplatesEditor companyId={company.id} />
-            </CardContent>
-          </Card>
-        )}
-        {company?.id && (company as any).invoice_mode === "template" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice templates</CardTitle>
-              <p className="text-sm text-muted-foreground">Used when generating invoices from a signed deal.</p>
-            </CardHeader>
-            <CardContent>
-              <InvoiceTemplatesEditor companyId={company.id} />
-            </CardContent>
-          </Card>
-        )}
-        {company?.id && (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Lead forms</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Create embeddable web forms for your website. Submissions create a new deal automatically.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <LeadFormsEditor companyId={company.id} />
-            </CardContent>
-          </Card>
-        )}
+      <div className="flex gap-8">
+        <nav className="hidden w-56 shrink-0 flex-col gap-0.5 md:flex">
+          {SECTIONS.map((s) => {
+            const active = pathname === s.to;
+            return (
+              <Link
+                key={s.to}
+                to={s.to as string}
+                className={`rounded-md px-3 py-2 text-sm transition-colors ${
+                  active
+                    ? "bg-muted font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }`}
+              >
+                {s.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="min-w-0 flex-1">
+          <Outlet />
+        </div>
       </div>
     </AppShell>
-  );
-}
-
-
-function CategoryRow({ cat, label, fees }: { cat: string; label: string; fees: any }) {
-  return (
-    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-sm">
-      <div>{label}</div>
-      <select
-        name={`default_basis_${cat}`}
-        defaultValue={fees[`default_basis_${cat}`] ?? "net"}
-        className="rounded-md border bg-background px-2 py-1 text-xs"
-      >
-        <option value="net">Net</option>
-        <option value="gross">Gross</option>
-      </select>
-      <div className="flex items-center gap-1">
-        <Input
-          name={`tax_rate_${cat}`}
-          type="number"
-          step="0.01"
-          defaultValue={fees[`tax_rate_${cat}`] ?? 0}
-          className="h-8 w-20"
-        />
-        <span className="text-xs text-muted-foreground">%</span>
-      </div>
-    </div>
-  );
-}
-
-function Field(props: any) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={props.name}>{props.label}</Label>
-      <Input {...props} id={props.name} />
-    </div>
   );
 }
