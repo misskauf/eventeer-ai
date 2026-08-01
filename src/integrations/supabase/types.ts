@@ -269,6 +269,85 @@ export type Database = {
           },
         ]
       }
+      deal_items: {
+        Row: {
+          captured_at: string
+          company_id: string
+          created_at: string
+          deal_id: string
+          id: string
+          item_id: string | null
+          item_name: string
+          item_type: string
+          line_cost: number
+          line_gross: number
+          line_total: number
+          proposal_id: string | null
+          qty: number
+          space_id: string | null
+          unit_cost: number
+          unit_price: number
+        }
+        Insert: {
+          captured_at?: string
+          company_id: string
+          created_at?: string
+          deal_id: string
+          id?: string
+          item_id?: string | null
+          item_name: string
+          item_type: string
+          line_cost?: number
+          line_gross?: number
+          line_total?: number
+          proposal_id?: string | null
+          qty?: number
+          space_id?: string | null
+          unit_cost?: number
+          unit_price?: number
+        }
+        Update: {
+          captured_at?: string
+          company_id?: string
+          created_at?: string
+          deal_id?: string
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          item_type?: string
+          line_cost?: number
+          line_gross?: number
+          line_total?: number
+          proposal_id?: string | null
+          qty?: number
+          space_id?: string | null
+          unit_cost?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_items_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           approval_note: string | null
@@ -1269,9 +1348,88 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      deal_items_visible: {
+        Row: {
+          captured_at: string | null
+          company_id: string | null
+          created_at: string | null
+          deal_id: string | null
+          id: string | null
+          item_id: string | null
+          item_name: string | null
+          item_type: string | null
+          line_cost: number | null
+          line_gross: number | null
+          line_total: number | null
+          proposal_id: string | null
+          qty: number | null
+          space_id: string | null
+          unit_cost: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          captured_at?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          id?: string | null
+          item_id?: string | null
+          item_name?: string | null
+          item_type?: string | null
+          line_cost?: never
+          line_gross?: number | null
+          line_total?: number | null
+          proposal_id?: string | null
+          qty?: number | null
+          space_id?: string | null
+          unit_cost?: never
+          unit_price?: number | null
+        }
+        Update: {
+          captured_at?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          id?: string | null
+          item_id?: string | null
+          item_name?: string | null
+          item_type?: string | null
+          line_cost?: never
+          line_gross?: number | null
+          line_total?: number | null
+          proposal_id?: string | null
+          qty?: number | null
+          space_id?: string | null
+          unit_cost?: never
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_items_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      can_view_costs: { Args: { _user_id: string }; Returns: boolean }
       create_company_workspace: {
         Args: { _currency: string; _name: string; _primary_color: string }
         Returns: string

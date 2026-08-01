@@ -30,6 +30,7 @@ import { money } from "@/lib/pricing";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { stageLabel, STAGE_ORDER } from "@/lib/deal-stages";
 import { useCanViewCosts } from "@/lib/cost-visibility";
+import { ItemAnalytics } from "@/components/analytics-items";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: AnalyticsPage,
@@ -662,6 +663,8 @@ function AnalyticsPage() {
               </CardContent>
             </Card>
           )}
+
+          <ItemAnalytics currency={currency} range={range} deals={deals} />
 
           {canViewCosts && (
             <Card>
