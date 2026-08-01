@@ -11,6 +11,7 @@ import { ContractTemplatesEditor } from "@/components/contracts-panel";
 import { InvoiceTemplatesEditor } from "@/components/invoice-templates-panel";
 import { LeadFormsEditor } from "@/components/lead-forms-editor";
 import { LogoUploader } from "@/components/logo-uploader";
+import { useTranslation, setAppLanguage, readStoredLang, type AppLang } from "@/i18n";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -18,6 +19,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 function SettingsPage() {
+  const { t } = useTranslation();
+  const [uiLang, setUiLang] = useState<AppLang>("en");
+  useEffect(() => { setUiLang(readStoredLang()); }, []);
   const [company, setCompany] = useState<any>(null);
   const [fees, setFees] = useState<any>(null);
 
@@ -101,14 +105,37 @@ function SettingsPage() {
     load();
   }
 
-  if (!company) return <AppShell><div>Loading…</div></AppShell>;
+  if (!company) return <AppShell><div>{t("common.loading")}</div></AppShell>;
 
   return (
     <AppShell>
-      <PageHeader title="Settings" description="Brand and default fees." />
+      <PageHeader title={t("settings.title")} description={t("settings.description")} />
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Brand</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("settings.interface_language")}</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex gap-2">
+              {(["en", "de"] as AppLang[]).map((l) => (
+                <Button
+                  key={l}
+                  type="button"
+                  variant={uiLang === l ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setAppLanguage(l);
+                    setUiLang(l);
+                    toast.success(t("settings.language_saved"));
+                  }}
+                >
+                  {l === "en" ? t("common.english") : t("common.german")}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{t("settings.interface_language_hint")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>{t("settings.brand")}</CardTitle></CardHeader>
           <CardContent>
             <form className="space-y-3" onSubmit={saveCompany}>
               <Field name="name" label="Company name" defaultValue={company.name} />
