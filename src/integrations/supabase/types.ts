@@ -854,6 +854,7 @@ export type Database = {
           id: string
           issued_at: string | null
           mode: string
+          quote_number: string | null
           status: string
           template_id: string | null
           template_name: string | null
@@ -868,6 +869,7 @@ export type Database = {
           id?: string
           issued_at?: string | null
           mode?: string
+          quote_number?: string | null
           status?: string
           template_id?: string | null
           template_name?: string | null
@@ -882,6 +884,7 @@ export type Database = {
           id?: string
           issued_at?: string | null
           mode?: string
+          quote_number?: string | null
           status?: string
           template_id?: string | null
           template_name?: string | null
