@@ -250,7 +250,7 @@ export function TeamMembersCard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      disabled={busy || (m.role === "owner" && m.active && activeOwners <= 1)}
+                      disabled={busy}
                       onClick={() => run(() => revoke({ data: { invite_id: i.id } }), "Invitation revoked")}
                     >
                       Revoke
