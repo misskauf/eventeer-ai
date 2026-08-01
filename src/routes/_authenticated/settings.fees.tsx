@@ -33,6 +33,8 @@ function FeesSettings() {
         tax_rate_extra: num("tax_rate_extra"),
         default_basis_rental: str("default_basis_rental"),
         tax_rate_rental: num("tax_rate_rental"),
+        default_basis_staff: str("default_basis_staff"),
+        tax_rate_staff: num("tax_rate_staff"),
         default_hours_food: num("default_hours_food"),
         default_hours_beverage: num("default_hours_beverage"),
       })
@@ -63,6 +65,7 @@ function FeesSettings() {
             <CategoryRow cat="beverage" label="Beverage" fees={fees} />
             <CategoryRow cat="extra" label="Extras" fees={fees} />
             <CategoryRow cat="rental" label="Rental / Spaces" fees={fees} />
+            <CategoryRow cat="staff" label="Staffing" fees={fees} />
           </div>
           <div className="space-y-2 rounded-md border p-3">
             <div className="text-sm font-medium">Standard event hours</div>
