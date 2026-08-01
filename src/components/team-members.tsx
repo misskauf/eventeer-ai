@@ -80,6 +80,7 @@ export function TeamMembersCard() {
 
   if (!data) return <div className="text-sm text-muted-foreground">Loading…</div>;
   const { canManage, callerIsOwner, members, invites } = data;
+  const activeOwners = members.filter((m) => m.role === "owner" && m.active).length;
 
   return (
     <Card>
@@ -146,12 +147,15 @@ export function TeamMembersCard() {
                   <div className="text-xs text-muted-foreground">
                     {m.active ? "Active" : "Deactivated"}
                     {m.isSelf ? " · you" : ""}
+                    {m.role === "owner" && m.active && activeOwners <= 1
+                      ? " · last owner (transfer ownership first)"
+                      : ""}
                   </div>
                 </div>
                 {canManage ? (
                   <Select
                     value={m.role}
-                    disabled={busy}
+                    disabled={busy || (m.role === "owner" && m.active && activeOwners <= 1)}
                     onValueChange={(v) =>
                       run(
                         () => changeRole({ data: { member_id: m.id, role: v as never } }),
@@ -182,7 +186,7 @@ export function TeamMembersCard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={busy}
+                      disabled={busy || (m.role === "owner" && m.active && activeOwners <= 1)}
                       onClick={() =>
                         run(
                           () => toggleActive({ data: { member_id: m.id, active: !m.active } }),
@@ -214,7 +218,7 @@ export function TeamMembersCard() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      disabled={busy}
+                      disabled={busy || (m.role === "owner" && m.active && activeOwners <= 1)}
                       onClick={() => {
                         if (!confirm("Remove this member from the company?")) return;
                         run(() => kick({ data: { member_id: m.id } }), "Member removed");
