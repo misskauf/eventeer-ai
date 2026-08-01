@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { acceptInvites } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -27,6 +29,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
   const [busy, setBusy] = useState(false);
+  const acceptPendingInvites = useServerFn(acceptInvites);
 
   async function goNext(fallback: "/deals" | "/onboarding") {
     const target = safeNext(next);
@@ -47,6 +50,12 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
+    // Join any company that invited this address.
+    try {
+      await acceptPendingInvites({ data: {} });
+    } catch {
+      /* no pending invite */
+    }
     await goNext("/deals");
   }
 
