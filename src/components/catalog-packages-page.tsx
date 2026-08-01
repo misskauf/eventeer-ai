@@ -65,6 +65,13 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
           ...(canViewCosts ? [costField("Internal cost per person")] : []),
           { name: "min_guests", label: "Minimum guests", type: "number", nullable: true },
           {
+            name: "event_types",
+            label: "Suits event types",
+            type: "tags",
+            suggestions: ["Wedding", "Corporate", "Birthday", "Conference", "Gala", "Private dining"],
+            hint: "Leave empty to suit all event types. Used to suggest a draft proposal for new leads.",
+          },
+          {
             name: "basis",
             label: "Price basis",
             type: "select",
