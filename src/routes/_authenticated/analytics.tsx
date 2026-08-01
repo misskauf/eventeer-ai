@@ -1155,6 +1155,24 @@ function AnalyticsPage() {
           </div>
         );
 
+      case "goals":
+        return (
+          <GoalsCard
+            goals={shownGoals}
+            deals={deals}
+            items={items}
+            currency={currency}
+            ownerName={ownerLabel}
+            spaceName={(id) => spaces.find((s) => s.id === id)?.name ?? "Space"}
+            onDrilldown={(title, ids) =>
+              setDrilldown({
+                title,
+                deals: deals.filter((d) => ids.includes(d.id)),
+              })
+            }
+          />
+        );
+
       case "items":
         return <ItemAnalytics currency={currency} range={globalRange} deals={deals} />;
 
