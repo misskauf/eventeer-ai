@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { LayoutGrid, RotateCcw } from "lucide-react";
+import { LayoutGrid, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, PageHeader } from "@/components/app-shell";
@@ -54,7 +54,18 @@ import {
   resolveRange,
   useDashboardConfig,
 } from "@/components/dashboard-config";
-import { WIDGET_MAP, defaultConfig, type WidgetConfig } from "@/lib/dashboard-widgets";
+import {
+  WIDGET_MAP,
+  defFor,
+  defaultConfig,
+  isCustomKey,
+  newCustomWidget,
+  type WidgetConfig,
+} from "@/lib/dashboard-widgets";
+import { CustomWidgetView } from "@/components/analytics-custom-widget";
+import { WidgetBuilderDialog } from "@/components/widget-builder-dialog";
+import type { CustomWidget, EngineItem } from "@/lib/analytics-engine";
+
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: () => (
@@ -87,11 +98,14 @@ type Deal = {
   owner_id: string;
   stage: string;
   source: string | null;
+  event_type: string | null;
+  guest_count: number | null;
   estimated_value: number;
   created_at: string;
   updated_at: string;
   event_date: string | null;
 };
+
 
 type Activity = { deal_id: string; kind: string; meta: any; created_at: string };
 type Proposal = { deal_id: string; created_at: string; sent_at: string | null };
@@ -207,6 +221,12 @@ function AnalyticsPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [members, setMembers] = useState<{ user_id: string; role: string }[]>([]);
+  const [items, setItems] = useState<EngineItem[]>([]);
+  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
+
+  // Custom widget builder
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [editingCustom, setEditingCustom] = useState<WidgetConfig | null>(null);
 
   const today = new Date();
   const [period, setPeriod] = useState("year");
@@ -226,10 +246,12 @@ function AnalyticsPage() {
 
   useEffect(() => {
     (async () => {
-      const [d, a, p, m] = await Promise.all([
+      const [d, a, p, m, it, sp] = await Promise.all([
         supabase
           .from("deals")
-          .select("id, owner_id, stage, source, estimated_value, created_at, updated_at, event_date")
+          .select(
+            "id, owner_id, stage, source, event_type, guest_count, estimated_value, created_at, updated_at, event_date",
+          )
           .order("created_at", { ascending: false })
           .limit(5000),
         supabase
@@ -239,11 +261,18 @@ function AnalyticsPage() {
           .limit(20000),
         supabase.from("proposals").select("deal_id, created_at, sent_at").limit(5000),
         supabase.from("user_roles").select("user_id, role"),
+        supabase
+          .from("deal_items_visible" as any)
+          .select("deal_id, item_type, item_id, item_name, space_id, line_total, line_cost")
+          .limit(20000),
+        supabase.from("spaces").select("id, name").limit(500),
       ]);
       setDeals((d.data as Deal[]) ?? []);
       setActivities((a.data as Activity[]) ?? []);
       setProposals((p.data as Proposal[]) ?? []);
       setMembers((m.data as any[]) ?? []);
+      setItems(((it.data as any[]) ?? []) as EngineItem[]);
+      setSpaces(((sp.data as any[]) ?? []) as { id: string; name: string }[]);
       setLoading(false);
     })();
   }, []);
@@ -253,7 +282,7 @@ function AnalyticsPage() {
   const visibleEntries = useMemo(
     () =>
       active.filter((e) => {
-        const def = WIDGET_MAP.get(e.widget_key);
+        const def = defFor(e);
         if (!def) return false;
         if (def.requiresCosts && !canViewCosts) return false;
         if (def.key === "reps" && members.length <= 1) return false;
@@ -261,6 +290,63 @@ function AnalyticsPage() {
       }),
     [active, canViewCosts, members.length, editing],
   );
+
+  const ownerLabel = (id: string) => `${id.slice(0, 8)}…`;
+  const spaceOptions = useMemo(
+    () => spaces.map((s) => ({ value: s.id, label: s.name })),
+    [spaces],
+  );
+  const ownerOptions = useMemo(
+    () =>
+      Array.from(new Set(deals.map((d) => d.owner_id))).map((id) => ({
+        value: id,
+        label: ownerLabel(id),
+      })),
+    [deals],
+  );
+  const eventTypeOptions = useMemo(
+    () =>
+      Array.from(new Set(deals.map((d) => d.event_type).filter(Boolean) as string[])).map((t) => ({
+        value: t,
+        label: t,
+      })),
+    [deals],
+  );
+  const stageOptions = useMemo(
+    () => STAGE_ORDER.map((s) => ({ value: s, label: stageLabel(s) })),
+    [],
+  );
+
+  function saveCustomWidget(custom: CustomWidget, chartType: string) {
+    const key = `custom:${custom.id}`;
+    const exists = active.some((e) => e.widget_key === key);
+    const next = exists
+      ? active.map((e) => (e.widget_key === key ? { ...e, custom, chart_type: chartType } : e))
+      : [
+          ...active,
+          {
+            widget_key: key,
+            visible: true,
+            chart_type: chartType,
+            size: (custom.dimension === "none" ? "sm" : "md") as WidgetConfig["size"],
+            date_range_override: null,
+            custom,
+          },
+        ];
+    if (editing) setDraft(next);
+    else void save(next);
+    setBuilderOpen(false);
+    setEditingCustom(null);
+    toast.success(exists ? "Widget updated." : "Widget added to your dashboard.");
+  }
+
+  function deleteCustomWidget(key: string) {
+    const next = active.filter((e) => e.widget_key !== key);
+    if (editing) setDraft(next);
+    else void save(next);
+    toast.success("Widget removed.");
+  }
+
 
   function patchEntry(key: string, patch: Partial<WidgetConfig>) {
     const next = active.map((e) => (e.widget_key === key ? { ...e, ...patch } : e));
@@ -959,6 +1045,17 @@ function AnalyticsPage() {
                 Edit dashboard
               </Button>
             )}
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingCustom(null);
+                setBuilderOpen(true);
+              }}
+              disabled={configLoading || loading}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              New widget
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -979,7 +1076,8 @@ function AnalyticsPage() {
           onReorder={reorder}
         >
           {visibleEntries.map((entry) => {
-            const def = WIDGET_MAP.get(entry.widget_key)!;
+            const def = defFor(entry)!;
+            const custom = entry.custom;
             return (
               <WidgetShell
                 key={entry.widget_key}
@@ -988,14 +1086,82 @@ function AnalyticsPage() {
                 global={globalRange}
                 editing={editing}
                 onChange={(patch) => patchEntry(entry.widget_key, patch)}
-                extraControls={extraControlsFor(entry.widget_key)}
+                extraControls={custom ? null : extraControlsFor(entry.widget_key)}
+                editActions={
+                  custom ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => {
+                          setEditingCustom(entry);
+                          setBuilderOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1 h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs text-destructive"
+                        onClick={() => deleteCustomWidget(entry.widget_key)}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    </>
+                  ) : null
+                }
               >
-                {({ chartType }) => renderWidget(entry.widget_key, chartType)}
+                {({ range, chartType }) =>
+                  custom ? (
+                    <CustomWidgetView
+                      custom={custom}
+                      chartType={chartType}
+                      range={range}
+                      deals={deals}
+                      activities={activities}
+                      items={items}
+                      currency={currency}
+                      ownerLabel={ownerLabel}
+                      stageLabel={stageLabel}
+                    />
+                  ) : (
+                    renderWidget(entry.widget_key, chartType)
+                  )
+                }
               </WidgetShell>
             );
           })}
         </WidgetGrid>
       )}
+
+      <WidgetBuilderDialog
+        open={builderOpen}
+        onOpenChange={(v) => {
+          setBuilderOpen(v);
+          if (!v) setEditingCustom(null);
+        }}
+        initial={editingCustom?.custom}
+        initialChartType={editingCustom?.chart_type ?? undefined}
+        onSave={saveCustomWidget}
+        deals={deals}
+        activities={activities}
+        items={items}
+        currency={currency}
+        canViewCosts={canViewCosts}
+        hasItems={items.length > 0}
+        globalRange={globalRange}
+        stageOptions={stageOptions}
+        spaceOptions={spaceOptions}
+        ownerOptions={ownerOptions}
+        eventTypeOptions={eventTypeOptions}
+        ownerLabel={ownerLabel}
+        stageLabel={stageLabel}
+      />
     </AppShell>
   );
 }
+

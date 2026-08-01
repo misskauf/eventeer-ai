@@ -1,56 +1,91 @@
-# Customizable, persistent Analytics dashboard
+# Custom widget builder for the analytics dashboard
 
-Adds a saved layout per user around the existing charts. The charts themselves stay exactly as they are today.
+Users compose their own charts from a curated set of measures, dimensions and filters. Everything is computed client-side from the data the dashboard already loads, and saved into the existing `dashboard_layouts.config` — no migration needed.
 
-## 1. Migration — `dashboard_layouts`
+## 1. Config shape
 
-Columns: `id`, `company_id`, `user_id` (nullable — a NULL row is the company default), `config` jsonb (default `'[]'`), `created_at`, `updated_at` (with the existing `set_updated_at` trigger). Unique on `(company_id, user_id)`.
-
-Access rules:
-- Members of a company can read their own row and the company default row.
-- A member can create/update/delete only their own row.
-- Only users with admin on the settings module can write the company default row.
-- Standard grants for signed-in users and backend services.
-
-`config` shape (ordered array):
+Custom widgets live in the same ordered config array as the built-in ones, so they inherit reordering, hiding and sizing from the layout editor:
 
 ```text
-[{ widget_key, visible, chart_type, size: "sm" | "md" | "lg", date_range_override }]
+{
+  widget_key: "custom:<id>",
+  visible, size, chart_type, date_range_override,
+  custom: {
+    id, title, measure, dimension,
+    filters: { stages[], space_ids[], owner_ids[], event_types[] }
+  }
+}
 ```
 
-`date_range_override` is either `null` (follow the global period) or `{ mode, from, to }`.
+The widget registry gains a `customDef()` builder that turns a stored custom entry into the same `WidgetDef` shape the shell already renders, so no changes to the layout editor are required. Config normalization is extended to keep custom entries intact instead of dropping unknown keys.
 
-## 2. Widget registry
+## 2. Curated aggregation engine
 
-New `src/lib/dashboard-widgets.ts`: one entry per widget with its key, label, allowed chart types, default size, and whether it requires cost visibility.
+New `src/lib/analytics-engine.ts` — pure functions over the already-loaded `deals`, `deal_activities` and `deal_items`. No SQL, no dynamic expressions.
 
-Widgets: KPI row, leads over time, sales funnel, deal status, revenue over time, by weekday, event revenue by month, velocity, sales rep performance, item analytics, internal revenue quality (cost-gated).
+Measures:
 
-A `defaultConfig()` helper produces the current dashboard order so existing users see no change on first load.
+```text
+leads            count of deals created in range
+won_deals        count of deals in a won stage
+conversion       won / leads, as %
+revenue          Σ estimated_value of won deals (Σ line_total from deal_items where the dimension is item-level)
+margin           Σ (line_total − line_cost)   [requires cost permission + deal_items]
+margin_pct       margin / revenue             [requires cost permission + deal_items]
+avg_deal_size    revenue / won deals
+avg_guests       average guest_count
+avg_days_to_win  average days from created_at to the won stage change
+```
 
-## 3. Refactor charts into self-contained widgets
+Dimensions:
 
-Split the current `analytics.tsx` body into `src/components/analytics/*.tsx`, one component per widget. Each receives the shared dataset (deals, activities, proposals), the global period, and its own config entry, and renders inside a card with its existing per-widget range and chart-type controls — now seeded from and written back to the saved config.
+```text
+month              request month
+weekday_request    weekday of created_at
+weekday_event      weekday of event_date
+stage              current deal stage
+owner              deal owner
+event_type         deal event type
+lead_source        source tag
+space              deal_items rows of type space
+package            deal_items rows of type package
+extra              deal_items rows of type extra
+staff              deal_items rows of type staff
+```
 
-`analytics.tsx` becomes: data fetch → resolve config → map over the ordered config → render visible widgets in a responsive grid, where `size` maps to column span (sm = 1, md = 2, lg = full).
+Filters: date range (widget override, else global period), stage, space, owner, event type — all multi-select, empty = no filter.
 
-## 4. Edit mode
+The engine returns a uniform `{ rows: [{ key, label, value, secondary? }], total, format }` so every chart type renders from one shape.
 
-An "Edit dashboard" toggle in the top bar switches each card into an edit chrome:
-- Reorder with dnd-kit (already commonly available; if the install is a problem the fallback is up/down arrow buttons — same config write either way).
-- Show/hide switch per widget, plus a panel listing hidden widgets so they can be brought back.
-- Chart-type picker per widget (only the types that widget supports).
-- Size picker (S / M / L).
-- Save, Cancel, and "Reset to default" (deletes the user row so the company default, then the built-in default, applies).
+Compatibility rules enforced in one place (`isCompatible(measure, dimension)`):
+- Item-level dimensions (space / package / extra / staff) require `deal_items` rows; margin measures require them too. Selecting an incompatible pair disables it in the dialog with a short reason.
+- Deal-level measures grouped by an item dimension attribute the deal's value to each matched item row.
 
-Edits are local until Save; Save upserts the user's `dashboard_layouts` row.
+## 3. Chart renderer
+
+New `src/components/analytics-custom-widget.tsx` renders the engine result as bar, line, area, donut, single-number KPI, or a sortable table — reusing the existing Recharts setup, colour palette, currency formatter and `EmptyState`. Value formatting follows the measure (currency, percent, count, days).
+
+## 4. "New widget" dialog
+
+New `src/components/widget-builder-dialog.tsx`, opened from an "Add widget" button in the analytics top bar (also available while in edit mode):
+
+- Title (auto-suggested from measure + dimension, editable)
+- Measure select — margin measures hidden entirely when the user cannot view costs
+- Dimension select — incompatible options disabled with a reason
+- Chart type picker — options narrowed to what the dimension supports (KPI = no dimension needed)
+- Filters: stage, space, owner, event type multi-selects, plus a date-range override (defaults to global period)
+- **Live preview** rendering the real chart from real data as choices change
+- Save appends the widget to the config and persists; Cancel discards
+
+Editing an existing custom widget reopens the same dialog pre-filled (pencil icon in edit mode); deleting removes it from the config.
 
 ## 5. Permissions
 
-Cost-gated widgets are filtered out of both the dashboard and the edit-mode widget list when `useCanViewCosts()` is false, regardless of what a stored config says — so a saved layout can never leak margin data after a permission change. The whole route keeps its existing analytics-module guard.
+- Margin / margin % measures are unavailable in the builder and filtered out of the dashboard for users without cost visibility — a saved margin widget simply does not render for them, matching how the built-in cost widgets behave.
+- Item-level widgets show a clear "run Rebuild item analytics" empty state when no `deal_items` rows exist yet.
 
 ## Technical notes
 
-- Config is read through a small `useDashboardConfig()` hook: fetch user row → company default row → built-in default; it also validates unknown widget keys out and appends newly added widgets at the end so future widgets show up automatically.
-- Writes go through a server function with the usual auth middleware; no admin client needed.
-- No change to data fetching or chart computation, so performance is unchanged.
+- `deal_items` is fetched once on the analytics page (via the cost-safe `deal_items_visible` view) and shared with the engine and the existing item widgets, so no extra round-trips.
+- All aggregation is O(deals + items) per widget with memoization keyed on the widget config, keeping a dashboard of a dozen custom widgets fast at a few hundred deals.
+- Custom widget IDs are generated client-side (`crypto.randomUUID()`); no schema change to `dashboard_layouts`.

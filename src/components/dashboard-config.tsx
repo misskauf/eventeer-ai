@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { ChartTypeToggle, periodRange, type Range } from "@/components/analytics-widgets";
 import {
-  WIDGET_MAP,
+  defFor,
   defaultConfig,
   normalizeConfig,
   sizeClass,
@@ -31,6 +31,7 @@ import {
   type WidgetDef,
   type WidgetSize,
 } from "@/lib/dashboard-widgets";
+
 
 /* -------------------------------------------------------------------------- */
 /* Persistence                                                                */
@@ -185,6 +186,7 @@ export function WidgetShell({
   editing,
   onChange,
   extraControls,
+  editActions,
   children,
 }: {
   def: WidgetDef;
@@ -193,8 +195,10 @@ export function WidgetShell({
   editing: boolean;
   onChange: (patch: Partial<WidgetConfig>) => void;
   extraControls?: React.ReactNode;
+  editActions?: React.ReactNode;
   children: (ctx: { range: Range; chartType: string | null }) => React.ReactNode;
 }) {
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.widget_key,
     disabled: !editing,
@@ -246,6 +250,7 @@ export function WidgetShell({
                     options={def.chartTypes}
                   />
                 )}
+                {editActions}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -255,6 +260,7 @@ export function WidgetShell({
                   <EyeOff className="mr-1 h-3.5 w-3.5" />
                   Hide
                 </Button>
+
               </>
             ) : (
               <>
@@ -329,10 +335,11 @@ export function HiddenWidgetsPanel({
         {hidden.map((c) => (
           <Button key={c.widget_key} size="sm" variant="outline" onClick={() => onShow(c.widget_key)}>
             <Eye className="mr-1 h-3.5 w-3.5" />
-            {WIDGET_MAP.get(c.widget_key)?.label ?? c.widget_key}
+            {defFor(c)?.label ?? c.widget_key}
           </Button>
         ))}
       </CardContent>
     </Card>
   );
 }
+
