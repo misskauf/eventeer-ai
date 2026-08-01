@@ -990,11 +990,7 @@ function AnalyticsPage() {
                 onChange={(patch) => patchEntry(entry.widget_key, patch)}
                 extraControls={extraControlsFor(entry.widget_key)}
               >
-                {({ chartType }) => (
-                  <div className={editing && !entry.visible ? "opacity-40" : undefined}>
-                    {renderWidget(entry.widget_key, chartType)}
-                  </div>
-                )}
+                {({ chartType }) => renderWidget(entry.widget_key, chartType)}
               </WidgetShell>
             );
           })}
