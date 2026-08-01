@@ -102,6 +102,7 @@ export function buildPlaceholderValues(ctx: ContractContext): Record<string, str
   const t = ctx.totals ?? {};
   return {
     client_name: ctx.deal?.client_name ?? "",
+    quote_number: ctx.quote_number ?? "—",
     client_company: ctx.deal?.client_company ?? "",
     client_email: ctx.deal?.client_email ?? "",
     event_date: ctx.deal?.event_date ? formatEventDate(ctx.deal.event_date) : "—",
