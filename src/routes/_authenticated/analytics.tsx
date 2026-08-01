@@ -235,6 +235,7 @@ function AnalyticsPage() {
   const [members, setMembers] = useState<{ user_id: string; role: string }[]>([]);
   const [items, setItems] = useState<EngineItem[]>([]);
   const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   // Custom widget builder
   const [builderOpen, setBuilderOpen] = useState(false);
