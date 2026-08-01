@@ -80,6 +80,50 @@ export type Database = {
         }
         Relationships: []
       }
+      company_invites: {
+        Row: {
+          accepted_at: string | null
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_templates: {
         Row: {
           body: string
@@ -956,6 +1000,44 @@ export type Database = {
           },
         ]
       }
+      permission_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          detail: Json
+          id: string
+          target: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_audit_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_rules: {
         Row: {
           basis: string
@@ -1155,6 +1237,47 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_permissions: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          level: string
+          module: string
+          role: Database["public"]["Enums"]["app_role"]
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          level?: string
+          module: string
+          role: Database["public"]["Enums"]["app_role"]
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          level?: string
+          module?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1370,24 +1493,30 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          active: boolean
           company_id: string
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          status: string
           user_id: string
         }
         Insert: {
+          active?: boolean
           company_id: string
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           user_id: string
         }
         Update: {
+          active?: boolean
           company_id?: string
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -1488,9 +1617,21 @@ export type Database = {
         Args: { _currency: string; _name: string; _primary_color: string }
         Returns: string
       }
+      has_permission: {
+        Args: { _company_id: string; _min_level: string; _module: string }
+        Returns: boolean
+      }
       is_member_of: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
+      }
+      permission_level: {
+        Args: { _company_id: string; _module: string }
+        Returns: string
+      }
+      seed_role_permissions: {
+        Args: { _company_id: string }
+        Returns: undefined
       }
       user_company_id: { Args: { _user_id: string }; Returns: string }
     }
