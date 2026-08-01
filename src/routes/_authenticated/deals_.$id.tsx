@@ -470,6 +470,7 @@ function DealDetail() {
           computed_total: totals.grand_total,
         },
         sent_at: send ? new Date().toISOString() : null,
+        quote_number: quoteNumber,
       })
       .select("*")
       .single();
