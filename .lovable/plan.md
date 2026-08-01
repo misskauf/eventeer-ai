@@ -1,52 +1,56 @@
-## Goal
+# Customizable, persistent Analytics dashboard
 
-Every proposal gets a human-readable quote number (e.g. `BB-2026-0042`) the first time it is sent, with `-v2`, `-v3` … on later re-sent revisions of the same deal.
+Adds a saved layout per user around the existing charts. The charts themselves stay exactly as they are today.
 
-## 1. Migration
+## 1. Migration — `dashboard_layouts`
 
-**`companies` — new columns**
-- `quote_format text not null default '{venue}-{YYYY}-{seq}'`
-- `venue_code text` (nullable, e.g. `BB`)
-- `quote_next_seq int not null default 1`
-- `quote_seq_padding int not null default 4`
-- `quote_reset_yearly boolean not null default true`
-- `quote_seq_year int` (year the counter belongs to)
+Columns: `id`, `company_id`, `user_id` (nullable — a NULL row is the company default), `config` jsonb (default `'[]'`), `created_at`, `updated_at` (with the existing `set_updated_at` trigger). Unique on `(company_id, user_id)`.
 
-**`proposals`**
-- `quote_number text` nullable
-- Unique index on `(company_id, quote_number)` where not null.
+Access rules:
+- Members of a company can read their own row and the company default row.
+- A member can create/update/delete only their own row.
+- Only users with admin on the settings module can write the company default row.
+- Standard grants for signed-in users and backend services.
 
-**`next_quote_number(_company_id uuid) returns text`**
-SECURITY DEFINER, `search_path = public`.
-- Requires `public.has_permission(_company_id, 'proposals', 'edit')` — otherwise raises.
-- `SELECT ... FOR UPDATE` on the company row (atomic under concurrency).
-- If `quote_reset_yearly` and `quote_seq_year` is null or ≠ current year → set seq to 1 and `quote_seq_year` to current year.
-- Formats `quote_format`, replacing `{venue}` (venue_code, empty string when null), `{YYYY}`, `{YY}`, `{MM}`, `{seq}` (`lpad` to `quote_seq_padding`). Collapses any duplicated `--` left by an empty venue code.
-- Increments `quote_next_seq`, returns the string.
+`config` shape (ordered array):
 
-Grant execute to `authenticated`.
+```text
+[{ widget_key, visible, chart_type, size: "sm" | "md" | "lg", date_range_override }]
+```
 
-## 2. Assignment on send
+`date_range_override` is either `null` (follow the global period) or `{ mode, from, to }`.
 
-In `saveProposal(send)` in `src/routes/_authenticated/deals_.$id.tsx` (the existing insert path), when `send` is true:
-- Look up the most recent prior proposal for this deal that has a `quote_number`.
-- **No prior number** → `supabase.rpc('next_quote_number', { _company_id })`, store as-is (first version, no suffix).
-- **Prior number exists** → strip any `-vN`, and store `<base>-v<N+1>` (first re-send gives `-v2`). The counter is not advanced.
-- Drafts never get a number; the number is written on the proposal row in the same insert (RPC first, then insert).
+## 2. Widget registry
 
-## 3. Settings UI — Numbering
+New `src/lib/dashboard-widgets.ts`: one entry per widget with its key, label, allowed chart types, default size, and whether it requires cost visibility.
 
-New "Quote numbering" card in `src/routes/_authenticated/settings.invoicing.tsx` (Invoicing page), visible only with **admin on the `settings` module** (`can('settings','admin')`); read-only otherwise.
+Widgets: KPI row, leads over time, sales funnel, deal status, revenue over time, by weekday, event revenue by month, velocity, sales rep performance, item analytics, internal revenue quality (cost-gated).
 
-Fields: format string (with a token legend), venue code, padding, yearly reset toggle. Live preview computed client-side with the same token rules using the current `quote_next_seq`, e.g. `Next: BB-2026-0042`. Save via the existing `companies` update pattern.
+A `defaultConfig()` helper produces the current dashboard order so existing users see no change on first load.
 
-## 4. Display
+## 3. Refactor charts into self-contained widgets
 
-- **Internal deal view** (`deals_.$id.tsx`): show the current proposal's quote number as a small mono badge next to the proposal version/status.
-- **Client page** (`src/routes/p.$token.tsx`): show it in the header near the cover title — `resolveProposalToken` already returns the full proposal row, so no server change is needed beyond the field existing.
-- **PDF**: the client page prints via the existing print stylesheet, so the header badge is included automatically; it is styled to stay visible in print.
+Split the current `analytics.tsx` body into `src/components/analytics/*.tsx`, one component per widget. Each receives the shared dataset (deals, activities, proposals), the global period, and its own config entry, and renders inside a card with its existing per-widget range and chart-type controls — now seeded from and written back to the saved config.
 
-## Notes
+`analytics.tsx` becomes: data fetch → resolve config → map over the ordered config → render visible widgets in a responsive grid, where `size` maps to column span (sm = 1, md = 2, lg = full).
 
-- Contracts and invoices are untouched.
-- Existing sent proposals keep `quote_number = null`; the UI simply omits the badge for them.
+## 4. Edit mode
+
+An "Edit dashboard" toggle in the top bar switches each card into an edit chrome:
+- Reorder with dnd-kit (already commonly available; if the install is a problem the fallback is up/down arrow buttons — same config write either way).
+- Show/hide switch per widget, plus a panel listing hidden widgets so they can be brought back.
+- Chart-type picker per widget (only the types that widget supports).
+- Size picker (S / M / L).
+- Save, Cancel, and "Reset to default" (deletes the user row so the company default, then the built-in default, applies).
+
+Edits are local until Save; Save upserts the user's `dashboard_layouts` row.
+
+## 5. Permissions
+
+Cost-gated widgets are filtered out of both the dashboard and the edit-mode widget list when `useCanViewCosts()` is false, regardless of what a stored config says — so a saved layout can never leak margin data after a permission change. The whole route keeps its existing analytics-module guard.
+
+## Technical notes
+
+- Config is read through a small `useDashboardConfig()` hook: fetch user row → company default row → built-in default; it also validates unknown widget keys out and appends newly added widgets at the end so future widgets show up automatically.
+- Writes go through a server function with the usual auth middleware; no admin client needed.
+- No change to data fetching or chart computation, so performance is unchanged.
