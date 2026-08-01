@@ -18,8 +18,14 @@ type Company = {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [company, setCompany] = useState<Company | null>(null);
+
+  useEffect(() => {
+    applyStoredLanguage();
+  }, []);
+
 
   useEffect(() => {
     (async () => {
