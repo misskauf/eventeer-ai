@@ -16,6 +16,7 @@ export type ContractContext = {
   totals?: { subtotal?: number; tax?: number; total?: number };
   event_hours?: number | null;
   menu_selections?: string[]; // human-readable lines
+  quote_number?: string | null; // accepted proposal's quote reference
 };
 
 export const CONTRACT_PLACEHOLDERS: Array<{ key: string; label: string }> = [
