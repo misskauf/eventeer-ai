@@ -35,6 +35,7 @@ import {
   type SpaceSel,
   type PackageSel,
   type ExtraSel,
+  type StaffSel,
   type DiscountTarget,
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
