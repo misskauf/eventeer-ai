@@ -186,6 +186,7 @@ export function WidgetShell({
   editing,
   onChange,
   extraControls,
+  editActions,
   children,
 }: {
   def: WidgetDef;
@@ -194,8 +195,10 @@ export function WidgetShell({
   editing: boolean;
   onChange: (patch: Partial<WidgetConfig>) => void;
   extraControls?: React.ReactNode;
+  editActions?: React.ReactNode;
   children: (ctx: { range: Range; chartType: string | null }) => React.ReactNode;
 }) {
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.widget_key,
     disabled: !editing,
