@@ -1292,6 +1292,7 @@ function AnalyticsPage() {
       {loading || configLoading ? (
         <div className="text-sm text-muted-foreground">Loading analytics…</div>
       ) : (
+        <div className="printable">
         <WidgetGrid
           order={visibleEntries.map((e) => e.widget_key)}
           editing={editing}
@@ -1373,6 +1374,7 @@ function AnalyticsPage() {
             );
           })}
         </WidgetGrid>
+        </div>
       )}
 
       <DealDrilldownSheet
