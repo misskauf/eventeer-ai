@@ -44,6 +44,9 @@ function ClientProposal() {
   const [spaces, setSpaces] = useState<SpaceSel[]>([]);
   const [packages, setPackages] = useState<PackageSel[]>([]);
   const [extras, setExtras] = useState<ExtraSel[]>([]);
+  const [staff, setStaff] = useState<StaffSel[]>([]);
+  const [staffIds, setStaffIds] = useState<string[]>([]);
+  const [staffConfig, setStaffConfig] = useState<Record<string, { count?: number; hours?: number }>>({});
   const [seasonMult, setSeasonMult] = useState(1);
   const [minRev, setMinRev] = useState(0);
   const [discount, setDiscount] = useState(0);
@@ -95,6 +98,7 @@ function ClientProposal() {
       setSpaces(((res as any).spaces ?? []) as SpaceSel[]);
       setPackages(((res as any).packages ?? []) as PackageSel[]);
       setExtras(((res as any).extras ?? []) as ExtraSel[]);
+      setStaff(((res as any).staff ?? []) as StaffSel[]);
       setFeesCfg((res as any).feeConfig ?? {});
       setSeasonMult(Number((res as any).seasonMultiplier ?? 1));
 
@@ -121,6 +125,8 @@ function ClientProposal() {
       const bSpaces: string[] = offerCfg.space_ids ?? [];
       const bPkgs: string[] = offerCfg.package_ids ?? [];
       const bExtras: string[] = offerCfg.extra_ids ?? [];
+      setStaffIds(offerCfg.staff_ids ?? []);
+      setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
       setBasePkgs(bPkgs);
       setBaseExtras(bExtras);
@@ -190,11 +196,13 @@ function ClientProposal() {
       space_ids: Array.from(new Set([...selSpaces, ...spaceExtra])),
       package_ids: Array.from(new Set([...selFoodPkgs, ...selBevPkgs, ...pkgExtra])),
       extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
+      staff_ids: staffIds,
+      staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: state.deal.event_date ?? null,
     };
-  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, packageGuests, packageHours, altGroups, altChoices]);
+  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices]);
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
@@ -208,7 +216,7 @@ function ClientProposal() {
         ? servicePct
         : Number(fcAny?.gratuity_default_pct ?? feesCfg.service_charge_pct ?? 0);
     return {
-      spaces, packages, extras,
+      spaces, packages, extras, staff,
       fees: {
         ...feesCfg,
         service_charge_pct: effectiveService,
@@ -223,7 +231,7 @@ function ClientProposal() {
       discount_target: discountTarget,
       currency: state?.company?.currency ?? "USD",
     };
-  }, [spaces, packages, extras, feesCfg, seasonMult, discount, discountTarget, minRev, servicePct, state?.company?.currency]);
+  }, [spaces, packages, extras, staff, feesCfg, seasonMult, discount, discountTarget, minRev, servicePct, state?.company?.currency]);
 
 
   const totals = useMemo(() => {
@@ -245,6 +253,7 @@ function ClientProposal() {
   const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
   const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
   const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
+  const staffItems = staff.filter((x) => staffIds.includes(x.id));
 
   async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
     if (action === "changes_requested" && !actionNote.trim()) {
