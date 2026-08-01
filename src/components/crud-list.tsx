@@ -117,6 +117,24 @@ export function CrudList<T extends { id: string }>({
                 if (f.type === "custom" && !f.label) {
                   return <div key={f.name}>{f.render ? f.render(cur, editing) : null}</div>;
                 }
+                if (f.type === "checkbox") {
+                  const checked = editing ? Boolean((editing as any)[f.name]) : f.defaultValue !== false;
+                  return (
+                    <div key={f.name} className="space-y-1.5">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          id={f.name}
+                          name={f.name}
+                          type="checkbox"
+                          defaultChecked={checked}
+                          className="h-4 w-4 rounded border"
+                        />
+                        {f.label}
+                      </label>
+                      {f.hint && <p className="text-xs text-muted-foreground">{f.hint}</p>}
+                    </div>
+                  );
+                }
                 return (
                   <div key={f.name} className="space-y-1.5">
                     <Label htmlFor={f.name}>{f.label}</Label>
