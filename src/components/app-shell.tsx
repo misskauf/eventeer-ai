@@ -56,10 +56,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const nav: Array<{ to: string; label: string; icon: typeof LayoutDashboard; match?: string }> = [
-    { to: "/deals", label: "Deals", icon: LayoutDashboard },
-    { to: "/catalog/spaces", label: "Catalog", icon: BookOpen, match: "/catalog" },
-    { to: "/settings", label: "Settings", icon: Settings },
+    { to: "/deals", label: t("nav.deals"), icon: LayoutDashboard },
+    { to: "/catalog/spaces", label: t("nav.catalog"), icon: BookOpen, match: "/catalog" },
+    { to: "/settings", label: t("nav.settings"), icon: Settings },
   ];
+
 
   return (
     <div className="min-h-screen bg-muted/20">
