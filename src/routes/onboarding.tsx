@@ -2,6 +2,8 @@ import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/lib/auth-hooks";
+import { useServerFn } from "@tanstack/react-start";
+import { acceptInvites } from "@/lib/team.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,16 +19,25 @@ function Onboarding() {
   const navigate = useNavigate();
   const [hasCompany, setHasCompany] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  const acceptPendingInvites = useServerFn(acceptInvites);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_roles")
-      .select("company_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setHasCompany(!!data?.company_id));
+    (async () => {
+      // Pick up any invitation sent to this address before offering workspace creation.
+      try {
+        await acceptPendingInvites({ data: {} });
+      } catch {
+        /* no pending invite */
+      }
+      const { data } = await supabase
+        .from("user_roles")
+        .select("company_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      setHasCompany(!!data?.company_id);
+    })();
   }, [user]);
 
   if (loading) return null;
