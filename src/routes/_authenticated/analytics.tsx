@@ -71,6 +71,8 @@ import { WidgetBuilderDialog } from "@/components/widget-builder-dialog";
 import { GoalsCard } from "@/components/analytics-goals";
 import {
   METRIC_LABEL,
+  STATUS_LABEL,
+  computeGoalProgress,
   currentPeriodStart,
   periodLabel,
   type Goal,
