@@ -250,6 +250,7 @@ export function WidgetShell({
                     options={def.chartTypes}
                   />
                 )}
+                {editActions}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -259,6 +260,7 @@ export function WidgetShell({
                   <EyeOff className="mr-1 h-3.5 w-3.5" />
                   Hide
                 </Button>
+
               </>
             ) : (
               <>
