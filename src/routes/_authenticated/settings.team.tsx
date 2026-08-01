@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import { useCompanySettings } from "@/components/settings-shared";
+import { NON_OWNER_ROLES, useCompanyRole } from "@/lib/cost-visibility";
 
 export const Route = createFileRoute("/_authenticated/settings/team")({
   component: TeamSettings,
@@ -28,6 +31,8 @@ function TeamSettings() {
   if (loading || !company) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   return (
+    <div className="space-y-6">
+
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
