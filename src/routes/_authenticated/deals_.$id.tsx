@@ -142,6 +142,7 @@ function DealDetail() {
   const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [dealTab, setDealTab] = useState<"proposal" | "brief">("proposal");
 
 
 
