@@ -841,6 +841,63 @@ export type Database = {
           },
         ]
       }
+      goals: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          metric: string
+          owner_id: string | null
+          period_start: string
+          period_type: string
+          space_id: string | null
+          target: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric: string
+          owner_id?: string | null
+          period_start: string
+          period_type: string
+          space_id?: string | null
+          target?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric?: string
+          owner_id?: string | null
+          period_start?: string
+          period_type?: string
+          space_id?: string | null
+          target?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_templates: {
         Row: {
           body: string

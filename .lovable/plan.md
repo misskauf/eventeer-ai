@@ -1,47 +1,47 @@
-## What already exists (reuse, don't rebuild)
+## 1. Migration — `goals` table
 
-- `dashboard_layouts` table (per user + company-default fallback), persisted config, reset-to-default.
-- `deals.source` column (`manual` / `lead_form`), already set by the lead form.
-- Analytics page with dnd-kit reorder, per-card size, hide/show, per-card date range, chart-type switch, custom widget builder, and the curated aggregation engine (`src/lib/analytics-engine.ts`).
-- "Analytics" already in the sidebar (`app-shell.tsx`, gated by the `analytics` module).
-- Cost/margin cards already gated by cost permission.
+Columns: `id`, `company_id`, `metric` (`net_revenue` | `gross_revenue`), `period_type` (`month` | `quarter` | `year`), `period_start` (date, normalized to the first day of the period), `target` numeric, `owner_id` nullable, `space_id` nullable, `created_by`, `created_at`, `updated_at` (with the existing `set_updated_at` trigger).
 
-So **no migration is needed** — both migration items from the brief are already live. The work below closes the remaining gaps.
+- Unique index on (`company_id`, `metric`, `period_type`, `period_start`, `owner_id`, `space_id`) so one target per scope+period.
+- GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `authenticated`, `ALL` to `service_role`; no `anon`.
+- RLS: read for anyone with `has_permission(company_id, 'analytics', 'view')`; write (insert/update/delete) requires `has_permission(company_id, 'settings', 'edit')` — i.e. owners/admins/managers, matching how other settings tables are gated.
 
-## 1. Revenue: net vs gross
+## 2. Settings → Goals page
 
-- Extend the engine with two measures: `revenue_net` and `revenue_gross`, read from the accepted proposal's stored totals (fall back to `estimated_value` when no accepted proposal exists).
-- Update the built-in "Revenue over time" card to plot both series, with a per-card toggle for net / gross / both.
+New section `/settings/goals` in the settings sidebar (module `settings`), listing goals grouped by period with:
 
-## 2. Compare vs previous period
+- Create/edit dialog: metric (net/gross), period type (Monthly default, Quarterly, Yearly), period picker (month/quarter/year selector that writes `period_start`), target amount in company currency, optional salesperson (team members), optional space.
+- Duplicate-period detection surfaces an inline "a goal already exists for this scope" message instead of a raw DB error.
+- Convenience action: "Copy last period's targets" to bulk-create next month's goals from the current ones.
+- Read-only view for users who can see analytics but not edit settings.
 
-- Add `compare_previous: boolean` to the card config (normalizer defaults it to `false`, so old layouts stay valid).
-- Helper computes the immediately-preceding equivalent window from the card's resolved range.
-- Line/area/bar cards overlay a dashed "previous" series; KPI cards show a % change badge (green/red, neutral when the previous value is 0).
-- Toggle lives on the card header, next to the range control.
+## 3. Goal cards on the analytics dashboard
 
-## 3. Per-card filters for built-in cards
+Two additions to the widget registry (`src/lib/dashboard-widgets.ts`):
 
-Today only custom widgets have filters. Add a compact "Filters" popover to every card header exposing: F&B package, space, stage, source (lead vs deal), owner, event type. Selections persist into the card's config entry and feed the same filter path the engine already uses.
+- Built-in card **"Revenue goals"** — shows every active goal for the current period as compact progress rows.
+- Custom card type **`goal`** — a single goal chosen in the card config (goal picker replaces the measure/dimension pickers), sized `sm`/`md`.
 
-## 4. Drill-down
+Each goal card follows the card-first shell (drag, hide, size, export), except its date range is **locked to the goal's period** (range control shows the period and is disabled, with a hint explaining why).
 
-- Clicking a bar / donut segment / table row opens a sheet listing the deals behind that number (client, event date, stage, owner, value) with a link to each deal.
-- One shared `DealDrilldownSheet` component; each card passes the predicate that produced the clicked slice.
+Card contents:
 
-## 5. Export
+- Progress bar (gauge for `sm`) showing actual vs target, `% achieved`, and formatted actual/target amounts.
+- Pacing line for in-progress periods: `62% of the month elapsed · 71% of goal` plus an **On track / Behind / Ahead** badge (on track when % achieved ≥ % elapsed − small tolerance).
+- Completed periods show final achievement only; future periods show "Not started".
+- Empty state links to Settings → Goals when no goals exist.
+- Clicking a goal opens the existing deal drill-down sheet filtered to the deals behind the actual.
 
-- **CSV**: header button exports every visible card's underlying rows as one CSV (card title as a section header), plus a per-card "Export CSV" item in edit mode.
-- **PDF**: print-to-PDF snapshot reusing the existing print approach from contracts/invoices, with a print stylesheet that expands the grid to one card per row and hides controls.
+## 4. Actuals calculation
 
-## 6. Polish
+Reuse the existing analytics data path — no new queries:
 
-- Empty states per card ("No data in this period"), consistent Recharts tooltips, and a responsive grid check at mobile / tablet widths.
+- Actual = sum over **signed/won deals** (existing `WON_STAGES`) of the accepted proposal's stored totals, via the existing `revenue_net` / `revenue_gross` measures in `src/lib/analytics-engine.ts`.
+- Owner-scoped goals filter on `deals.owner_id`; space-scoped goals filter on deal items' `space_id` — both already supported filter paths in the engine.
+- A small `goalProgress()` helper computes actual, % achieved, % elapsed, and pacing status.
 
 ## Technical notes
 
-- Config additions are additive and normalized defensively in `normalizeConfig`, so existing saved layouts load unchanged.
-- Drill-down and CSV reuse the same in-memory dataset already fetched by the page — no extra queries.
-- Margin/cost measures stay behind `useCanViewCosts()`; drill-down and CSV strip cost columns for users without that permission.
-
-No app-wide redesign; all changes stay inside the analytics page, its widget components, and the engine.
+- Goals are fetched once per dashboard load with the other analytics data and passed into the cards.
+- Config additions (`goal_id` on the card entry) are normalized defensively in `normalizeConfig`, so existing saved layouts keep working; a card pointing at a deleted goal renders an empty state instead of breaking.
+- Visibility of goal cards follows the `analytics` module permission; no cost permission involved, since only revenue (not margin) is shown.

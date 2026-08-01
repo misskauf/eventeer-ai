@@ -68,6 +68,15 @@ import { CardFilters, applyCardFilters } from "@/components/analytics-card-filte
 import { DealDrilldownSheet, type Drilldown } from "@/components/analytics-drilldown";
 import { downloadCsv, printSnapshot, toCsv } from "@/lib/analytics-export";
 import { WidgetBuilderDialog } from "@/components/widget-builder-dialog";
+import { GoalsCard } from "@/components/analytics-goals";
+import {
+  METRIC_LABEL,
+  STATUS_LABEL,
+  computeGoalProgress,
+  currentPeriodStart,
+  periodLabel,
+  type Goal,
+} from "@/lib/goals";
 import type { CustomWidget, EngineItem } from "@/lib/analytics-engine";
 
 
@@ -228,6 +237,7 @@ function AnalyticsPage() {
   const [members, setMembers] = useState<{ user_id: string; role: string }[]>([]);
   const [items, setItems] = useState<EngineItem[]>([]);
   const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   // Custom widget builder
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -252,7 +262,7 @@ function AnalyticsPage() {
 
   useEffect(() => {
     (async () => {
-      const [d, a, p, m, it, sp] = await Promise.all([
+      const [d, a, p, m, it, sp, gl] = await Promise.all([
         supabase
           .from("deals")
           .select(
@@ -272,6 +282,11 @@ function AnalyticsPage() {
           .select("deal_id, item_type, item_id, item_name, space_id, line_total, line_gross, line_cost")
           .limit(20000),
         supabase.from("spaces").select("id, name").limit(500),
+        supabase
+          .from("goals")
+          .select("id, company_id, metric, period_type, period_start, target, owner_id, space_id")
+          .order("period_start", { ascending: false })
+          .limit(500),
       ]);
       setDeals((d.data as Deal[]) ?? []);
       setActivities((a.data as Activity[]) ?? []);
@@ -279,6 +294,7 @@ function AnalyticsPage() {
       setMembers((m.data as any[]) ?? []);
       setItems(((it.data as any[]) ?? []) as EngineItem[]);
       setSpaces(((sp.data as any[]) ?? []) as { id: string; name: string }[]);
+      setGoals(((gl.data as any[]) ?? []) as Goal[]);
       setLoading(false);
     })();
   }, []);
@@ -392,6 +408,20 @@ function AnalyticsPage() {
   const dealsFor = (key: string) => applyCardFilters(deals as any, items, filtersFor(key)) as Deal[];
   const byCreated = (r: Range, list: Deal[] = deals) => list.filter((d) => inRange(d.created_at, r));
   const byEvent = (r: Range, list: Deal[] = deals) => list.filter((d) => inRange(d.event_date, r));
+
+  /* ---------------- Revenue goals ---------------- */
+  // The goal card follows the goal's own period, not the dashboard range.
+  const currentGoals = useMemo(
+    () => goals.filter((g) => g.period_start === currentPeriodStart(g.period_type)),
+    [goals],
+  );
+  const goalEntry = entryFor("goals");
+  const shownGoals = useMemo(() => {
+    if (!goalEntry.goal_id) return currentGoals;
+    return goals.filter((g) => g.id === goalEntry.goal_id);
+  }, [goals, currentGoals, goalEntry.goal_id]);
+
+
 
   const leadsRange = rangeFor("leads");
   const funnelRange = rangeFor("funnel");
@@ -712,6 +742,27 @@ function AnalyticsPage() {
           ["Avg days to win", kpis.avgDaysToWin?.toFixed(1) ?? ""],
         ],
       );
+    else if (key === "goals")
+      csv = toCsv(
+        ["Metric", "Period", "Scope", "Target", "Actual", "% achieved", "% elapsed", "Status"],
+        shownGoals.map((g) => {
+          const p = computeGoalProgress({ goal: g, deals, items });
+          const scope =
+            [g.owner_id ? ownerLabel(g.owner_id) : null, g.space_id ? (spaces.find((s) => s.id === g.space_id)?.name ?? "Space") : null]
+              .filter(Boolean)
+              .join(" · ") || "Whole company";
+          return [
+            METRIC_LABEL[g.metric],
+            periodLabel(g.period_start, g.period_type),
+            scope,
+            p.target,
+            p.actual,
+            p.pct.toFixed(1),
+            p.elapsedPct.toFixed(1),
+            STATUS_LABEL[p.status],
+          ];
+        }),
+      );
     if (!csv) {
       toast.error("This card has no tabular export.");
       return;
@@ -721,6 +772,7 @@ function AnalyticsPage() {
 
   const EXPORTABLE = new Set([
     "kpis",
+    "goals",
     "leads",
     "funnel",
     "stage",
@@ -1141,6 +1193,24 @@ function AnalyticsPage() {
           </div>
         );
 
+      case "goals":
+        return (
+          <GoalsCard
+            goals={shownGoals}
+            deals={deals}
+            items={items}
+            currency={currency}
+            ownerName={ownerLabel}
+            spaceName={(id) => spaces.find((s) => s.id === id)?.name ?? "Space"}
+            onDrilldown={(title, ids) =>
+              setDrilldown({
+                title,
+                deals: deals.filter((d) => ids.includes(d.id)),
+              })
+            }
+          />
+        );
+
       case "items":
         return <ItemAnalytics currency={currency} range={globalRange} deals={deals} />;
 
@@ -1162,6 +1232,25 @@ function AnalyticsPage() {
   }
 
   function extraControlsFor(key: string): React.ReactNode {
+    if (key === "goals")
+      return (
+        <Select
+          value={goalEntry.goal_id ?? "current"}
+          onValueChange={(v) => patchEntry("goals", { goal_id: v === "current" ? null : v })}
+        >
+          <SelectTrigger className="h-8 w-[220px] text-xs" aria-label="Goal shown">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="current">Current period goals</SelectItem>
+            {goals.map((g) => (
+              <SelectItem key={g.id} value={g.id}>
+                {METRIC_LABEL[g.metric]} · {periodLabel(g.period_start, g.period_type)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
     if (key === "stage")
       return (
         <ChartTypeToggle
@@ -1311,7 +1400,7 @@ function AnalyticsPage() {
                 onChange={(patch) => patchEntry(entry.widget_key, patch)}
                 extraControls={custom ? null : extraControlsFor(entry.widget_key)}
                 filtersControl={
-                  custom || entry.widget_key === "items" ? null : (
+                  custom || entry.widget_key === "items" || entry.widget_key === "goals" ? null : (
                     <CardFilters
                       value={entry.filters}
                       onChange={(filters) => patchEntry(entry.widget_key, { filters })}

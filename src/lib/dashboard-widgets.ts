@@ -29,6 +29,8 @@ export type WidgetConfig = {
   filters?: CustomFilters;
   /** Overlay / compare against the previous equivalent period. */
   compare_previous?: boolean;
+  /** Goal card: `null` shows every goal for the current period, otherwise one goal. */
+  goal_id?: string | null;
   /** Present only for user-built widgets (`widget_key` = `custom:<id>`). */
   custom?: CustomWidget;
 };
@@ -53,6 +55,14 @@ export const WIDGETS: WidgetDef[] = [
   {
     key: "kpis",
     label: "KPI cards",
+    chartTypes: [],
+    defaultChartType: null,
+    defaultSize: "lg",
+    supportsRange: false,
+  },
+  {
+    key: "goals",
+    label: "Revenue goals",
     chartTypes: [],
     defaultChartType: null,
     defaultSize: "lg",
@@ -220,6 +230,7 @@ export function defaultEntry(def: WidgetDef): WidgetConfig {
     date_range_override: null,
     filters: emptyFilters(),
     compare_previous: false,
+    goal_id: null,
     ...(def.custom ? { custom: def.custom } : {}),
   };
 }
@@ -304,6 +315,7 @@ export function normalizeConfig(raw: unknown): WidgetConfig[] {
       size: SIZES.includes(size) ? size : def.defaultSize,
       filters: normalizeFilters((item as any)?.filters),
       compare_previous: (item as any)?.compare_previous === true,
+      goal_id: typeof (item as any)?.goal_id === "string" ? (item as any).goal_id : null,
       date_range_override:
         override && typeof override?.mode === "string"
           ? { mode: override.mode, from: String(override.from ?? ""), to: String(override.to ?? "") }

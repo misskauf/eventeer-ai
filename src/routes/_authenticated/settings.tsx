@@ -19,6 +19,7 @@ const SECTIONS: Array<{ to: string; label: string; module: PermissionModule }> =
   { to: "/settings/team", label: "Team & users", module: "team" },
   { to: "/settings/workflow", label: "Deals & workflow", module: "settings" },
   { to: "/settings/fees", label: "Fees & tax", module: "settings" },
+  { to: "/settings/goals", label: "Revenue goals", module: "settings" },
   { to: "/settings/contract-templates", label: "Contract templates", module: "contracts" },
   { to: "/settings/invoicing", label: "Invoicing", module: "invoices" },
   { to: "/settings/lead-forms", label: "Lead forms", module: "lead_forms" },
