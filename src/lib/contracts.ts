@@ -16,10 +16,12 @@ export type ContractContext = {
   totals?: { subtotal?: number; tax?: number; total?: number };
   event_hours?: number | null;
   menu_selections?: string[]; // human-readable lines
+  quote_number?: string | null; // accepted proposal's quote reference
 };
 
 export const CONTRACT_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   { key: "client_name", label: "Client name" },
+  { key: "quote_number", label: "Quote number" },
   { key: "client_company", label: "Client company" },
   { key: "client_email", label: "Client email" },
   { key: "event_date", label: "Event date" },
@@ -100,6 +102,7 @@ export function buildPlaceholderValues(ctx: ContractContext): Record<string, str
   const t = ctx.totals ?? {};
   return {
     client_name: ctx.deal?.client_name ?? "",
+    quote_number: ctx.quote_number ?? "—",
     client_company: ctx.deal?.client_company ?? "",
     client_email: ctx.deal?.client_email ?? "",
     event_date: ctx.deal?.event_date ? formatEventDate(ctx.deal.event_date) : "—",

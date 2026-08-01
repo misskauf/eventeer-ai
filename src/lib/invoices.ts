@@ -69,6 +69,7 @@ export const DEFAULT_INVOICE_TEMPLATE = `<div style="display:flex;justify-conten
   <div>
     <h1 style="margin:0">Invoice</h1>
     <p style="margin:4px 0 0;font-size:12px;color:#555">Date: {{today}}</p>
+    <p style="margin:2px 0 0;font-size:12px;color:#555">Quote ref: {{quote_number}}</p>
   </div>
   <div style="text-align:right">{{company_logo}}<p style="margin:6px 0 0;font-size:12px;color:#555">{{company_name}}<br/>{{company_address}}<br/>{{company_email}}</p></div>
 </div>

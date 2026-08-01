@@ -1684,6 +1684,7 @@ function DealDetail() {
                     ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
                     : undefined,
                   event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+                  quote_number: (existingProposal as any)?.quote_number ?? null,
                 }}
               />
             </div>
@@ -1716,6 +1717,7 @@ function DealDetail() {
                     ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
                     : undefined,
                   event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+                  quote_number: (existingProposal as any)?.quote_number ?? null,
                   line_items: totals?.lines.map((l) => ({
                     label: l.label,
                     qty: l.qty,

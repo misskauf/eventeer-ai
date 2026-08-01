@@ -44,7 +44,22 @@ export const getContractByToken = createServerFn({ method: "GET" })
         .eq("id", contract.deal_id)
         .maybeSingle(),
     ]);
-    return { ok: true as const, contract, company, deal };
+    const { data: quoteRow } = await supabaseAdmin
+      .from("proposals")
+      .select("quote_number")
+      .eq("deal_id", contract.deal_id)
+      .not("quote_number", "is", null)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return {
+      ok: true as const,
+      contract,
+      company,
+      deal,
+      quote_number: (quoteRow as any)?.quote_number ?? null,
+    };
   });
 
 /** Public: client signs the contract by drawing/typing their signature. */
