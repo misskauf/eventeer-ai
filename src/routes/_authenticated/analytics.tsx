@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { LayoutGrid, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { FileDown, LayoutGrid, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, PageHeader } from "@/components/app-shell";
@@ -60,9 +60,13 @@ import {
   defaultConfig,
   isCustomKey,
   newCustomWidget,
+  emptyFilters,
   type WidgetConfig,
 } from "@/lib/dashboard-widgets";
 import { CustomWidgetView } from "@/components/analytics-custom-widget";
+import { CardFilters, applyCardFilters } from "@/components/analytics-card-filters";
+import { DealDrilldownSheet, type Drilldown } from "@/components/analytics-drilldown";
+import { downloadCsv, printSnapshot, toCsv } from "@/lib/analytics-export";
 import { WidgetBuilderDialog } from "@/components/widget-builder-dialog";
 import type { CustomWidget, EngineItem } from "@/lib/analytics-engine";
 
@@ -95,6 +99,7 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 
 type Deal = {
   id: string;
+  client_name: string | null;
   owner_id: string;
   stage: string;
   source: string | null;
@@ -250,7 +255,7 @@ function AnalyticsPage() {
         supabase
           .from("deals")
           .select(
-            "id, owner_id, stage, source, event_type, guest_count, estimated_value, created_at, updated_at, event_date",
+            "id, client_name, owner_id, stage, source, event_type, guest_count, estimated_value, created_at, updated_at, event_date",
           )
           .order("created_at", { ascending: false })
           .limit(5000),
@@ -263,7 +268,7 @@ function AnalyticsPage() {
         supabase.from("user_roles").select("user_id, role"),
         supabase
           .from("deal_items_visible" as any)
-          .select("deal_id, item_type, item_id, item_name, space_id, line_total, line_cost")
+          .select("deal_id, item_type, item_id, item_name, space_id, line_total, line_gross, line_cost")
           .limit(20000),
         supabase.from("spaces").select("id, name").limit(500),
       ]);
@@ -382,8 +387,10 @@ function AnalyticsPage() {
 
   const rangeFor = (key: string) => resolveRange(entryFor(key), globalRange);
 
-  const byCreated = (r: Range) => deals.filter((d) => inRange(d.created_at, r));
-  const byEvent = (r: Range) => deals.filter((d) => inRange(d.event_date, r));
+  const filtersFor = (key: string) => entryFor(key).filters ?? emptyFilters();
+  const dealsFor = (key: string) => applyCardFilters(deals as any, items, filtersFor(key)) as Deal[];
+  const byCreated = (r: Range, list: Deal[] = deals) => list.filter((d) => inRange(d.created_at, r));
+  const byEvent = (r: Range, list: Deal[] = deals) => list.filter((d) => inRange(d.event_date, r));
 
   const leadsRange = rangeFor("leads");
   const funnelRange = rangeFor("funnel");
