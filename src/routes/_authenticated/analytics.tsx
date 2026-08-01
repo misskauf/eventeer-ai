@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { FileDown, LayoutGrid, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Copy, FileDown, LayoutGrid, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, PageHeader } from "@/components/app-shell";
@@ -368,6 +368,37 @@ function AnalyticsPage() {
     else void save(next);
     toast.success("Widget removed.");
   }
+
+  /** Clones a custom widget (measure, dimension, filters, look) as an independent card. */
+  function duplicateCustomWidget(key: string) {
+    const index = active.findIndex((e) => e.widget_key === key);
+    const source = active[index];
+    if (index < 0 || !source?.custom) return;
+
+    const custom: CustomWidget = {
+      ...source.custom,
+      id: crypto.randomUUID(),
+      title: `${source.custom.title} (copy)`,
+      filters: { ...source.custom.filters },
+    };
+    const copy: WidgetConfig = {
+      ...source,
+      widget_key: `custom:${custom.id}`,
+      visible: true,
+      filters: source.filters ? { ...source.filters } : undefined,
+      date_range_override: source.date_range_override
+        ? { ...source.date_range_override }
+        : null,
+      custom,
+    };
+
+    const next = [...active];
+    next.splice(index + 1, 0, copy);
+    if (editing) setDraft(next);
+    else void save(next);
+    toast.success("Widget duplicated.");
+  }
+
 
 
   function patchEntry(key: string, patch: Partial<WidgetConfig>) {
@@ -1428,6 +1459,15 @@ function AnalyticsPage() {
                       >
                         <Pencil className="mr-1 h-3.5 w-3.5" />
                         Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => duplicateCustomWidget(entry.widget_key)}
+                      >
+                        <Copy className="mr-1 h-3.5 w-3.5" />
+                        Duplicate
                       </Button>
                       <Button
                         size="sm"
