@@ -428,6 +428,32 @@ function DealDetail() {
     }
     const version = existingProposal ? existingProposal.version + 1 : 1;
     const status = send ? "sent" : "draft";
+
+    // Quote number: assigned on first send; later re-sends reuse the base with -vN.
+    let quoteNumber: string | null = null;
+    if (send) {
+      const { data: prior } = await supabase
+        .from("proposals")
+        .select("quote_number")
+        .eq("deal_id", deal.id)
+        .not("quote_number", "is", null)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const priorNumber = (prior as any)?.quote_number as string | undefined;
+      if (priorNumber) {
+        const m = priorNumber.match(/^(.*?)-v(\d+)$/);
+        const base = m ? m[1] : priorNumber;
+        const nextRev = m ? Number(m[2]) + 1 : 2;
+        quoteNumber = `${base}-v${nextRev}`;
+      } else {
+        const { data: generated, error: qErr } = await supabase.rpc("next_quote_number", {
+          _company_id: deal.company_id,
+        });
+        if (qErr) { toast.error(qErr.message); return null; }
+        quoteNumber = generated as unknown as string;
+      }
+    }
     const { data: newProp, error } = await supabase
       .from("proposals")
       .insert({
@@ -444,6 +470,7 @@ function DealDetail() {
           computed_total: totals.grand_total,
         },
         sent_at: send ? new Date().toISOString() : null,
+        quote_number: quoteNumber,
       })
       .select("*")
       .single();
@@ -994,7 +1021,14 @@ function DealDetail() {
       <div>
       {/* PROPOSAL SECTION */}
       <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
-        <h2 className="text-lg font-semibold">Proposal</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Proposal</h2>
+          {existingProposal?.quote_number && (
+            <span className="rounded border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+              {existingProposal.quote_number}
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={previewAsClient}>
             <Eye className="mr-1 h-4 w-4" /> Preview as client

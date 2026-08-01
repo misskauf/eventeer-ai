@@ -346,6 +346,11 @@ function ClientProposal() {
             <h1 className="text-2xl font-semibold leading-tight">
               {coverTitle || `Proposal for ${state.deal.client_name}`}
             </h1>
+            {state.proposal?.quote_number && (
+              <div className="mt-1 font-mono text-xs text-muted-foreground">
+                {state.proposal.quote_number}
+              </div>
+            )}
             <div className="mt-0.5 text-xs text-muted-foreground">
               For {state.deal.client_name}
               {state.deal.event_date && ` · ${formatEventDate(state.deal.event_date)}`}

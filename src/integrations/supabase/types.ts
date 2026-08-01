@@ -30,9 +30,15 @@ export type Database = {
           name: string
           primary_color: string
           proposal_reminder_days: number
+          quote_format: string
+          quote_next_seq: number
+          quote_reset_yearly: boolean
+          quote_seq_padding: number
+          quote_seq_year: number | null
           require_deal_approval: boolean
           timezone: string
           updated_at: string
+          venue_code: string | null
           website: string | null
         }
         Insert: {
@@ -50,9 +56,15 @@ export type Database = {
           name: string
           primary_color?: string
           proposal_reminder_days?: number
+          quote_format?: string
+          quote_next_seq?: number
+          quote_reset_yearly?: boolean
+          quote_seq_padding?: number
+          quote_seq_year?: number | null
           require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
+          venue_code?: string | null
           website?: string | null
         }
         Update: {
@@ -70,9 +82,15 @@ export type Database = {
           name?: string
           primary_color?: string
           proposal_reminder_days?: number
+          quote_format?: string
+          quote_next_seq?: number
+          quote_reset_yearly?: boolean
+          quote_seq_padding?: number
+          quote_seq_year?: number | null
           require_deal_approval?: boolean
           timezone?: string
           updated_at?: string
+          venue_code?: string | null
           website?: string | null
         }
         Relationships: []
@@ -1195,6 +1213,7 @@ export type Database = {
           deal_id: string
           id: string
           offer: Json
+          quote_number: string | null
           sent_at: string | null
           status: string
           version: number
@@ -1206,6 +1225,7 @@ export type Database = {
           deal_id: string
           id?: string
           offer?: Json
+          quote_number?: string | null
           sent_at?: string | null
           status?: string
           version?: number
@@ -1217,6 +1237,7 @@ export type Database = {
           deal_id?: string
           id?: string
           offer?: Json
+          quote_number?: string | null
           sent_at?: string | null
           status?: string
           version?: number
@@ -1622,6 +1643,7 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      next_quote_number: { Args: { _company_id: string }; Returns: string }
       permission_level: {
         Args: { _company_id: string; _module: string }
         Returns: string
