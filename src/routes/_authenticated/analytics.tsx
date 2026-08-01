@@ -740,6 +740,27 @@ function AnalyticsPage() {
           ["Avg days to win", kpis.avgDaysToWin?.toFixed(1) ?? ""],
         ],
       );
+    else if (key === "goals")
+      csv = toCsv(
+        ["Metric", "Period", "Scope", "Target", "Actual", "% achieved", "% elapsed", "Status"],
+        shownGoals.map((g) => {
+          const p = computeGoalProgress({ goal: g, deals, items });
+          const scope =
+            [g.owner_id ? ownerLabel(g.owner_id) : null, g.space_id ? (spaces.find((s) => s.id === g.space_id)?.name ?? "Space") : null]
+              .filter(Boolean)
+              .join(" · ") || "Whole company";
+          return [
+            METRIC_LABEL[g.metric],
+            periodLabel(g.period_start, g.period_type),
+            scope,
+            p.target,
+            p.actual,
+            p.pct.toFixed(1),
+            p.elapsedPct.toFixed(1),
+            STATUS_LABEL[p.status],
+          ];
+        }),
+      );
     if (!csv) {
       toast.error("This card has no tabular export.");
       return;
@@ -749,6 +770,7 @@ function AnalyticsPage() {
 
   const EXPORTABLE = new Set([
     "kpis",
+    "goals",
     "leads",
     "funnel",
     "stage",
