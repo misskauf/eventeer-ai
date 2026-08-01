@@ -22,6 +22,11 @@ export const sendProposalReminder = createServerFn({ method: "POST" })
       .maybeSingle();
     if (dealErr) throw new Error(dealErr.message);
     if (!deal) throw new Error("Deal not found");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, deal.company_id as string, "proposals", "edit");
+    }
+
     if (!deal.client_email) throw new Error("This deal has no client email on file.");
 
     // Latest sent proposal

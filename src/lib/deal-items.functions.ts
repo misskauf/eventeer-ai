@@ -28,6 +28,11 @@ export const backfillDealItems = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     if (!role?.company_id) throw new Error("No company");
+    {
+      const { requirePermission } = await import("@/lib/permissions.server");
+      await requirePermission(context.supabase, role.company_id as string, "deals", "edit");
+    }
+
     const { backfillCompanyDealItemsAdmin } = await import("@/lib/deal-items.server");
     return await backfillCompanyDealItemsAdmin(role.company_id as string);
   });
