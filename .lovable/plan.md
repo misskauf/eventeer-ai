@@ -1,45 +1,27 @@
-# Real drawn e-signature on the client signing page
+## What already exists (verified)
 
-## DB migration
-- Add `signed_place text` (nullable) to `contracts`.
+Most of this prompt was already built in the previous turn:
 
-## `src/lib/contracts.functions.ts` — `signContract`
-- Extend input schema: `signature_image` (string, PNG data URL, `startsWith('data:image/')`), `signed_place` (string, 1–200), `signed_date` (ISO date string).
-- Fetch existing `rendered_body` along with the current fields.
-- Build signed HTML by replacing placeholders in `rendered_body`:
-  - `{{client_signature}}` → `<img src="..." style="max-height:60px"/>`
-  - `{{client_signature_name}}` → escaped name
-  - `{{client_signature_date}}` → formatted date
-  - `{{client_signature_place}}` → escaped place
-  - If none of those placeholders are present, append a signature block (image + name / place / date) to the end.
-- Update `contracts` with: `status='signed'`, `signed_at=now`, `signed_by_name`, `signed_by_email` (from `sent_to_email`), `signed_place`, `signed_ip`, `signature_data = signature_image`, `rendered_body = signedHtml`, clear signing token.
-- Keep the existing `notifyDeal('contract_signed', …)` call.
+- Table `staff_roles` (same shape as the requested `staff` table): `id`, `company_id`, `name`, `name_de`, `category` (default `'staff'`), `description`, `long_description`, `long_description_de`, `pricing_type` (`extra_pricing_type`, default `per_hour`), `price`, `basis`, `tax_rate_pct`, `active` (default true), `created_at`, `updated_at` — with the company RLS pattern.
+- Route `src/routes/_authenticated/catalog.staff.tsx` with the Extras-style CRUD UI (EN/DE fields, pricing type, basis, tax, preview breakdown, category defaults bar).
+- "Staff" tab already in `catalog.tsx`.
+- Generated Supabase types already include `staff_roles`.
 
-## `src/routes/c.$token.tsx` — Sign contract card
-- Replace the single name input with:
-  - **Signature pad**: `<canvas>` with pointer events (`pointerdown/move/up`), high-DPR sizing, Clear button, `hasDrawn` flag. On submit, export via `canvas.toDataURL('image/png')`.
-  - **Type instead** toggle: renders typed name in cursive on a hidden canvas and exports to PNG so we always store an image.
-  - **Full legal name** (required text).
-  - **Place / city** (required text).
-  - **Date** (date input, default today, required).
-  - Keep the agreement checkbox.
-- Sign button disabled until name + (drawn or typed signature) + place + date + agreed.
-- Pass `signature_image`, `signed_place`, `signed_date` to `signContract`.
-- Signed state card: show the signature image, name, place, and date. The contract card automatically shows the updated `rendered_body`. Ensure print stylesheet still displays the image and signed block.
+No new migration is needed. Renaming the table to `staff` would break the code already wired to `staff_roles` for no benefit, so I'd keep the current name.
 
-## `src/lib/contracts.ts` — placeholders
-- Add to `CONTRACT_PLACEHOLDERS`:
-  - `client_signature` — Client signature (image)
-  - `client_signature_name` — Client signature name
-  - `client_signature_date` — Client signature date
-  - `client_signature_place` — Client signature place
-- These are filled at signing time, so `buildPlaceholderValues` leaves them as empty strings (or unset) during initial render; the signContract handler substitutes them.
+## What's actually missing
 
-## `src/components/rich-text-editor.tsx` — Insert signature block
-- Replace the underscore-lines signature snippet with a two-cell table (or aligned block) using the new placeholders:
-  - Client: `{{client_signature}}` image row, name = `{{client_signature_name}}`, place = `{{client_signature_place}}`, date = `{{client_signature_date}}`.
-  - Keep the venue side as-is (or mirror it with existing company placeholders).
+1. **Activate / deactivate.** Neither the Extras page nor the Staff page can toggle `active` — the field just defaults to true. Add a boolean field type to `src/components/crud-list.tsx` (a checkbox rendered like the other fields, written into the insert/update payload as a real boolean).
+2. **Staff page uses it.** Add an "Active" checkbox to the field list in `catalog.staff.tsx`, defaulting to true, and show an "Inactive" badge in the row renderer for rows where `active` is false.
+3. **German short description parity.** The Staff page currently offers `name_de` and `long_description_de` but not a German short description. `staff_roles` has no `description_de` column. Two options — I'd do (a) unless you say otherwise:
+   - (a) Leave it: short `description` is internal-facing only, so no DE needed (matches Extras).
+   - (b) Add `description_de` via a small migration and a paired field.
+
+## Technical notes
+
+- `crud-list.tsx` gains `type: "checkbox"`; submit path converts `fd.get(name)` presence to `true/false` (unchecked checkboxes are absent from FormData, so it must be handled explicitly, not via the generic string branch).
+- Inactive rows stay visible in the manager list; filtering by `active` belongs to the proposal builder, which is out of scope here.
 
 ## Out of scope
-- No changes to proposal flow, deal detail page, invoices, or i18n strings.
-- No new dependencies.
+
+No changes to the proposal builder, client proposal page, contracts, or invoices.
