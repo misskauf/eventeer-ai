@@ -1463,6 +1463,15 @@ function AnalyticsPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => duplicateCustomWidget(entry.widget_key)}
+                      >
+                        <Copy className="mr-1 h-3.5 w-3.5" />
+                        Duplicate
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className="h-8 px-2 text-xs text-destructive"
                         onClick={() => deleteCustomWidget(entry.widget_key)}
                       >
