@@ -407,6 +407,20 @@ function AnalyticsPage() {
   const byCreated = (r: Range, list: Deal[] = deals) => list.filter((d) => inRange(d.created_at, r));
   const byEvent = (r: Range, list: Deal[] = deals) => list.filter((d) => inRange(d.event_date, r));
 
+  /* ---------------- Revenue goals ---------------- */
+  // The goal card follows the goal's own period, not the dashboard range.
+  const currentGoals = useMemo(
+    () => goals.filter((g) => g.period_start === currentPeriodStart(g.period_type)),
+    [goals],
+  );
+  const goalEntry = entryFor("goals");
+  const shownGoals = useMemo(() => {
+    if (!goalEntry.goal_id) return currentGoals;
+    return goals.filter((g) => g.id === goalEntry.goal_id);
+  }, [goals, currentGoals, goalEntry.goal_id]);
+
+
+
   const leadsRange = rangeFor("leads");
   const funnelRange = rangeFor("funnel");
   const stageRange = rangeFor("stage");
