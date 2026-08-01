@@ -1495,7 +1495,13 @@ export type Database = {
       user_company_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "owner" | "manager" | "sales" | "accounting"
+      app_role:
+        | "owner"
+        | "manager"
+        | "sales"
+        | "accounting"
+        | "sales_manager"
+        | "event_manager"
       deal_stage:
         | "inquiry"
         | "proposal_draft"
@@ -1644,7 +1650,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "manager", "sales", "accounting"],
+      app_role: [
+        "owner",
+        "manager",
+        "sales",
+        "accounting",
+        "sales_manager",
+        "event_manager",
+      ],
       deal_stage: [
         "inquiry",
         "proposal_draft",
