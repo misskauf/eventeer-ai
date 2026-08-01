@@ -82,7 +82,7 @@ type SpaceRow = SpaceSel & { available_days?: number[] | null; details_url?: str
 type AlternativeGroup = {
   id: string;
   name: string;
-  category: "space" | "food" | "beverage" | "extra";
+  category: "space" | "food" | "beverage" | "extra" | "staff";
   item_ids: string[];
   default_id: string;
 };
@@ -99,6 +99,7 @@ function DealDetail() {
   const [spaces, setSpaces] = useState<SpaceRow[]>([]);
   const [packages, setPackages] = useState<PackageSel[]>([]);
   const [extras, setExtras] = useState<ExtraSel[]>([]);
+  const [staff, setStaff] = useState<StaffSel[]>([]);
   const [fees, setFees] = useState<any>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [minRevRules, setMinRevRules] = useState<MinRevRule[]>([]);
@@ -107,6 +108,7 @@ function DealDetail() {
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
   const [packageHours, setPackageHours] = useState<Record<string, number>>({});
 
@@ -148,10 +150,11 @@ function DealDetail() {
     if (!d) return;
     setDeal(d as Deal);
 
-    const [sp, pk, ex, fc, ss, mr, co, ac, pr] = await Promise.all([
+    const [sp, pk, ex, stf, fc, ss, mr, co, ac, pr] = await Promise.all([
       supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
+      supabase.from("staff_roles").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
@@ -163,6 +166,7 @@ function DealDetail() {
     setSpaces((sp.data as SpaceRow[]) ?? []);
     setPackages((pk.data as PackageSel[]) ?? []);
     setExtras((ex.data as ExtraSel[]) ?? []);
+    setStaff((stf.data as StaffSel[]) ?? []);
     const feeRow: any = fc.data ?? {
       service_charge_pct: 0, tax_pct: 0, cleaning_fee: 0, overtime_fee_per_hour: 0,
     };
@@ -184,6 +188,7 @@ function DealDetail() {
       setSelectedSpaces(cfg.space_ids ?? []);
       setSelectedPackages(cfg.package_ids ?? []);
       setSelectedExtras(cfg.extra_ids ?? []);
+      setSelectedStaff(cfg.staff_ids ?? []);
       setPackageGuests(cfg.package_guests ?? {});
       setPackageHours(cfg.package_hours ?? {});
       setSeasonId(cfg.season_id ?? "none");
@@ -286,11 +291,13 @@ function DealDetail() {
     const extraSpaces: string[] = [];
     const extraPkgs: string[] = [];
     const extraExtras: string[] = [];
+    const extraStaff: string[] = [];
     for (const g of altGroups) {
       const target = g.default_id && g.item_ids.includes(g.default_id) ? g.default_id : g.item_ids[0];
       if (!target) continue;
       if (g.category === "space") extraSpaces.push(target);
       else if (g.category === "extra") extraExtras.push(target);
+      else if (g.category === "staff") extraStaff.push(target);
       else extraPkgs.push(target);
     }
     return {
@@ -298,11 +305,12 @@ function DealDetail() {
       space_ids: Array.from(new Set([...selectedSpaces, ...extraSpaces])),
       package_ids: Array.from(new Set([...selectedPackages, ...extraPkgs])),
       extra_ids: Array.from(new Set([...selectedExtras, ...extraExtras])),
+      staff_ids: Array.from(new Set([...selectedStaff, ...extraStaff])),
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedSpaces, selectedPackages, selectedExtras, packageGuests, packageHours, altGroups]);
+  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, packageGuests, packageHours, altGroups]);
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
@@ -311,7 +319,7 @@ function DealDetail() {
   const offer: Offer | null = useMemo(() => {
     if (!fees) return null;
     return {
-      spaces, packages, extras,
+      spaces, packages, extras, staff,
       fees: {
         ...fees,
         service_charge_pct: servicePct,
@@ -326,7 +334,7 @@ function DealDetail() {
       discount_target: effectiveDiscountTarget,
       currency,
     };
-  }, [spaces, packages, extras, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency]);
+  }, [spaces, packages, extras, staff, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency]);
 
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
@@ -337,12 +345,13 @@ function DealDetail() {
     if (cat === "space") return availableSpaces.map((s) => ({ id: s.id, name: s.name }));
     if (cat === "food") return foodPackages.map((p) => ({ id: p.id, name: p.name }));
     if (cat === "beverage") return beveragePackages.map((p) => ({ id: p.id, name: p.name }));
+    if (cat === "staff") return staff.map((x) => ({ id: x.id, name: x.name }));
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
 
   // Candidate lines (by sourceKind+sourceId) that the discount can be applied to.
   const discountTargets = (totals?.lines ?? [])
-    .filter((l) => l.sourceKind === "space" || l.sourceKind === "package" || l.sourceKind === "extra")
+    .filter((l) => l.sourceKind === "space" || l.sourceKind === "package" || l.sourceKind === "extra" || l.sourceKind === "staff")
     .map((l) => ({
       kind: l.sourceKind as DiscountTarget["kind"],
       id: l.sourceId!,
@@ -355,6 +364,7 @@ function DealDetail() {
       space_ids: selectedSpaces,
       package_ids: selectedPackages,
       extra_ids: selectedExtras,
+      staff_ids: selectedStaff,
       package_guests: packageGuests,
       package_hours: packageHours,
       season_id: seasonId,
@@ -389,6 +399,8 @@ function DealDetail() {
     if (bevNames.length) lines.push(`**Beverage:** ${bevNames.join(", ")}.`);
     const extraNames = extras.filter((e) => selectedExtras.includes(e.id)).map((e) => e.name);
     if (extraNames.length) lines.push(`**Extras:** ${extraNames.join(", ")}.`);
+    const staffNames = staff.filter((x) => selectedStaff.includes(x.id)).map((x) => x.name);
+    if (staffNames.length) lines.push(`**Staffing:** ${staffNames.join(", ")}.`);
     if (altGroups.length) lines.push(`We've included a few **choices** below so you can shape the experience yourself.`);
     lines.push("");
     lines.push("Let me know what you think, or reply directly with any tweaks.");
@@ -610,6 +622,8 @@ function DealDetail() {
     if (p) return p.name;
     const e = extras.find((x) => x.id === itemId);
     if (e) return e.name;
+    const st = staff.find((x) => x.id === itemId);
+    if (st) return st.name;
     return itemId;
   };
 
@@ -1069,6 +1083,22 @@ function DealDetail() {
           </Card>
 
           <Card>
+            <CardHeader><CardTitle>Staffing</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {staff.length === 0 && <EmptyHint to="/catalog/staff" label="Add staff roles in catalog" />}
+              {staff.map((x) => (
+                <PickRow
+                  key={x.id}
+                  checked={selectedStaff.includes(x.id)}
+                  onChange={(v) => toggle(setSelectedStaff, x.id, v)}
+                  title={x.name}
+                  subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
+                />
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Options for the client to choose from</CardTitle>
               <Button
@@ -1123,6 +1153,7 @@ function DealDetail() {
                           <SelectItem value="food">Food</SelectItem>
                           <SelectItem value="beverage">Beverage</SelectItem>
                           <SelectItem value="extra">Extra</SelectItem>
+                          <SelectItem value="staff">Staff</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex-1" />
