@@ -160,6 +160,7 @@ export type EngineItem = {
   item_name: string;
   space_id: string | null;
   line_total: number;
+  line_gross?: number | null;
   line_cost: number | null;
 };
 
