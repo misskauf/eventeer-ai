@@ -213,7 +213,8 @@ type Bucket = {
   label: string;
   order: number;
   deals: EngineDeal[];
-  revenue: number; // item revenue, only used by item dimensions
+  revenue: number; // item revenue (net), only used by item dimensions
+  gross: number;
   cost: number;
   dealIds: Set<string>;
 };
@@ -235,13 +236,25 @@ export function runQuery(input: {
   if (bad) return { rows: [], total: 0, format, error: bad };
 
   const itemDim = DIMENSION_MAP.get(dimension)?.itemType ?? null;
-  const needsItems = itemDim !== null || measure === "margin" || measure === "margin_pct";
+  const needsItems =
+    itemDim !== null ||
+    measure === "margin" ||
+    measure === "margin_pct" ||
+    measure === "revenue_net" ||
+    measure === "revenue_gross";
 
   // --- filter deals -------------------------------------------------------
   const spaceFilter = new Set(filters.space_ids ?? []);
   const dealsWithSpace = new Set<string>();
   if (spaceFilter.size) {
     for (const i of items) if (i.space_id && spaceFilter.has(i.space_id)) dealsWithSpace.add(i.deal_id);
+  }
+  const packageFilter = new Set(filters.package_ids ?? []);
+  const dealsWithPackage = new Set<string>();
+  if (packageFilter.size) {
+    for (const i of items)
+      if (i.item_type === "package" && i.item_id && packageFilter.has(i.item_id))
+        dealsWithPackage.add(i.deal_id);
   }
 
   const useEventDate = dimension === "weekday_event";
@@ -251,7 +264,9 @@ export function runQuery(input: {
     if (filters.stages?.length && !filters.stages.includes(d.stage)) return false;
     if (filters.owner_ids?.length && !filters.owner_ids.includes(d.owner_id)) return false;
     if (filters.event_types?.length && !filters.event_types.includes(d.event_type ?? "")) return false;
+    if (filters.sources?.length && !filters.sources.includes(d.source || "manual")) return false;
     if (spaceFilter.size && !dealsWithSpace.has(d.id)) return false;
+    if (packageFilter.size && !dealsWithPackage.has(d.id)) return false;
     return true;
   });
 
@@ -268,11 +283,12 @@ export function runQuery(input: {
     };
   }
 
-  // Per-deal item totals, used by margin measures on deal-level dimensions.
-  const perDeal = new Map<string, { revenue: number; cost: number }>();
+  // Per-deal item totals, used by margin/net/gross measures on deal-level dimensions.
+  const perDeal = new Map<string, { revenue: number; gross: number; cost: number }>();
   for (const i of scopedItems) {
-    const row = perDeal.get(i.deal_id) ?? { revenue: 0, cost: 0 };
+    const row = perDeal.get(i.deal_id) ?? { revenue: 0, gross: 0, cost: 0 };
     row.revenue += num(i.line_total);
+    row.gross += num(i.line_gross ?? i.line_total);
     row.cost += num(i.line_cost);
     perDeal.set(i.deal_id, row);
   }
