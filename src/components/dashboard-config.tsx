@@ -329,10 +329,11 @@ export function HiddenWidgetsPanel({
         {hidden.map((c) => (
           <Button key={c.widget_key} size="sm" variant="outline" onClick={() => onShow(c.widget_key)}>
             <Eye className="mr-1 h-3.5 w-3.5" />
-            {WIDGET_MAP.get(c.widget_key)?.label ?? c.widget_key}
+            {defFor(c)?.label ?? c.widget_key}
           </Button>
         ))}
       </CardContent>
     </Card>
   );
 }
+
