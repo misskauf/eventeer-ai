@@ -1400,7 +1400,7 @@ function AnalyticsPage() {
                 onChange={(patch) => patchEntry(entry.widget_key, patch)}
                 extraControls={custom ? null : extraControlsFor(entry.widget_key)}
                 filtersControl={
-                  custom || entry.widget_key === "items" ? null : (
+                  custom || entry.widget_key === "items" || entry.widget_key === "goals" ? null : (
                     <CardFilters
                       value={entry.filters}
                       onChange={(filters) => patchEntry(entry.widget_key, { filters })}
