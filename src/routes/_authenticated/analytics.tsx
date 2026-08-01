@@ -221,6 +221,12 @@ function AnalyticsPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [members, setMembers] = useState<{ user_id: string; role: string }[]>([]);
+  const [items, setItems] = useState<EngineItem[]>([]);
+  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
+
+  // Custom widget builder
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [editingCustom, setEditingCustom] = useState<WidgetConfig | null>(null);
 
   const today = new Date();
   const [period, setPeriod] = useState("year");
@@ -240,10 +246,12 @@ function AnalyticsPage() {
 
   useEffect(() => {
     (async () => {
-      const [d, a, p, m] = await Promise.all([
+      const [d, a, p, m, it, sp] = await Promise.all([
         supabase
           .from("deals")
-          .select("id, owner_id, stage, source, estimated_value, created_at, updated_at, event_date")
+          .select(
+            "id, owner_id, stage, source, event_type, guest_count, estimated_value, created_at, updated_at, event_date",
+          )
           .order("created_at", { ascending: false })
           .limit(5000),
         supabase
@@ -253,11 +261,18 @@ function AnalyticsPage() {
           .limit(20000),
         supabase.from("proposals").select("deal_id, created_at, sent_at").limit(5000),
         supabase.from("user_roles").select("user_id, role"),
+        supabase
+          .from("deal_items_visible" as any)
+          .select("deal_id, item_type, item_id, item_name, space_id, line_total, line_cost")
+          .limit(20000),
+        supabase.from("spaces").select("id, name").limit(500),
       ]);
       setDeals((d.data as Deal[]) ?? []);
       setActivities((a.data as Activity[]) ?? []);
       setProposals((p.data as Proposal[]) ?? []);
       setMembers((m.data as any[]) ?? []);
+      setItems(((it.data as any[]) ?? []) as EngineItem[]);
+      setSpaces(((sp.data as any[]) ?? []) as { id: string; name: string }[]);
       setLoading(false);
     })();
   }, []);
@@ -267,7 +282,7 @@ function AnalyticsPage() {
   const visibleEntries = useMemo(
     () =>
       active.filter((e) => {
-        const def = WIDGET_MAP.get(e.widget_key);
+        const def = defFor(e);
         if (!def) return false;
         if (def.requiresCosts && !canViewCosts) return false;
         if (def.key === "reps" && members.length <= 1) return false;
@@ -275,6 +290,63 @@ function AnalyticsPage() {
       }),
     [active, canViewCosts, members.length, editing],
   );
+
+  const ownerLabel = (id: string) => `${id.slice(0, 8)}…`;
+  const spaceOptions = useMemo(
+    () => spaces.map((s) => ({ value: s.id, label: s.name })),
+    [spaces],
+  );
+  const ownerOptions = useMemo(
+    () =>
+      Array.from(new Set(deals.map((d) => d.owner_id))).map((id) => ({
+        value: id,
+        label: ownerLabel(id),
+      })),
+    [deals],
+  );
+  const eventTypeOptions = useMemo(
+    () =>
+      Array.from(new Set(deals.map((d) => d.event_type).filter(Boolean) as string[])).map((t) => ({
+        value: t,
+        label: t,
+      })),
+    [deals],
+  );
+  const stageOptions = useMemo(
+    () => STAGE_ORDER.map((s) => ({ value: s, label: stageLabel(s) })),
+    [],
+  );
+
+  function saveCustomWidget(custom: CustomWidget, chartType: string) {
+    const key = `custom:${custom.id}`;
+    const exists = active.some((e) => e.widget_key === key);
+    const next = exists
+      ? active.map((e) => (e.widget_key === key ? { ...e, custom, chart_type: chartType } : e))
+      : [
+          ...active,
+          {
+            widget_key: key,
+            visible: true,
+            chart_type: chartType,
+            size: (custom.dimension === "none" ? "sm" : "md") as WidgetConfig["size"],
+            date_range_override: null,
+            custom,
+          },
+        ];
+    if (editing) setDraft(next);
+    else void save(next);
+    setBuilderOpen(false);
+    setEditingCustom(null);
+    toast.success(exists ? "Widget updated." : "Widget added to your dashboard.");
+  }
+
+  function deleteCustomWidget(key: string) {
+    const next = active.filter((e) => e.widget_key !== key);
+    if (editing) setDraft(next);
+    else void save(next);
+    toast.success("Widget removed.");
+  }
+
 
   function patchEntry(key: string, patch: Partial<WidgetConfig>) {
     const next = active.map((e) => (e.widget_key === key ? { ...e, ...patch } : e));
