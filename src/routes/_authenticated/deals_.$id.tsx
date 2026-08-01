@@ -50,6 +50,7 @@ import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/dea
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 import { ContractsPanel } from "@/components/contracts-panel";
 import { InvoicePanel } from "@/components/invoice-panel";
+import { EventBriefPanel } from "@/components/event-brief-panel";
 
 
 
