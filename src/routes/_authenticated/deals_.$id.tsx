@@ -110,6 +110,7 @@ function DealDetail() {
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+  const [staffConfig, setStaffConfig] = useState<Record<string, { count?: number; hours?: number }>>({});
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
   const [packageHours, setPackageHours] = useState<Record<string, number>>({});
 
@@ -190,6 +191,7 @@ function DealDetail() {
       setSelectedPackages(cfg.package_ids ?? []);
       setSelectedExtras(cfg.extra_ids ?? []);
       setSelectedStaff(cfg.staff_ids ?? []);
+      setStaffConfig(cfg.staff_config ?? {});
       setPackageGuests(cfg.package_guests ?? {});
       setPackageHours(cfg.package_hours ?? {});
       setSeasonId(cfg.season_id ?? "none");
@@ -307,11 +309,12 @@ function DealDetail() {
       package_ids: Array.from(new Set([...selectedPackages, ...extraPkgs])),
       extra_ids: Array.from(new Set([...selectedExtras, ...extraExtras])),
       staff_ids: Array.from(new Set([...selectedStaff, ...extraStaff])),
+      staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, packageGuests, packageHours, altGroups]);
+  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups]);
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
@@ -366,6 +369,7 @@ function DealDetail() {
       package_ids: selectedPackages,
       extra_ids: selectedExtras,
       staff_ids: selectedStaff,
+      staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       season_id: seasonId,
@@ -1088,13 +1092,51 @@ function DealDetail() {
             <CardContent className="space-y-2">
               {staff.length === 0 && <EmptyHint to="/catalog/staff" label="Add staff roles in catalog" />}
               {staff.map((x) => (
-                <PickRow
-                  key={x.id}
-                  checked={selectedStaff.includes(x.id)}
-                  onChange={(v) => toggle(setSelectedStaff, x.id, v)}
-                  title={x.name}
-                  subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
-                />
+                <div key={x.id} className="space-y-2">
+                  <PickRow
+                    checked={selectedStaff.includes(x.id)}
+                    onChange={(v) => toggle(setSelectedStaff, x.id, v)}
+                    title={x.name}
+                    subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
+                  />
+                  {selectedStaff.includes(x.id) && x.pricing_type !== "per_person" && (
+                    <div className="flex flex-wrap items-center gap-3 pl-9 text-xs text-muted-foreground">
+                      <label className="flex items-center gap-2">
+                        Count
+                        <Input
+                          type="number"
+                          min={1}
+                          className="h-8 w-20"
+                          value={staffConfig[x.id]?.count ?? 1}
+                          onChange={(e) =>
+                            setStaffConfig((c) => ({
+                              ...c,
+                              [x.id]: { ...(c[x.id] ?? {}), count: Math.max(1, Number(e.target.value) || 1) },
+                            }))
+                          }
+                        />
+                      </label>
+                      {x.pricing_type === "per_hour" && (
+                        <label className="flex items-center gap-2">
+                          Hours
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.5"
+                            className="h-8 w-20"
+                            value={staffConfig[x.id]?.hours ?? 1}
+                            onChange={(e) =>
+                              setStaffConfig((c) => ({
+                                ...c,
+                                [x.id]: { ...(c[x.id] ?? {}), hours: Math.max(0, Number(e.target.value) || 0) },
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                  )}
+                </div>
               ))}
             </CardContent>
           </Card>
@@ -1549,6 +1591,13 @@ function DealDetail() {
                   extras: extras
                     .filter((e) => selectedExtras.includes(e.id))
                     .map((e) => ({ name: e.name })),
+                  staff: staff
+                    .filter((x) => selectedStaff.includes(x.id))
+                    .map((x) => ({
+                      name: x.name,
+                      qty: staffConfig[x.id]?.count ?? 1,
+                      hours: x.pricing_type === "per_hour" ? staffConfig[x.id]?.hours ?? 1 : undefined,
+                    })),
                   totals: totals
                     ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
                     : undefined,
@@ -1574,6 +1623,13 @@ function DealDetail() {
                   extras: extras
                     .filter((e) => selectedExtras.includes(e.id))
                     .map((e) => ({ name: e.name })),
+                  staff: staff
+                    .filter((x) => selectedStaff.includes(x.id))
+                    .map((x) => ({
+                      name: x.name,
+                      qty: staffConfig[x.id]?.count ?? 1,
+                      hours: x.pricing_type === "per_hour" ? staffConfig[x.id]?.hours ?? 1 : undefined,
+                    })),
                   totals: totals
                     ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
                     : undefined,
