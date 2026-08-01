@@ -365,6 +365,7 @@ export function runQuery(input: {
       const it = perDeal.get(d.id);
       if (it) {
         b.revenue += it.revenue;
+        b.gross += it.gross;
         b.cost += it.cost;
       }
     }
