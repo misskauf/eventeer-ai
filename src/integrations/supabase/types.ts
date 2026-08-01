@@ -283,6 +283,41 @@ export type Database = {
           },
         ]
       }
+      dashboard_layouts: {
+        Row: {
+          company_id: string
+          config: Json
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_layouts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_activities: {
         Row: {
           actor_id: string | null
