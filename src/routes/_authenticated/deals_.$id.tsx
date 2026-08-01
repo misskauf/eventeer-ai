@@ -50,6 +50,7 @@ import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/dea
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 import { ContractsPanel } from "@/components/contracts-panel";
 import { InvoicePanel } from "@/components/invoice-panel";
+import { EventBriefPanel } from "@/components/event-brief-panel";
 
 
 
@@ -142,6 +143,7 @@ function DealDetail() {
   const [approvalNoteOpen, setApprovalNoteOpen] = useState(false);
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [dealTab, setDealTab] = useState<"proposal" | "brief">("proposal");
 
 
 
@@ -966,6 +968,25 @@ function DealDetail() {
         </Card>
       )}
 
+      <div className="mb-4 flex gap-1 border-b">
+        {(["proposal", "brief"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setDealTab(t)}
+            className={`border-b-2 px-3 py-2 text-sm capitalize ${
+              dealTab === t
+                ? "border-primary font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {dealTab === "proposal" && (
+      <div>
       {/* PROPOSAL SECTION */}
       <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
         <h2 className="text-lg font-semibold">Proposal</h2>
@@ -1688,6 +1709,44 @@ function DealDetail() {
           </Card>
         </div>
       </div>
+      </div>
+      )}
+
+      {dealTab === "brief" && (
+        <EventBriefPanel
+          companyId={deal.company_id}
+          dealId={deal.id}
+          packageIds={selectedPackages}
+          briefExtras={{ statusLabel: deal.stage }}
+          ctx={{
+            deal,
+            company: { name: undefined, currency },
+            spaces: spaces.filter((s) => selectedSpaces.includes(s.id)).map((s) => ({ name: s.name })),
+            foodPackages: foodPackages.filter((p) => selectedPackages.includes(p.id)).map((p) => ({ name: p.name })),
+            beveragePackages: beveragePackages
+              .filter((p) => selectedPackages.includes(p.id))
+              .map((p) => ({ name: p.name, included_hours: p.included_hours })),
+            extras: extras.filter((e) => selectedExtras.includes(e.id)).map((e) => ({ name: e.name })),
+            staff: staff
+              .filter((x) => selectedStaff.includes(x.id))
+              .map((x) => ({
+                name: x.name,
+                qty: staffConfig[x.id]?.count ?? 1,
+                hours: x.pricing_type === "per_hour" ? staffConfig[x.id]?.hours ?? 1 : undefined,
+              })),
+            totals: totals
+              ? { subtotal: totals.net_subtotal, tax: totals.tax_subtotal, total: totals.grand_total }
+              : undefined,
+            event_hours: (packageHours && Object.values(packageHours)[0]) ?? null,
+            menu_selections: Object.entries(menuChoicesByPkg).flatMap(([pid, groups]) => {
+              const pkgName = packages.find((p) => p.id === pid)?.name ?? "";
+              return Object.entries(groups ?? {}).flatMap(([group, items]) =>
+                (items ?? []).length ? [`${pkgName} — ${group}: ${(items ?? []).join(", ")}`] : [],
+              );
+            }),
+          }}
+        />
+      )}
     </AppShell>
   );
 }

@@ -450,6 +450,54 @@ export type Database = {
           },
         ]
       }
+      event_briefs: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          generated_at: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          generated_at?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          generated_at?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_briefs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_briefs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: true
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       extras: {
         Row: {
           active: boolean
