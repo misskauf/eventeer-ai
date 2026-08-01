@@ -742,6 +742,28 @@ function DealDetail() {
         );
       })()}
 
+      {existingProposal?.status === "draft" &&
+        !existingProposal?.sent_at &&
+        (existingProposal?.constraints as any)?.autodrafted && (
+          <div className="mb-4 flex flex-wrap items-start gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium">Suggested draft from lead — review &amp; adjust</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                We pre-filled a space and packages from this lead. Nothing has been sent to the client yet.
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                document.getElementById("proposal-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            >
+              Review draft
+            </Button>
+          </div>
+        )}
+
       {showReminderBanner && (
         <div className="mb-4 flex flex-wrap items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           <Clock className="mt-0.5 h-4 w-4 flex-none" aria-hidden="true" />

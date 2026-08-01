@@ -1,52 +1,47 @@
 ## Goal
 
-Capture what was actually sold on each won deal as one row per item, then use those rows to power item-level revenue, margin, and attach-rate analytics. Costs stay internal and gated.
+When a lead form submission creates a deal, also create a **draft** proposal with a sensible space + package suggestion, so the manager opens the deal and finds a starting point instead of a blank builder. Nothing is ever auto-sent to the client.
 
-## 1. Migration: `deal_items`
+## 1. Migration
 
-Columns: `id`, `company_id`, `deal_id`, `proposal_id`, `item_type` (`space|package|extra|staff`), `item_id` (nullable — catalog item may be deleted later), `item_name` (snapshot), `space_id` (nullable, for grouping non-space lines under the booked space), `qty numeric`, `unit_price numeric`, `line_total numeric` (net), `line_gross numeric`, `unit_cost numeric`, `line_cost numeric`, `captured_at`, `created_at`.
+- `fb_packages.event_types text[] not null default '{}'`
+- `spaces.event_types text[] not null default '{}'` (same semantics, used for a mild tie-break on space choice)
 
-Indexes on `(company_id, deal_id)` and `(company_id, item_type, item_id)`. Unique on `(deal_id, item_type, item_id)` so re-snapshot is an upsert.
+Empty array = "suits any event type". No RLS changes needed (both tables are already company-scoped).
 
-Access rules:
-- Rows readable and writable only by members of the same company (existing `is_member_of` pattern), plus service role.
-- Cost columns are not protected by column-level RLS (Postgres RLS is row-level). Instead: a security-definer view `deal_items_visible` that returns `unit_cost`/`line_cost` as NULL unless the caller is owner or their role is in `companies.cost_visible_roles`, backed by a new `can_view_costs(uid)` SQL function. Analytics reads the view; the base table stays company-scoped.
+## 2. Catalog editor
 
-## 2. Snapshot logic
+In the Food and Beverage package editor (`catalog-packages-page.tsx`, via the shared `crud-list` field set) add a **"Suits event types"** field using the existing `tags` field type — free-text chips, matching the free-text `event_type` on deals (Wedding, Corporate, Birthday, …), with the hint "Leave empty to suit all event types". Show the tags in the list row next to min-guests. Same optional field on spaces.
 
-New `src/lib/deal-items.functions.ts` (`createServerFn` + `requireSupabaseAuth`), `snapshotDealItems({ dealId })`:
-- Loads the deal, its latest accepted proposal (`proposals.offer`) and the client's `proposal_selections.selection`.
-- Expands the selection through the same rules the pricing engine uses (`computeTotals` line output, using `sourceKind`/`sourceId`) so amounts always match the quoted totals — one row per selected space, package (plus its overtime folded into the package row), extra, and staff line. Fees/gratuity/discount lines are skipped.
-- Cost: read `cost` from the catalog row (`spaces.cost`, `fb_packages.cost`, `extras.cost`, `staff_roles.cost`) and multiply by the same quantity basis as the price (per person × guests, per hour × hours × count, flat × count, per event for spaces). There is no separate `item_costs` table in this project; the item's `cost` column is the source.
-- `space_id` = the booked space on the deal, so packages/extras/staff group under it.
-- Deletes rows for that deal that are no longer selected, upserts the rest — so re-running is idempotent.
+## 3. Suggestion engine
 
-Triggers for re-snapshot:
-- Called when a deal moves to `client_approved` or `signed`.
-- Called when the accepted proposal or the client selection changes on an already-won deal.
+New server-only helper `src/lib/lead-suggest.server.ts` → `buildSuggestedProposal(companyId, deal)`, using the admin client (the lead-form flow is public/unauthenticated, like the existing deal insert).
 
-## 3. Backfill
+Selection rules:
+- **Space**: active spaces only; smallest `capacity >= guest_count`; if none is big enough, the largest one; prefer a space whose `event_types` contains the deal's `event_type` (case-insensitive) when there is a tie. Skip if the venue has no spaces.
+- **Food package**: active, `min_guests <= guest_count`, and `event_types` empty or containing the event type. Pick the tagged match first, otherwise the untagged candidate that appears most recently in `updated_at`. Skip if no candidate.
+- **Beverage package**: same rule, applied to `kind = 'beverage'`.
+- Guest count of 0/unknown → skip the min-guests filter rather than suggesting nothing.
 
-A one-time owner-only server fn `backfillDealItems()` that runs the same snapshot over every deal currently in `client_approved`, `signed`, or later payment stages. Exposed as a "Rebuild item analytics" button on the Analytics page (owner only) with a result summary (deals processed, rows written). I will run it and report the counts before we treat the item numbers as authoritative.
+Offer JSON is built with exactly the shape the builder writes in `buildOfferConfig()`: `space_ids`, `package_ids`, `extra_ids: []`, `staff_ids: []`, `staff_config: {}`, `package_guests` seeded to `guest_count` for each chosen package, `package_hours: {}`, `season_id: "none"`, `discount: 0`, `discount_target: null`, `min_revenue_required` from the matching pricing rule (same helper logic as the builder), `service_charge_pct_override` from the company's `fee_config` gratuity default, `guest_count`, empty `alternative_groups` / menu maps. So the builder loads it with zero special-casing.
 
-## 4. Analytics additions
+Then, in one transaction-ish sequence:
+- insert `proposals` row: `version: 1`, `status: 'draft'`, `sent_at: null`, `constraints: { intro_markdown: "", autodrafted: true }`
+- update the deal `stage` to `proposal_draft`
+- insert `deal_activities` row `kind: 'lead_autodrafted'` with the chosen space/package ids in `meta`
 
-New "Items & margin" section in `src/routes/_authenticated/analytics.tsx`, respecting the existing period filter (by deal event date, falling back to won date):
+If neither a space nor any package can be suggested: do nothing at all — the deal stays as created, no proposal row, no stage change. Any failure inside the helper is caught and logged, never surfaced to the public form submitter.
 
-Always visible:
-- Best-selling packages, extras, and staff — count of bookings and € contribution, top 10 each.
-- Space bookings count / utilization.
-- Attach rate: % of booked deals with ≥1 extra and ≥1 staff line, plus average add-on value per booked deal.
+## 4. Hook into the lead form
 
-Gated behind `useCanViewCosts()`:
-- Revenue and margin per space (grouped bar: revenue, cost, margin).
-- Gross margin % overall, over time (by month), and by space.
-- Margin € and % columns on the best-seller tables.
+In `submitLeadForm` (`src/lib/lead-forms.functions.ts`), after the deal insert and its `deal_created` activity, call `buildSuggestedProposal` in a try/catch and pass its result into the notification: when a draft was created, the existing lead email/notification body gains a line "A suggested draft proposal is ready to review." (EN + DE strings alongside the existing lead notification copy).
 
-When the user cannot see costs, the cost columns come back NULL from the view and those widgets are not rendered at all.
+## 5. Manager review UX
+
+On `deals_.$id.tsx`: when the latest proposal is `status: 'draft'` with `constraints.autodrafted` and no later version exists, render a banner above the builder — **"Suggested draft from lead — review & adjust"**, with a short note that nothing has been sent yet and a button that scrolls to / opens the existing proposal builder with the draft already loaded (the loader already hydrates state from `proposals.offer`, so no new loading path). The banner disappears once the manager saves or sends a new version. No changes to send/approval logic.
 
 ## Technical notes
 
-- Aggregation stays client-side over `deal_items`, consistent with the existing dashboard; a few thousand rows is fine.
-- No change to the pricing engine, client proposal page, contract, invoice, or any public server function — costs never enter client-visible paths.
-- Snapshot rows are historical: later catalog price/cost edits do not rewrite past bookings unless the deal's accepted proposal itself changes.
+- Reuses the existing offer format and builder state hydration; no new proposal format or components.
+- Costs, client-visible payloads, and public server functions are untouched.
+- Suggestion runs server-side with admin access only inside the lead-form handler.

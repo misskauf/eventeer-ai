@@ -120,7 +120,7 @@ export const submitLeadForm = createServerFn({ method: "POST" })
     const { data: deal, error: dealErr } = await supabaseAdmin
       .from("deals")
       .insert(insertRow as any)
-      .select("id, company_id")
+      .select("id, company_id, guest_count, event_type, event_date")
       .single();
     if (dealErr || !deal) throw new Error(dealErr?.message ?? "Failed to create deal");
 
@@ -132,6 +132,21 @@ export const submitLeadForm = createServerFn({ method: "POST" })
       meta: { via: "lead_form", form_id: (form as any).id, form_slug: data.slug },
     } as any);
 
+    let draftCreated = false;
+    try {
+      const { buildSuggestedProposal } = await import("@/lib/lead-suggest.server");
+      const res = await buildSuggestedProposal(deal.company_id as string, {
+        id: deal.id as string,
+        company_id: deal.company_id as string,
+        guest_count: (deal as any).guest_count ?? 0,
+        event_type: (deal as any).event_type ?? null,
+        event_date: (deal as any).event_date ?? null,
+      });
+      draftCreated = res.created;
+    } catch (err) {
+      console.warn("[submitLeadForm] buildSuggestedProposal failed", err);
+    }
+
     try {
       const { notifyDeal } = await import("@/lib/notifications.server");
       await notifyDeal({
@@ -139,11 +154,14 @@ export const submitLeadForm = createServerFn({ method: "POST" })
         dealId: deal.id as string,
         kind: "lead_created",
         title: `New lead: ${clientName}`,
-        body: `${clientName}${dealPatch["client_company"] ? ` (${dealPatch["client_company"]})` : ""} — ${clientEmail}${dealPatch["event_date"] ? ` — ${dealPatch["event_date"]}` : ""}`,
+        body:
+          `${clientName}${dealPatch["client_company"] ? ` (${dealPatch["client_company"]})` : ""} — ${clientEmail}${dealPatch["event_date"] ? ` — ${dealPatch["event_date"]}` : ""}` +
+          (draftCreated ? `\n\nA suggested draft proposal is ready to review.` : ""),
       });
     } catch (err) {
       console.warn("[submitLeadForm] notifyDeal failed", err);
     }
+
 
     return {
       ok: true as const,
