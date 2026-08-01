@@ -111,6 +111,8 @@ export type Selection = {
   package_ids: string[];
   extra_ids: string[];
   staff_ids?: string[];
+  // per staff line overrides: how many people of that role, and hours (per_hour pricing)
+  staff_config?: Record<string, { count?: number; hours?: number }>;
   package_guests?: Record<string, number>; // override per package
   package_hours?: Record<string, number>; // override event hours per package
   event_date?: string | null; // ISO date, used for weekday-based pricing
