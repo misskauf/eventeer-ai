@@ -12,6 +12,7 @@ export type ContractContext = {
   foodPackages?: Array<{ name: string }>;
   beveragePackages?: Array<{ name: string; included_hours?: number | null }>;
   extras?: Array<{ name: string; qty?: number }>;
+  staff?: Array<{ name: string; qty?: number; hours?: number }>;
   totals?: { subtotal?: number; tax?: number; total?: number };
   event_hours?: number | null;
   menu_selections?: string[]; // human-readable lines
@@ -29,6 +30,7 @@ export const CONTRACT_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   { key: "drinks_package", label: "Drinks package" },
   { key: "menu_selections", label: "Menu selections" },
   { key: "extras", label: "Extras (list)" },
+  { key: "staff", label: "Staffing (list)" },
   { key: "line_items_table", label: "Line items table" },
   { key: "subtotal", label: "Subtotal" },
   { key: "service_charge", label: "Service charge" },
@@ -74,6 +76,18 @@ function extrasHtml(items?: Array<{ name: string; qty?: number }>): string {
   );
 }
 
+function staffHtml(items?: Array<{ name: string; qty?: number; hours?: number }>): string {
+  if (!items || items.length === 0) return "—";
+  return htmlList(
+    items.map((i) => {
+      const parts: string[] = [i.name];
+      if (i.qty && i.qty > 1) parts.push(`× ${i.qty}`);
+      if (i.hours) parts.push(`(${i.hours}h)`);
+      return parts.join(" ");
+    }),
+  );
+}
+
 function companyLogoHtml(company: any): string {
   const url = company?.logo_url;
   if (!url) return "";
@@ -97,6 +111,7 @@ export function buildPlaceholderValues(ctx: ContractContext): Record<string, str
     menu_selections:
       ctx.menu_selections && ctx.menu_selections.length ? htmlList(ctx.menu_selections) : "—",
     extras: extrasHtml(ctx.extras),
+    staff: staffHtml(ctx.staff),
     subtotal: t.subtotal != null ? money(t.subtotal, currency) : "—",
     tax: t.tax != null ? money(t.tax, currency) : "—",
     total: t.total != null ? money(t.total, currency) : "—",

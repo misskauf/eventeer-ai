@@ -124,6 +124,8 @@
     "reminder_body_line": "Kurze Rückfrage zu dem Event-Angebot, das wir Ihnen geschickt haben",
     "reminder_view_here": "Sie können es hier einsehen:",
     "reminder_reply_note": "Bei Fragen oder Änderungswünschen antworten Sie einfach auf diese E-Mail — gerne helfen wir weiter.",
-    "reminder_thanks": "Vielen Dank!"
+    "reminder_thanks": "Vielen Dank!",
+    "section_staffing": "Personal",
+    "staffing_included_note": "Das Personal wird vom Veranstaltungsort gestellt und ist im Gesamtpreis enthalten."
   }
 }

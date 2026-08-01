@@ -46,7 +46,12 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
       ...groups.filter((g) => g.category === "extra").flatMap((g) => g.item_ids),
     ]));
 
-    const [spacesRes, packagesRes, extrasRes, feeCfgRes, seasonRes] = await Promise.all([
+    const staffIds = Array.from(new Set<string>([
+      ...(offerCfg.staff_ids ?? []),
+      ...groups.filter((g) => g.category === "staff").flatMap((g) => g.item_ids),
+    ]));
+
+    const [spacesRes, packagesRes, extrasRes, staffRes, feeCfgRes, seasonRes] = await Promise.all([
       spaceIds.length
         ? supabaseAdmin.from("spaces").select("id, name, name_de, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, long_description_de, weekday_pricing").in("id", spaceIds)
         : Promise.resolve({ data: [] } as any),
@@ -55,6 +60,9 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
         : Promise.resolve({ data: [] } as any),
       extraIds.length
         ? supabaseAdmin.from("extras").select("id, name, name_de, pricing_type, price, basis, tax_rate_pct, long_description, long_description_de").in("id", extraIds)
+        : Promise.resolve({ data: [] } as any),
+      staffIds.length
+        ? supabaseAdmin.from("staff_roles").select("id, name, name_de, pricing_type, price, basis, tax_rate_pct, long_description, long_description_de").in("id", staffIds)
         : Promise.resolve({ data: [] } as any),
       supabaseAdmin.from("fee_config").select("*").eq("company_id", tok.company_id).maybeSingle(),
       offerCfg.season_id && offerCfg.season_id !== "none"
@@ -71,6 +79,7 @@ export const resolveProposalToken = createServerFn({ method: "GET" })
       spaces: spacesRes.data ?? [],
       packages: packagesRes.data ?? [],
       extras: extrasRes.data ?? [],
+      staff: staffRes.data ?? [],
       feeConfig: feeCfgRes.data ?? {},
       seasonMultiplier: (seasonRes as any).data?.multiplier ?? 1,
     };
