@@ -64,6 +64,8 @@ function TeamSettings() {
       </CardContent>
     </Card>
 
+    <PermissionMatrixCard />
+
     <CostVisibilityCard companyId={company.id} initial={company.cost_visible_roles ?? []} />
     </div>
   );
