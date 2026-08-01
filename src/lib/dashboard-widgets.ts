@@ -29,6 +29,8 @@ export type WidgetConfig = {
   filters?: CustomFilters;
   /** Overlay / compare against the previous equivalent period. */
   compare_previous?: boolean;
+  /** Goal card: `null` shows every goal for the current period, otherwise one goal. */
+  goal_id?: string | null;
   /** Present only for user-built widgets (`widget_key` = `custom:<id>`). */
   custom?: CustomWidget;
 };
