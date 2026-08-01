@@ -70,6 +70,14 @@ export function EventBriefPanel({
   const [company, setCompany] = useState<CompanyBrand | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tab, setTab] = useState("write");
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [recipients, setRecipients] = useState<
+    { user_id: string; role: string; email: string }[]
+  >([]);
+  const [pickedEmail, setPickedEmail] = useState<string>("");
+  const [customEmail, setCustomEmail] = useState("");
+  const [note, setNote] = useState("");
 
   const generate = useCallback(async () => {
     let allergenNotes: string[] = [];
