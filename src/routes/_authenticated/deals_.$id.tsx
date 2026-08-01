@@ -967,6 +967,25 @@ function DealDetail() {
         </Card>
       )}
 
+      <div className="mb-4 flex gap-1 border-b">
+        {(["proposal", "brief"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setDealTab(t)}
+            className={`border-b-2 px-3 py-2 text-sm capitalize ${
+              dealTab === t
+                ? "border-primary font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {dealTab === "proposal" && (
+      <div>
       {/* PROPOSAL SECTION */}
       <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
         <h2 className="text-lg font-semibold">Proposal</h2>
