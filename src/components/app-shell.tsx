@@ -77,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{company?.name ?? "Workspace"}</div>
+            <div className="truncate text-sm font-semibold">{company?.name ?? t("nav.workspace")}</div>
           </div>
         </div>
         <nav className="flex-1 space-y-1 p-2">
@@ -105,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="w-full justify-start text-muted-foreground"
             onClick={signOut}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
+            <LogOut className="mr-2 h-4 w-4" /> {t("nav.sign_out")}
           </Button>
         </div>
       </aside>
