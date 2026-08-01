@@ -65,7 +65,9 @@ export function CrudList<T extends { id: string }>({
     for (const f of fields) {
       const raw = fd.get(f.name);
       const str = raw == null ? "" : String(raw);
-      if (f.type === "number") {
+      if (f.type === "checkbox") {
+        payload[f.name] = raw != null;
+      } else if (f.type === "number") {
         payload[f.name] = str === "" ? (f.nullable ? null : 0) : Number(str);
       } else if (f.type === "tags" || f.type === "weekdays" || f.type === "custom") {
         try {
