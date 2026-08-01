@@ -18,7 +18,27 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { ContractDocument } from "@/components/contract-document";
 import { buildBriefHtml, type BriefExtras } from "@/lib/event-brief";
 import type { ContractContext } from "@/lib/contracts";
-import { Download, RefreshCw, Save } from "lucide-react";
+import { Download, Mail, RefreshCw, Save } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listBriefRecipients, sendBriefToManager } from "@/lib/event-brief.functions";
 
 type CompanyBrand = {
   name: string | null;
@@ -50,6 +70,14 @@ export function EventBriefPanel({
   const [company, setCompany] = useState<CompanyBrand | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tab, setTab] = useState("write");
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [recipients, setRecipients] = useState<
+    { user_id: string; role: string; email: string }[]
+  >([]);
+  const [pickedEmail, setPickedEmail] = useState<string>("");
+  const [customEmail, setCustomEmail] = useState("");
+  const [note, setNote] = useState("");
 
   const generate = useCallback(async () => {
     let allergenNotes: string[] = [];
@@ -131,6 +159,46 @@ export function EventBriefPanel({
     toast.info("Brief rebuilt from the current deal — review and save.");
   }
 
+  async function openSend() {
+    setSendOpen(true);
+    if (recipients.length === 0) {
+      try {
+        const res = await listBriefRecipients({ data: { company_id: companyId } });
+        setRecipients(res.recipients);
+        const manager = res.recipients.find((r) => r.role === "manager");
+        setPickedEmail(manager?.email ?? res.recipients[0]?.email ?? "__custom__");
+      } catch (err: any) {
+        toast.error(err?.message ?? "Could not load team members");
+        setPickedEmail("__custom__");
+      }
+    }
+  }
+
+  async function doSend() {
+    const to = pickedEmail === "__custom__" ? customEmail.trim() : pickedEmail;
+    if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      return toast.error("Enter a valid email address");
+    }
+    setSending(true);
+    try {
+      await sendBriefToManager({
+        data: {
+          deal_id: dealId,
+          to_email: to,
+          message: note.trim() || undefined,
+          body_html: DOMPurify.sanitize(body),
+        },
+      });
+      setSendOpen(false);
+      setNote("");
+      toast.success(`Brief sent to ${to}`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not send the brief");
+    } finally {
+      setSending(false);
+    }
+  }
+
   if (loading) return <div className="text-sm text-muted-foreground">Loading brief…</div>;
 
   return (
@@ -152,6 +220,9 @@ export function EventBriefPanel({
           </Button>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Download className="mr-1 h-4 w-4" /> Download PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={openSend}>
+            <Mail className="mr-1 h-4 w-4" /> Send to event manager
           </Button>
           <Button size="sm" disabled={saving || !dirty} onClick={() => save()}>
             <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : "Save"}
@@ -222,6 +293,71 @@ export function EventBriefPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={sendOpen} onOpenChange={setSendOpen}>
+        <DialogContent className="no-print sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send brief to event manager</DialogTitle>
+            <DialogDescription>
+              Sends the brief as it currently reads, plus a link to open the deal for the live
+              version.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Recipient</Label>
+              <Select value={pickedEmail} onValueChange={setPickedEmail}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a recipient" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipients.map((r) => (
+                    <SelectItem key={r.user_id} value={r.email}>
+                      {r.email} · {r.role}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__custom__">Other email…</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {pickedEmail === "__custom__" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="brief-custom-email">Email address</Label>
+                <Input
+                  id="brief-custom-email"
+                  type="email"
+                  value={customEmail}
+                  onChange={(e) => setCustomEmail(e.target.value)}
+                  placeholder="name@venue.com"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="brief-note">Message (optional)</Label>
+              <Textarea
+                id="brief-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Anything the team should know…"
+                rows={3}
+              />
+            </div>
+            {dirty && (
+              <p className="text-xs text-muted-foreground">
+                You have unsaved edits — they will be included in the email.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendOpen(false)} disabled={sending}>
+              Cancel
+            </Button>
+            <Button onClick={doSend} disabled={sending}>
+              {sending ? "Sending…" : "Send brief"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
