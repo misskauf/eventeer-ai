@@ -54,7 +54,18 @@ import {
   resolveRange,
   useDashboardConfig,
 } from "@/components/dashboard-config";
-import { WIDGET_MAP, defaultConfig, type WidgetConfig } from "@/lib/dashboard-widgets";
+import {
+  WIDGET_MAP,
+  defFor,
+  defaultConfig,
+  isCustomKey,
+  newCustomWidget,
+  type WidgetConfig,
+} from "@/lib/dashboard-widgets";
+import { CustomWidgetView } from "@/components/analytics-custom-widget";
+import { WidgetBuilderDialog } from "@/components/widget-builder-dialog";
+import type { CustomWidget, EngineItem } from "@/lib/analytics-engine";
+
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: () => (
