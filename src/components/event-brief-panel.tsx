@@ -221,6 +221,9 @@ export function EventBriefPanel({
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Download className="mr-1 h-4 w-4" /> Download PDF
           </Button>
+          <Button variant="outline" size="sm" onClick={openSend}>
+            <Mail className="mr-1 h-4 w-4" /> Send to event manager
+          </Button>
           <Button size="sm" disabled={saving || !dirty} onClick={() => save()}>
             <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : "Save"}
           </Button>
