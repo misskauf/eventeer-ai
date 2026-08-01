@@ -67,6 +67,13 @@ function SpacesPage() {
           { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
           ...(canViewCosts ? [costField("Internal cost per event")] : []),
           {
+            name: "event_types",
+            label: "Suits event types",
+            type: "tags" as const,
+            suggestions: ["Wedding", "Corporate", "Birthday", "Conference", "Gala", "Private dining"],
+            hint: "Leave empty to suit all event types. Used to suggest a draft proposal for new leads.",
+          },
+          {
             name: "weekday_pricing",
             label: "Price per weekday",
             type: "custom",
