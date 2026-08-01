@@ -230,6 +230,7 @@ export function defaultEntry(def: WidgetDef): WidgetConfig {
     date_range_override: null,
     filters: emptyFilters(),
     compare_previous: false,
+    goal_id: null,
     ...(def.custom ? { custom: def.custom } : {}),
   };
 }
