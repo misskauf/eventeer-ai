@@ -8,7 +8,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, EyeOff, GripVertical } from "lucide-react";
+import { Download, Eye, EyeOff, GitCompareArrows, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/lib/use-permissions";
 import { Button } from "@/components/ui/button";
@@ -186,6 +186,9 @@ export function WidgetShell({
   editing,
   onChange,
   extraControls,
+  filtersControl,
+  supportsCompare,
+  onExport,
   editActions,
   children,
 }: {
@@ -195,6 +198,9 @@ export function WidgetShell({
   editing: boolean;
   onChange: (patch: Partial<WidgetConfig>) => void;
   extraControls?: React.ReactNode;
+  filtersControl?: React.ReactNode;
+  supportsCompare?: boolean;
+  onExport?: () => void;
   editActions?: React.ReactNode;
   children: (ctx: { range: Range; chartType: string | null }) => React.ReactNode;
 }) {
@@ -265,7 +271,31 @@ export function WidgetShell({
             ) : (
               <>
                 {def.supportsRange && <RangeControl entry={entry} onChange={onChange} />}
+                {filtersControl}
                 {extraControls}
+                {supportsCompare && (
+                  <Button
+                    size="sm"
+                    variant={entry.compare_previous ? "secondary" : "ghost"}
+                    className="h-8 px-2 text-xs"
+                    aria-pressed={entry.compare_previous ? true : false}
+                    onClick={() => onChange({ compare_previous: !entry.compare_previous })}
+                  >
+                    <GitCompareArrows className="mr-1 h-3.5 w-3.5" />
+                    Compare
+                  </Button>
+                )}
+                {onExport && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2 text-xs"
+                    aria-label={`Export ${def.label} as CSV`}
+                    onClick={onExport}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                )}
                 {def.chartTypes.length > 0 && (
                   <ChartTypeToggle
                     value={entry.chart_type ?? def.defaultChartType ?? ""}

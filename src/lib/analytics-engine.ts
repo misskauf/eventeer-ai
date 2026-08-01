@@ -10,6 +10,8 @@ export type Measure =
   | "won_deals"
   | "conversion"
   | "revenue"
+  | "revenue_net"
+  | "revenue_gross"
   | "margin"
   | "margin_pct"
   | "avg_deal_size"
@@ -39,6 +41,10 @@ export type CustomFilters = {
   space_ids: string[];
   owner_ids: string[];
   event_types: string[];
+  /** Lead source: "manual" | "lead_form" | … */
+  sources?: string[];
+  /** F&B package item ids (from deal_items snapshots). */
+  package_ids?: string[];
 };
 
 export type CustomWidget = {
@@ -62,6 +68,8 @@ export const MEASURES: {
   { value: "won_deals", label: "Won deals", format: "count" },
   { value: "conversion", label: "Conversion rate", format: "percent", dealOnly: true },
   { value: "revenue", label: "Revenue", format: "currency" },
+  { value: "revenue_net", label: "Net revenue", format: "currency", requiresItems: true },
+  { value: "revenue_gross", label: "Gross revenue", format: "currency", requiresItems: true },
   { value: "margin", label: "Margin", format: "currency", requiresCosts: true, requiresItems: true },
   { value: "margin_pct", label: "Margin %", format: "percent", requiresCosts: true, requiresItems: true },
   { value: "avg_deal_size", label: "Average deal size", format: "currency" },
@@ -152,6 +160,7 @@ export type EngineItem = {
   item_name: string;
   space_id: string | null;
   line_total: number;
+  line_gross?: number | null;
   line_cost: number | null;
 };
 
@@ -204,7 +213,8 @@ type Bucket = {
   label: string;
   order: number;
   deals: EngineDeal[];
-  revenue: number; // item revenue, only used by item dimensions
+  revenue: number; // item revenue (net), only used by item dimensions
+  gross: number;
   cost: number;
   dealIds: Set<string>;
 };
@@ -226,13 +236,25 @@ export function runQuery(input: {
   if (bad) return { rows: [], total: 0, format, error: bad };
 
   const itemDim = DIMENSION_MAP.get(dimension)?.itemType ?? null;
-  const needsItems = itemDim !== null || measure === "margin" || measure === "margin_pct";
+  const needsItems =
+    itemDim !== null ||
+    measure === "margin" ||
+    measure === "margin_pct" ||
+    measure === "revenue_net" ||
+    measure === "revenue_gross";
 
   // --- filter deals -------------------------------------------------------
   const spaceFilter = new Set(filters.space_ids ?? []);
   const dealsWithSpace = new Set<string>();
   if (spaceFilter.size) {
     for (const i of items) if (i.space_id && spaceFilter.has(i.space_id)) dealsWithSpace.add(i.deal_id);
+  }
+  const packageFilter = new Set(filters.package_ids ?? []);
+  const dealsWithPackage = new Set<string>();
+  if (packageFilter.size) {
+    for (const i of items)
+      if (i.item_type === "package" && i.item_id && packageFilter.has(i.item_id))
+        dealsWithPackage.add(i.deal_id);
   }
 
   const useEventDate = dimension === "weekday_event";
@@ -242,7 +264,9 @@ export function runQuery(input: {
     if (filters.stages?.length && !filters.stages.includes(d.stage)) return false;
     if (filters.owner_ids?.length && !filters.owner_ids.includes(d.owner_id)) return false;
     if (filters.event_types?.length && !filters.event_types.includes(d.event_type ?? "")) return false;
+    if (filters.sources?.length && !filters.sources.includes(d.source || "manual")) return false;
     if (spaceFilter.size && !dealsWithSpace.has(d.id)) return false;
+    if (packageFilter.size && !dealsWithPackage.has(d.id)) return false;
     return true;
   });
 
@@ -259,11 +283,12 @@ export function runQuery(input: {
     };
   }
 
-  // Per-deal item totals, used by margin measures on deal-level dimensions.
-  const perDeal = new Map<string, { revenue: number; cost: number }>();
+  // Per-deal item totals, used by margin/net/gross measures on deal-level dimensions.
+  const perDeal = new Map<string, { revenue: number; gross: number; cost: number }>();
   for (const i of scopedItems) {
-    const row = perDeal.get(i.deal_id) ?? { revenue: 0, cost: 0 };
+    const row = perDeal.get(i.deal_id) ?? { revenue: 0, gross: 0, cost: 0 };
     row.revenue += num(i.line_total);
+    row.gross += num(i.line_gross ?? i.line_total);
     row.cost += num(i.line_cost);
     perDeal.set(i.deal_id, row);
   }
@@ -281,7 +306,7 @@ export function runQuery(input: {
   const bucket = (key: string, label: string, order: number) => {
     let b = buckets.get(key);
     if (!b) {
-      b = { key, label, order, deals: [], revenue: 0, cost: 0, dealIds: new Set() };
+      b = { key, label, order, deals: [], revenue: 0, gross: 0, cost: 0, dealIds: new Set() };
       buckets.set(key, b);
     }
     return b;
@@ -295,6 +320,7 @@ export function runQuery(input: {
       const key = i.item_id ?? i.item_name;
       const b = bucket(key, i.item_name || "—", 0);
       b.revenue += num(i.line_total);
+      b.gross += num(i.line_gross ?? i.line_total);
       b.cost += num(i.line_cost);
       if (!b.dealIds.has(i.deal_id)) {
         b.dealIds.add(i.deal_id);
@@ -339,6 +365,7 @@ export function runQuery(input: {
       const it = perDeal.get(d.id);
       if (it) {
         b.revenue += it.revenue;
+        b.gross += it.gross;
         b.cost += it.cost;
       }
     }
@@ -358,6 +385,10 @@ export function runQuery(input: {
         return itemDim
           ? b.revenue
           : won.reduce((s, d) => s + num(d.estimated_value), 0);
+      case "revenue_net":
+        return b.revenue;
+      case "revenue_gross":
+        return b.gross;
       case "margin":
         return b.revenue - b.cost;
       case "margin_pct":
@@ -404,6 +435,7 @@ export function runQuery(input: {
     order: 0,
     deals: itemDim ? [] : scoped,
     revenue: 0,
+    gross: 0,
     cost: 0,
     dealIds: new Set(),
   };
@@ -412,6 +444,7 @@ export function runQuery(input: {
     for (const i of scopedItems) {
       if (i.item_type !== itemDim) continue;
       allBucket.revenue += num(i.line_total);
+      allBucket.gross += num(i.line_gross ?? i.line_total);
       allBucket.cost += num(i.line_cost);
       if (!allBucket.dealIds.has(i.deal_id)) {
         allBucket.dealIds.add(i.deal_id);
@@ -425,6 +458,7 @@ export function runQuery(input: {
       const it = perDeal.get(d.id);
       if (it) {
         allBucket.revenue += it.revenue;
+        allBucket.gross += it.gross;
         allBucket.cost += it.cost;
       }
     }
