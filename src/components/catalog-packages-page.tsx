@@ -8,11 +8,13 @@ import { categoryDefault, categoryDefaultHours, resolveBasis, resolveTaxRate, ty
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
 import { MenuSelectionEditor, type MenuGroup } from "@/components/menu-selection-editor";
+import { CostMargin, costField, useCanViewCosts } from "@/lib/cost-visibility";
 
 
 export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
   const { companyId } = useCurrentCompany();
   const currency = useCompanyCurrency();
+  const { canViewCosts } = useCanViewCosts();
   const [defaults, setDefaults] = useState<CategoryDefaults | null>(null);
   const [sampleGuests, setSampleGuests] = useState(100);
 
@@ -60,6 +62,7 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
           { name: "name", label: "Name" },
           { name: "description", label: "Short description", type: "textarea", rows: 2 },
           { name: "price_per_person", label: "Price per person", type: "number", step: "0.01" },
+          ...(canViewCosts ? [costField("Internal cost per person")] : []),
           { name: "min_guests", label: "Minimum guests", type: "number", nullable: true },
           {
             name: "basis",
@@ -150,6 +153,9 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
                 </div>
                 <div className="text-xs text-muted-foreground">for {sampleGuests} guests</div>
               </div>
+              {canViewCosts && (
+                <CostMargin cost={r.cost} price={r.price_per_person} currency={currency} unit="/ guest" />
+              )}
               <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
             </div>
           );

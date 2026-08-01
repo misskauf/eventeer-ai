@@ -8,6 +8,7 @@ import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
+import { CostMargin, costField, useCanViewCosts } from "@/lib/cost-visibility";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ const WEEKDAYS = [
 function SpacesPage() {
   const { companyId } = useCurrentCompany();
   const currency = useCompanyCurrency();
+  const { canViewCosts } = useCanViewCosts();
   const [defaults, setDefaults] = useState<CategoryDefaults | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -63,6 +65,7 @@ function SpacesPage() {
           { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true },
           { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01" },
           { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
+          ...(canViewCosts ? [costField("Internal cost per event")] : []),
           {
             name: "weekday_pricing",
             label: "Price per weekday",
@@ -207,6 +210,7 @@ function SpacesPage() {
                   </div>
                 )}
               </div>
+              {canViewCosts && <CostMargin cost={r.cost} price={r.base_rental_fee} currency={currency} />}
               <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
               <div className="flex flex-wrap items-center gap-1 pt-1">
                 <span className="mr-1 text-[11px] uppercase tracking-wide text-muted-foreground">Available</span>

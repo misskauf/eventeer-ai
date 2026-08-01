@@ -8,6 +8,7 @@ import { PriceBreakdown } from "@/components/price-breakdown";
 import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
+import { CostMargin, costField, useCanViewCosts } from "@/lib/cost-visibility";
 
 export const Route = createFileRoute("/_authenticated/catalog/staff")({
   component: StaffPage,
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/catalog/staff")({
 function StaffPage() {
   const { companyId } = useCurrentCompany();
   const currency = useCompanyCurrency();
+  const { canViewCosts } = useCanViewCosts();
   const [defaults, setDefaults] = useState<CategoryDefaults | null>(null);
   const [sampleGuests, setSampleGuests] = useState(100);
 
@@ -67,6 +69,7 @@ function StaffPage() {
             ],
           },
           { name: "price", label: "Price", type: "number", step: "0.01" },
+          ...(canViewCosts ? [costField()] : []),
           {
             name: "basis",
             label: "Price basis",
@@ -135,6 +138,7 @@ function StaffPage() {
                   {r.pricing_type === "per_person" ? `for ${sampleGuests} guests` : ""}
                 </div>
               </div>
+              {canViewCosts && <CostMargin cost={r.cost} price={r.price} currency={currency} />}
               <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
             </div>
           );
