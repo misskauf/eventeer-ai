@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useCompanySettings } from "@/components/settings-shared";
 import { NON_OWNER_ROLES, useCompanyRole } from "@/lib/cost-visibility";
+import { PermissionMatrixCard } from "@/components/permission-matrix";
 
 export const Route = createFileRoute("/_authenticated/settings/team")({
   component: TeamSettings,
@@ -62,6 +63,8 @@ function TeamSettings() {
         )}
       </CardContent>
     </Card>
+
+    <PermissionMatrixCard />
 
     <CostVisibilityCard companyId={company.id} initial={company.cost_visible_roles ?? []} />
     </div>
