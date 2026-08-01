@@ -428,6 +428,32 @@ function DealDetail() {
     }
     const version = existingProposal ? existingProposal.version + 1 : 1;
     const status = send ? "sent" : "draft";
+
+    // Quote number: assigned on first send; later re-sends reuse the base with -vN.
+    let quoteNumber: string | null = null;
+    if (send) {
+      const { data: prior } = await supabase
+        .from("proposals")
+        .select("quote_number")
+        .eq("deal_id", deal.id)
+        .not("quote_number", "is", null)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const priorNumber = (prior as any)?.quote_number as string | undefined;
+      if (priorNumber) {
+        const m = priorNumber.match(/^(.*?)-v(\d+)$/);
+        const base = m ? m[1] : priorNumber;
+        const nextRev = m ? Number(m[2]) + 1 : 2;
+        quoteNumber = `${base}-v${nextRev}`;
+      } else {
+        const { data: generated, error: qErr } = await supabase.rpc("next_quote_number", {
+          _company_id: deal.company_id,
+        });
+        if (qErr) { toast.error(qErr.message); return null; }
+        quoteNumber = generated as unknown as string;
+      }
+    }
     const { data: newProp, error } = await supabase
       .from("proposals")
       .insert({
