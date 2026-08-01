@@ -231,6 +231,7 @@ function AnalyticsPage() {
 
   // Custom widget builder
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [drilldown, setDrilldown] = useState<Drilldown>(null);
   const [editingCustom, setEditingCustom] = useState<WidgetConfig | null>(null);
 
   const today = new Date();
@@ -632,6 +633,127 @@ function AnalyticsPage() {
 
   const funnelMax = funnel.steps[0]?.value || 1;
 
+  /* ---------------- drill-down + export ---------------- */
+
+  const openDrilldown = (title: string, list: Deal[]) =>
+    setDrilldown({
+      title,
+      deals: list.map((d) => ({
+        id: d.id,
+        client_name: d.client_name,
+        stage: d.stage,
+        estimated_value: Number(d.estimated_value || 0),
+        created_at: d.created_at,
+        event_date: d.event_date,
+      })),
+    });
+
+  function openMonthDrilldown(key: string, month?: string) {
+    if (!month) return;
+    const list = byCreated(rangeFor(key), dealsFor(key)).filter((d) => monthKey(d.created_at) === month);
+    openDrilldown(`Leads · ${month}`, list);
+  }
+
+  function openStageDrilldown(stage?: string, label?: string) {
+    if (!stage) return;
+    const list = byCreated(stageRange, dealsFor("stage")).filter((d) => d.stage === stage);
+    openDrilldown(`${label ?? stageLabel(stage)} deals`, list);
+  }
+
+  function openWeekdayDrilldown(day?: string) {
+    if (!day) return;
+    const idx = WEEKDAYS.indexOf(day);
+    const list = dealsFor("weekday");
+    const rows =
+      weekdayMetric === "revenue"
+        ? byEvent(weekdayRange, list).filter(
+            (d) => WON_STAGES.has(d.stage) && new Date(d.event_date!).getDay() === idx,
+          )
+        : byCreated(weekdayRange, list).filter((d) => new Date(d.created_at).getDay() === idx);
+    openDrilldown(`${day} · ${weekdayMetric === "revenue" ? "event revenue" : "requests"}`, rows);
+  }
+
+  function exportCard(key: string) {
+    const label = defFor(entryFor(key))?.label ?? key;
+    const file = `${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.csv`;
+    let csv: string | null = null;
+    if (key === "leads")
+      csv = toCsv(["Month", "Leads"], leadsOverTime.map((r: any) => [r.month, r.total]));
+    else if (key === "revenue")
+      csv = toCsv(["Month", "Revenue"], revenueOverTime.map((r) => [r.month, r.value]));
+    else if (key === "stage")
+      csv = toCsv(
+        ["Stage", "Deals", "Value"],
+        stageDistribution.map((r) => [r.label, r.count, r.value]),
+      );
+    else if (key === "funnel")
+      csv = toCsv(["Step", "Deals"], funnel.steps.map((r) => [r.name, r.value]));
+    else if (key === "weekday")
+      csv = toCsv(["Weekday", "Requests", "Revenue"], weekdayRows.map((r) => [r.day, r.requests, r.revenue]));
+    else if (key === "revenue_month")
+      csv = toCsv(["Month", "Revenue"], revenueByMonth.map((r) => [r.month, r.revenue]));
+    else if (key === "velocity")
+      csv = toCsv(["Transition", "Avg days", "Samples"], velocity.rows.map((r) => [r.transition, r.days, r.n]));
+    else if (key === "reps")
+      csv = toCsv(
+        ["Owner", "Deals", "Won", "Win %", "Revenue"],
+        reps.map((r) => [r.name, r.deals, r.won, r.winPct.toFixed(0), r.revenue]),
+      );
+    else if (key === "kpis")
+      csv = toCsv(
+        ["Metric", "Value"],
+        [
+          ["Leads", kpis.leads],
+          ["Won deals", kpis.wonCount],
+          ["Conversion %", kpis.conversion.toFixed(1)],
+          ["Booked revenue", kpis.bookedRevenue],
+          ["Open pipeline", kpis.pipeline],
+          ["Average deal size", kpis.avgDeal],
+          ["Avg days to win", kpis.avgDaysToWin?.toFixed(1) ?? ""],
+        ],
+      );
+    if (!csv) {
+      toast.error("This card has no tabular export.");
+      return;
+    }
+    downloadCsv(file, csv);
+  }
+
+  const EXPORTABLE = new Set([
+    "kpis",
+    "leads",
+    "funnel",
+    "stage",
+    "revenue",
+    "weekday",
+    "revenue_month",
+    "velocity",
+    "reps",
+  ]);
+  const COMPARABLE = new Set(["leads", "revenue"]);
+
+  const sourceOptions = useMemo(
+    () =>
+      Array.from(new Set(deals.map((d) => d.source || "manual"))).map((v) => ({ value: v, label: v })),
+    [deals],
+  );
+  const packageOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const i of items) if (i.item_type === "package" && i.item_id) map.set(i.item_id, i.item_name);
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [items]);
+  const filterOptions = useMemo(
+    () => ({
+      stages: stageOptions,
+      spaces: spaceOptions,
+      owners: ownerOptions,
+      eventTypes: eventTypeOptions,
+      sources: sourceOptions,
+      packages: packageOptions,
+    }),
+    [stageOptions, spaceOptions, ownerOptions, eventTypeOptions, sourceOptions, packageOptions],
+  );
+
   /* ---------------- widget bodies ---------------- */
 
   function renderWidget(key: string, chartType: string | null): React.ReactNode {
@@ -710,6 +832,17 @@ function AnalyticsPage() {
                     ) : (
                       <Line type="monotone" dataKey="total" name="Leads" stroke={CHART_COLORS[0]} strokeWidth={2} dot />
                     )}
+                    {entryFor("leads").compare_previous && (
+                      <Line
+                        type="monotone"
+                        dataKey="prev"
+                        name="Previous period"
+                        stroke={CHART_COLORS[5]}
+                        strokeDasharray="4 4"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    )}
                   </LineChart>
                 ) : (
                   <BarChart data={leadsOverTime}>
@@ -725,7 +858,25 @@ function AnalyticsPage() {
                         ))}
                       </>
                     ) : (
-                      <Bar dataKey="total" name="Leads" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} maxBarSize={64} />
+                      <Bar
+                        dataKey="total"
+                        name="Leads"
+                        fill={CHART_COLORS[0]}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={64}
+                        cursor="pointer"
+                        onClick={(d: any) => openMonthDrilldown("leads", d?.month)}
+                      />
+                    )}
+                    {entryFor("leads").compare_previous && (
+                      <Bar
+                        dataKey="prev"
+                        name="Previous period"
+                        fill={CHART_COLORS[5]}
+                        fillOpacity={0.45}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={64}
+                      />
                     )}
                   </BarChart>
                 )}
@@ -792,7 +943,13 @@ function AnalyticsPage() {
                     <RTooltip
                       formatter={(v: any) => (stageMetric === "value" ? money(Number(v), currency) : String(v))}
                     />
-                    <Bar dataKey={stageMetric} radius={[4, 4, 0, 0]} maxBarSize={48}>
+                    <Bar
+                      dataKey={stageMetric}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={48}
+                      cursor="pointer"
+                      onClick={(d: any) => openStageDrilldown(d?.stage, d?.label)}
+                    >
                       {stageDistribution.map((_, i) => (
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
@@ -837,6 +994,9 @@ function AnalyticsPage() {
                     <YAxis tick={{ fontSize: 12 }} width={80} />
                     <RTooltip formatter={(v: any) => money(Number(v), currency)} />
                     <Line type="monotone" dataKey="value" name="Revenue" stroke={CHART_COLORS[0]} strokeWidth={2} dot />
+                    {entryFor("revenue").compare_previous && (
+                      <Line type="monotone" dataKey="prev" name="Previous period" stroke={CHART_COLORS[5]} strokeDasharray="4 4" strokeWidth={2} dot={false} />
+                    )}
                   </LineChart>
                 ) : chartType === "bar" ? (
                   <BarChart data={revenueOverTime}>
@@ -845,6 +1005,9 @@ function AnalyticsPage() {
                     <YAxis tick={{ fontSize: 12 }} width={80} />
                     <RTooltip formatter={(v: any) => money(Number(v), currency)} />
                     <Bar dataKey="value" name="Revenue" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} maxBarSize={56} />
+                    {entryFor("revenue").compare_previous && (
+                      <Bar dataKey="prev" name="Previous period" fill={CHART_COLORS[5]} fillOpacity={0.45} radius={[4, 4, 0, 0]} maxBarSize={56} />
+                    )}
                   </BarChart>
                 ) : (
                   <AreaChart data={revenueOverTime}>
@@ -860,6 +1023,9 @@ function AnalyticsPage() {
                       fill="hsl(var(--primary) / 0.18)"
                       strokeWidth={2}
                     />
+                    {entryFor("revenue").compare_previous && (
+                      <Line type="monotone" dataKey="prev" name="Previous period" stroke={CHART_COLORS[5]} strokeDasharray="4 4" strokeWidth={2} dot={false} />
+                    )}
                   </AreaChart>
                 )}
               </ResponsiveContainer>
@@ -884,6 +1050,8 @@ function AnalyticsPage() {
                   fill={weekdayMetric === "revenue" ? CHART_COLORS[2] : CHART_COLORS[0]}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={48}
+                  cursor="pointer"
+                  onClick={(d: any) => openWeekdayDrilldown(d?.day)}
                 />
               </BarChart>
             </ResponsiveContainer>
