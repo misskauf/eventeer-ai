@@ -8,6 +8,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { useTranslation, applyStoredLanguage } from "@/i18n";
 import { usePermissions } from "@/lib/use-permissions";
 import type { PermissionModule } from "@/lib/permissions";
+import { PaywallGate } from "@/components/paywall-gate";
 
 type Company = {
   id: string;
@@ -135,7 +136,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="flex h-14 items-center justify-end gap-2 border-b bg-background px-6">
           <NotificationsBell />
         </header>
-        <div className="mx-auto max-w-6xl p-6">{children}</div>
+        <div className="mx-auto max-w-6xl p-6">
+          <PaywallGate>{children}</PaywallGate>
+        </div>
       </div>
     </div>
   );
