@@ -12,9 +12,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { acceptInvites } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    next: typeof s.next === "string" ? s.next : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } =>
+    typeof s.next === "string" ? { next: s.next } : {},
+
   component: AuthPage,
 });
 
