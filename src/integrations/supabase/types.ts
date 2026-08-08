@@ -16,7 +16,9 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          activated_at: string | null
           address: string | null
+          billing_note: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -36,13 +38,17 @@ export type Database = {
           quote_seq_padding: number
           quote_seq_year: number | null
           require_deal_approval: boolean
+          subscription_status: string
           timezone: string
+          trial_ends_at: string | null
           updated_at: string
           venue_code: string | null
           website: string | null
         }
         Insert: {
+          activated_at?: string | null
           address?: string | null
+          billing_note?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -62,13 +68,17 @@ export type Database = {
           quote_seq_padding?: number
           quote_seq_year?: number | null
           require_deal_approval?: boolean
+          subscription_status?: string
           timezone?: string
+          trial_ends_at?: string | null
           updated_at?: string
           venue_code?: string | null
           website?: string | null
         }
         Update: {
+          activated_at?: string | null
           address?: string | null
+          billing_note?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -88,7 +98,9 @@ export type Database = {
           quote_seq_padding?: number
           quote_seq_year?: number | null
           require_deal_approval?: boolean
+          subscription_status?: string
           timezone?: string
+          trial_ends_at?: string | null
           updated_at?: string
           venue_code?: string | null
           website?: string | null
