@@ -298,15 +298,27 @@ export function TeamMembersCard() {
                     expires {new Date(i.expires_at).toLocaleDateString()}
                   </span>
                   {canManage && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => run(() => revoke({ data: { invite_id: i.id } }), "Invitation revoked")}
-                    >
-                      Revoke
-                    </Button>
+                    <>
+                      {i.token && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyLink(inviteLink(i.token as string))}
+                        >
+                          Copy link
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => run(() => revoke({ data: { invite_id: i.id } }), "Invitation revoked")}
+                      >
+                        Revoke
+                      </Button>
+                    </>
                   )}
+
                 </div>
               ))}
             </div>
