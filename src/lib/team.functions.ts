@@ -93,19 +93,23 @@ export const listTeam = createServerFn({ method: "GET" })
 
     const { data: invites } = await supabaseAdmin
       .from("company_invites")
-      .select("id, email, role, expires_at, accepted_at, created_at")
+      .select("id, email, role, expires_at, accepted_at, created_at, token")
       .eq("company_id", companyId)
       .is("accepted_at", null)
       .order("created_at", { ascending: false });
 
+    const canManage = level === "admin";
+
     return {
       companyId,
-      canManage: level === "admin",
+      canManage,
       callerIsOwner: await isOwner(companyId, context.userId),
       members,
-      invites: invites ?? [],
+      // Only admins may re-copy an invite link.
+      invites: (invites ?? []).map((i) => ({ ...i, token: canManage ? i.token : null })),
     };
   });
+
 
 /** Create an invite and email the accept link. */
 export const inviteMember = createServerFn({ method: "POST" })
