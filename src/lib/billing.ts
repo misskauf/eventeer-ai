@@ -22,9 +22,7 @@ export type TrialState = {
 };
 
 export function getTrialState(company: BillingCompany | null | undefined): TrialState {
-  const status = ((company?.subscription_status as SubscriptionStatus) ?? "active") satisfies
-    | SubscriptionStatus
-    | string as SubscriptionStatus;
+  const status = (company?.subscription_status ?? "active") as SubscriptionStatus;
 
   if (status === "active" || status === "comped") {
     return { status, locked: false, isTrialing: false, daysLeft: 0 };
