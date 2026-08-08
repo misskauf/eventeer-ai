@@ -1,17 +1,42 @@
 ## Goal
 
-In the Analytics dashboard's edit mode, each custom widget card gets a **Duplicate** action next to Edit and Delete, creating an independent copy with the same measure, dimension, and filters — ready to tweak into a variant.
+Every company gets a 60-day free trial. When the trial ends, the app is locked behind a paywall screen — but nothing is ever deleted, and existing companies are grandfathered as paying accounts.
 
-## Behaviour
+## Database migration
 
-- Duplicate appears only on user-built (custom) widget cards, alongside Edit / Delete, and only while edit mode is on. Built-in cards (KPIs, Funnel, Revenue goals, …) stay single-instance since they are identified by a fixed key.
-- The copy gets a fresh widget ID, the title `"<original title> (copy)"`, and carries over: measure, dimension, all filters, chart type, card size, and any per-card date-range override.
-- It is inserted directly after the original in the grid, so it appears right where the user clicked.
-- Original and copy are fully independent afterwards — editing one does not touch the other.
-- Follows the existing save behaviour: while in edit mode the change goes into the unsaved draft (applied on Save), otherwise it persists immediately, same as Delete does today.
-- A short toast confirms: "Widget duplicated."
+Add to `companies`:
+- `trial_ends_at` (timestamp, nullable)
+- `subscription_status` (text, default `trialing`, allowed: `trialing`, `active`, `expired`, `comped`)
+- `activated_at` (timestamp, nullable)
+- `billing_note` (text, nullable)
+
+Also:
+- Update `create_company_workspace` so new workspaces start with `trial_ends_at = now() + 60 days` and `subscription_status = 'trialing'`.
+- Backfill: every company that exists today becomes `subscription_status = 'active'` with `activated_at = now()` — no current account gets locked out.
+- Owners/admins can edit the billing fields; all members can read them (needed by the access gate).
+
+## Access rules
+
+| Status | Result |
+| --- | --- |
+| `active`, `comped` | Full access, no banner |
+| `trialing`, still within trial | Full access + banner "X days left in your free trial" |
+| `trialing` past `trial_ends_at`, or `expired` | Locked — paywall screen |
+
+Paywall screen:
+- Owner: "Your 60-day free trial has ended. To keep using EventFlow, please subscribe — contact <support email>." Owner can still reach the billing/contact screen and account settings (Settings → Company / Team), plus sign out.
+- Other members: simpler message — "Your team's trial has ended — ask your account owner to subscribe." Sign out only.
+
+Data is untouched in every case; this only gates the UI.
 
 ## Technical notes
 
-- `src/routes/_authenticated/analytics.tsx`: add a `duplicateCustomWidget(key)` helper next to `deleteCustomWidget`. It finds the entry, clones `entry.custom` with `crypto.randomUUID()` and the `(copy)` title, builds a new `WidgetConfig` with `widget_key = custom:<newId>` reusing `chart_type`, `size`, `filters`, and `date_range_override`, and splices it in after the source index. Render a Copy-icon button in the existing `editActions` block for custom entries.
-- No changes to `dashboard-widgets.ts`, the engine, or the database — the layout config already stores custom widgets as a list, and `normalizeConfig` accepts the new entry as-is.
+- New `src/lib/billing.ts`: `TRIAL_DAYS = 60` (the single constant), plus `getTrialState(company)` returning `{ status, locked, daysLeft, isTrialing }`.
+- New `src/lib/use-subscription.ts`: hook reading the current company's `subscription_status` / `trial_ends_at` (same pattern as `usePermissions`).
+- New `src/components/paywall-gate.tsx`: renders children, the trial banner, or the paywall screen. Mounted inside `AppShell` so every authenticated page is covered with one change; Settings routes stay reachable for owners.
+- `src/components/app-shell.tsx`: fetch the two extra columns alongside the existing company query and wrap `{children}`.
+- No changes to deals/proposals/analytics logic.
+
+## Open item
+
+The paywall needs a contact email address to show. Tell me which address to use, otherwise I'll wire it as a constant in `src/lib/billing.ts` that you can edit in one place.
