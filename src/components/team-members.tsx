@@ -107,7 +107,13 @@ export function TeamMembersCard() {
             <p className="text-sm text-muted-foreground">People with access to this company.</p>
           </div>
           {canManage && (
-            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+            <Dialog
+              open={inviteOpen}
+              onOpenChange={(o) => {
+                setInviteOpen(o);
+                if (!o) setLastLink(null);
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">Invite member</Button>
               </DialogTrigger>
@@ -119,12 +125,20 @@ export function TeamMembersCard() {
                   className="space-y-3"
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    const email = String(new FormData(e.currentTarget).get("email") ?? "");
-                    await run(
-                      () => invite({ data: { email, role: inviteRole as never } }),
-                      "Invitation sent",
-                    );
-                    setInviteOpen(false);
+                    const form = e.currentTarget;
+                    const email = String(new FormData(form).get("email") ?? "");
+                    setBusy(true);
+                    try {
+                      const res = await invite({ data: { email, role: inviteRole as never } });
+                      toast.success("Invitation sent");
+                      setLastLink(res?.link ?? null);
+                      form.reset();
+                      await refresh();
+                    } catch (err: any) {
+                      toast.error(err?.message ?? "Action failed");
+                    } finally {
+                      setBusy(false);
+                    }
                   }}
                 >
                   <div className="space-y-1.5">
@@ -144,8 +158,29 @@ export function TeamMembersCard() {
                   </div>
                   <Button className="w-full" disabled={busy}>Send invitation</Button>
                 </form>
+                {lastLink && (
+                  <div className="space-y-2 rounded-md border bg-muted/40 p-3">
+                    <div className="text-sm font-medium">Invitation link</div>
+                    <p className="text-xs text-muted-foreground">
+                      The email is on its way. If it doesn't arrive, share this link directly — it
+                      only works for the invited email address.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input readOnly value={lastLink} className="h-8 text-xs" />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyLink(lastLink)}
+                      >
+                        Copy link
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
+
           )}
         </div>
       </CardHeader>
