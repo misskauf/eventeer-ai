@@ -52,6 +52,21 @@ export function TeamMembersCard() {
   const [busy, setBusy] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteRole, setInviteRole] = useState("sales_manager");
+  const [lastLink, setLastLink] = useState<string | null>(null);
+
+  async function copyLink(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Invite link copied");
+    } catch {
+      toast.error("Couldn't copy — select and copy the link manually");
+    }
+  }
+
+  function inviteLink(token: string) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/invite/${token}`;
+  }
 
   async function refresh() {
     try {
@@ -77,6 +92,7 @@ export function TeamMembersCard() {
       setBusy(false);
     }
   }
+
 
   if (!data) return <div className="text-sm text-muted-foreground">Loading…</div>;
   const { canManage, callerIsOwner, members, invites } = data;
