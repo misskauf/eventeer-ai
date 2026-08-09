@@ -230,7 +230,7 @@ export function CrudList<T extends { id: string }>({
               <Plus className="mr-1 h-4 w-4" /> Add {title}
             </Button>
           </DialogTrigger>
-          <DialogContent className={`max-h-[85vh] overflow-y-auto${grouped ? " sm:max-w-2xl" : ""}`}>
+          <DialogContent className={`max-h-[85vh] overflow-y-auto${grouped || sectioned ? " sm:max-w-2xl" : ""}`}>
             <DialogHeader>
               <DialogTitle>{editing ? `Edit ${title}` : `New ${title}`}</DialogTitle>
             </DialogHeader>
@@ -261,6 +261,17 @@ export function CrudList<T extends { id: string }>({
                     </div>
                   ))}
                 </>
+              ) : sectioned ? (
+                activeSections.map((s, i) => (
+                  <div key={s || `_${i}`} className={`space-y-3${i > 0 ? " border-t pt-4" : ""}`}>
+                    {s && (
+                      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {s}
+                      </div>
+                    )}
+                    {fields.filter((f) => (f.section ?? "") === s).map((f) => renderField(f))}
+                  </div>
+                ))
               ) : (
                 fields.map((f) => renderField(f))
               )}
