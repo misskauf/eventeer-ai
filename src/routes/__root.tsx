@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { APP_TITLE } from "../lib/app-brand";
 
 function NotFoundComponent() {
   return (
@@ -78,13 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Proposalist — Event proposals from inquiry to signed" },
+      { title: APP_TITLE },
       {
         name: "description",
         content:
           "Build personalised event proposals, let clients configure options through a magic link, and track every deal through your pipeline.",
       },
-      { property: "og:title", content: "Proposalist — Event proposals from inquiry to signed" },
+      { property: "og:title", content: APP_TITLE },
       {
         property: "og:description",
         content:

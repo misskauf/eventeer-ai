@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { APP_NAME } from "@/lib/app-brand";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -88,9 +89,9 @@ function Consent() {
     <div className="grid min-h-screen place-items-center bg-muted/30 p-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Connect {clientName} to Proposalist</CardTitle>
+          <CardTitle>Connect {clientName} to {APP_NAME}</CardTitle>
           <CardDescription>
-            This lets {clientName} use Proposalist as you. It cannot bypass your company's
+            This lets {clientName} use {APP_NAME} as you. It cannot bypass your company's
             permissions.
           </CardDescription>
         </CardHeader>
