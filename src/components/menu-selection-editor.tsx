@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, LayoutList, ListChecks, Layers } from "lucide-react";
 
 export type MenuOption = { label: string; description?: string };
 export type MenuGroup = { label: string; max_select: number; options: MenuOption[] };
@@ -15,6 +15,9 @@ export function MenuSelectionEditor({
   defaultMode,
   defaultGroups,
   defaultTotalMax,
+  title = "Menu selection",
+  modeLabels,
+  itemNoun = "menu item",
 }: {
   modeName: string;
   groupsName: string;
@@ -22,7 +25,16 @@ export function MenuSelectionEditor({
   defaultMode: "fixed" | "single_group" | "multi_group";
   defaultGroups: MenuGroup[];
   defaultTotalMax?: number | null;
+  title?: string;
+  modeLabels?: { fixed: string; single_group: string; multi_group: string };
+  itemNoun?: string;
 }) {
+  const labels = modeLabels ?? {
+    fixed: "Fixed menu",
+    single_group: "Menu items (one group)",
+    multi_group: "Menu items (multiple groups)",
+  };
+  const nounTitle = itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1);
   const [mode, setMode] = useState<"fixed" | "single_group" | "multi_group">(defaultMode);
   const [groups, setGroups] = useState<MenuGroup[]>(
     defaultGroups.length
