@@ -43,6 +43,8 @@ export type Field = {
   placeholder?: string;
   /** Optional tab grouping. If no field has a group, the form renders ungrouped. */
   group?: FieldGroup;
+  /** Optional stacked section header grouping (mutually exclusive with tabs). */
+  section?: string;
   // For type "custom": renders arbitrary UI that must write a JSON string to a
   // hidden input named `name`. The stored value is JSON.parse'd on submit.
   render?: (currentValue: any, editingRow: any) => ReactNode;
