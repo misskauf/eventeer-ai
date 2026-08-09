@@ -94,41 +94,56 @@ export function MenuSelectionEditor({
       {totalName && <input type="hidden" name={totalName} value={serializedTotal} />}
 
       <div className="space-y-2">
-        <Label>Menu selection</Label>
-        <div className="flex flex-wrap gap-2 text-xs">
+        <Label>{title}</Label>
+        <div className="grid gap-2 sm:grid-cols-3">
           {(
             [
-              { v: "fixed", label: "Fixed menu" },
-              { v: "single_group", label: "Menu items (one group)" },
-              { v: "multi_group", label: "Menu items (multiple groups)" },
+              {
+                v: "fixed",
+                icon: LayoutList,
+                label: labels.fixed,
+                desc: "Served as-is, no guest choice.",
+              },
+              {
+                v: "single_group",
+                icon: ListChecks,
+                label: labels.single_group,
+                desc: `Guests pick from one list of ${itemNoun}s.`,
+              },
+              {
+                v: "multi_group",
+                icon: Layers,
+                label: labels.multi_group,
+                desc: "Several groups, guests pick from each.",
+              },
             ] as const
           ).map((o) => {
             const active = mode === o.v;
+            const Icon = o.icon;
             return (
               <button
                 key={o.v}
                 type="button"
                 onClick={() => setMode(o.v)}
+                aria-pressed={active}
                 className={
-                  "rounded-full border px-3 py-1 transition " +
+                  "flex h-full flex-col items-start gap-1 rounded-md border p-3 text-left transition " +
                   (active
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground")
+                    : "border-border hover:border-primary/50")
                 }
               >
-                {o.label}
+                <Icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{o.label}</span>
+                <span className={"text-xs " + (active ? "text-primary/80" : "text-muted-foreground")}>
+                  {o.desc}
+                </span>
               </button>
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {mode === "fixed"
-            ? "The package is served as-is — no guest choice."
-            : mode === "single_group"
-              ? "Guests pick from one list of menu items."
-              : "Add up to 5 groups (e.g. Starters, Mains, Desserts) — guests pick from each."}
-        </p>
       </div>
+
 
       {mode === "multi_group" && (
         <div className="flex items-center gap-2 text-xs">
