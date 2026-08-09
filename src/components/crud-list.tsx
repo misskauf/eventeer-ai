@@ -60,6 +60,7 @@ export function CrudList<T extends { id: string }>({
   filter,
   staticValues,
   extraFormContent,
+  sectionOrder,
   module = "catalog",
 }: {
   table: string;
@@ -71,6 +72,8 @@ export function CrudList<T extends { id: string }>({
   filter?: Record<string, any>; // eq() filters applied on load
   staticValues?: Record<string, any>; // merged into every insert/update payload
   extraFormContent?: (row: T | null) => ReactNode;
+  /** Optional explicit order of section headers (see Field.section). */
+  sectionOrder?: string[];
   module?: PermissionModule;
 }) {
   const { can } = usePermissions();
