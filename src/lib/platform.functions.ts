@@ -10,9 +10,9 @@ export const checkPlatformAdmin = createServerFn({ method: "GET" })
     return { isPlatformAdmin: data === true };
   });
 
-async function assertPlatformAdmin(supabase: {
-  rpc: (fn: "is_platform_admin") => Promise<{ data: unknown }>;
-}) {
+type RpcClient = { rpc: (fn: "is_platform_admin") => PromiseLike<{ data: unknown }> };
+
+async function assertPlatformAdmin(supabase: RpcClient) {
   const { data } = await supabase.rpc("is_platform_admin");
   if (data !== true) throw new Error("Forbidden");
 }
@@ -108,25 +108,30 @@ export const setCompanyBilling = createServerFn({ method: "POST" })
     if (readErr) throw new Error(readErr.message);
     if (!company) throw new Error("Company not found");
 
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      subscription_status: string;
+      activated_at?: string;
+      billing_note?: string;
+      trial_ends_at?: string;
+    } = { subscription_status: company.subscription_status };
     if (data.action === "activate") {
       if (!data.note?.trim()) throw new Error("A note is required when activating an account");
-      patch["subscription_status"] = "active";
-      patch["activated_at"] = new Date().toISOString();
-      patch["billing_note"] = data.note.trim();
+      patch.subscription_status = "active";
+      patch.activated_at = new Date().toISOString();
+      patch.billing_note = data.note.trim();
     } else if (data.action === "extend_trial") {
       const days = data.days ?? 30;
       const base = company.trial_ends_at ? new Date(company.trial_ends_at) : new Date();
       const from = base.getTime() > Date.now() ? base : new Date();
-      patch["subscription_status"] = "trialing";
-      patch["trial_ends_at"] = new Date(from.getTime() + days * 86_400_000).toISOString();
-      if (data.note?.trim()) patch["billing_note"] = data.note.trim();
+      patch.subscription_status = "trialing";
+      patch.trial_ends_at = new Date(from.getTime() + days * 86_400_000).toISOString();
+      if (data.note?.trim()) patch.billing_note = data.note.trim();
     } else if (data.action === "comp") {
-      patch["subscription_status"] = "comped";
-      if (data.note?.trim()) patch["billing_note"] = data.note.trim();
+      patch.subscription_status = "comped";
+      if (data.note?.trim()) patch.billing_note = data.note.trim();
     } else {
-      patch["subscription_status"] = "expired";
-      if (data.note?.trim()) patch["billing_note"] = data.note.trim();
+      patch.subscription_status = "expired";
+      if (data.note?.trim()) patch.billing_note = data.note.trim();
     }
 
     const { error: upErr } = await supabaseAdmin
@@ -143,7 +148,7 @@ export const setCompanyBilling = createServerFn({ method: "POST" })
         note: data.note?.trim() ?? null,
         days: data.action === "extend_trial" ? (data.days ?? 30) : null,
         previous_status: company.subscription_status,
-        new_status: patch["subscription_status"],
+        new_status: patch.subscription_status,
       },
     });
 
