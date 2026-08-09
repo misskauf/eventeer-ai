@@ -53,6 +53,7 @@ export function CrudList<T extends { id: string }>({
   companyId,
   fields,
   render,
+  columns,
   title,
   filter,
   staticValues,
@@ -63,6 +64,7 @@ export function CrudList<T extends { id: string }>({
   companyId: string | null;
   fields: Field[];
   render: (row: T) => ReactNode;
+  columns?: Column<T>[];
   title: string;
   filter?: Record<string, any>; // eq() filters applied on load
   staticValues?: Record<string, any>; // merged into every insert/update payload
