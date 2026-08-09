@@ -263,6 +263,67 @@ export function CrudList<T extends { id: string }>({
         <CardContent className="p-0">
           {rows.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">No {title} yet.</div>
+          ) : columns ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40">
+                  <tr>
+                    {columns.map((c) => (
+                      <th
+                        key={c.key}
+                        style={c.width ? { width: c.width } : undefined}
+                        className={
+                          "whitespace-nowrap px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground " +
+                          (c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : "text-left")
+                        }
+                      >
+                        {c.label}
+                      </th>
+                    ))}
+                    <th className={`px-4 py-2 ${canEdit ? "" : "hidden"}`} />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {rows.map((r) => (
+                    <tr
+                      key={r.id}
+                      onClick={() => { if (canEdit) { setEditing(r); setOpen(true); } }}
+                      className={`transition hover:bg-muted/30 ${canEdit ? "cursor-pointer" : ""}`}
+                    >
+                      {columns.map((c) => (
+                        <td
+                          key={c.key}
+                          className={
+                            "whitespace-nowrap px-4 py-3 align-middle " +
+                            (c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : "text-left")
+                          }
+                        >
+                          {c.cell(r)}
+                        </td>
+                      ))}
+                      <td className={`whitespace-nowrap px-4 py-3 text-right ${canEdit ? "" : "hidden"}`}>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => { e.stopPropagation(); setEditing(r); setOpen(true); }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => { e.stopPropagation(); onDelete(r.id); }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="divide-y">
               {rows.map((r) => (
