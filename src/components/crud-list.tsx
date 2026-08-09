@@ -205,9 +205,56 @@ export function CrudList<T extends { id: string }>({
                     {f.hint && <p className="text-xs text-muted-foreground">{f.hint}</p>}
                   </div>
                 );
-              })}
+    }
+  }
+
+  return (
+    <div>
+      <div className={`mb-4 flex justify-end ${canEdit ? "" : "hidden"}`}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditing(null)}>
+              <Plus className="mr-1 h-4 w-4" /> Add {title}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={`max-h-[85vh] overflow-y-auto${grouped ? " sm:max-w-2xl" : ""}`}>
+            <DialogHeader>
+              <DialogTitle>{editing ? `Edit ${title}` : `New ${title}`}</DialogTitle>
+            </DialogHeader>
+            <form className="space-y-3" onSubmit={onSubmit}>
+              {grouped ? (
+                <>
+                  <div className="flex flex-wrap gap-1 border-b pb-2">
+                    {activeGroups.map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setTab(g)}
+                        className={
+                          "rounded-md px-3 py-1.5 text-sm transition " +
+                          (g === tab
+                            ? "bg-muted font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground")
+                        }
+                      >
+                        {FIELD_GROUP_LABELS[g]}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Every group stays mounted so FormData keeps all fields on submit. */}
+                  {activeGroups.map((g) => (
+                    <div key={g} className={`space-y-3${g === tab ? "" : " hidden"}`}>
+                      {fields.filter((f) => groupOf(f) === g).map((f) => renderField(f))}
+                    </div>
+                  ))}
+                </>
+              ) : (
+                fields.map((f) => renderField(f))
+              )}
               {extraFormContent?.(editing)}
-              <Button className="w-full">Save</Button>
+              <div className="sticky bottom-0 -mx-6 border-t bg-background px-6 pb-1 pt-3">
+                <Button className="w-full">Save</Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
