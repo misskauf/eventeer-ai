@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { APP_NAME } from "@/lib/app-brand";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -97,7 +98,7 @@ function AuthPage() {
     <div className="grid min-h-screen place-items-center bg-muted/30 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome to Proposalist</CardTitle>
+          <CardTitle>Welcome to {APP_NAME}</CardTitle>
           <CardDescription>Sign in or create your workspace.</CardDescription>
         </CardHeader>
         <CardContent>

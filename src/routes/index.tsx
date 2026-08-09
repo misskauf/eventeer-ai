@@ -2,6 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useAuthUser } from "@/lib/auth-hooks";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Sparkles, Users } from "lucide-react";
+import { APP_NAME } from "@/lib/app-brand";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -20,7 +21,7 @@ function Index() {
             <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
               P
             </div>
-            <span>Proposalist</span>
+            <span>{APP_NAME}</span>
           </div>
           <Link to="/auth">
             <Button size="sm">Sign in</Button>

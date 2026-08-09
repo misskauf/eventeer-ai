@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "proposalist-mcp",
+      "name": "eventeer-mcp",
       "version": "0.1.0",
-      "title": "Proposalist"
+      "title": "Eventeer"
     },
     "tools": [
       {
