@@ -2,11 +2,24 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useAuthUser } from "@/lib/auth-hooks";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Sparkles, Users } from "lucide-react";
-import { APP_NAME } from "@/lib/app-brand";
+import { APP_NAME, APP_TITLE, APP_DESCRIPTION } from "@/lib/app-brand";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: APP_TITLE },
+      { name: "description", content: APP_DESCRIPTION },
+      { property: "og:title", content: APP_TITLE },
+      { property: "og:description", content: APP_DESCRIPTION },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://eventflow-pro-45.lovable.app/" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://eventflow-pro-45.lovable.app/" }],
+  }),
 });
+
 
 function Index() {
   const { user, loading } = useAuthUser();
@@ -19,7 +32,8 @@ function Index() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2 font-semibold">
             <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
-              P
+              {APP_NAME[0]}
+
             </div>
             <span>{APP_NAME}</span>
           </div>
