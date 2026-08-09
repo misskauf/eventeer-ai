@@ -23,12 +23,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, Plus, Search } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { money } from "@/lib/pricing";
 import {
   STAGE_ORDER,
+  STAGE_GROUPS,
+  STAGE_GROUP_LABELS,
   formatRelative,
   stageLabel,
   stageToneClass,
@@ -158,7 +167,10 @@ function DealsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return deals.filter((d) => {
-      if (stageFilter !== "all" && d.stage !== stageFilter) return false;
+      if (stageFilter.startsWith("group:")) {
+        const group = STAGE_GROUPS[stageFilter.slice(6)] ?? [];
+        if (!group.includes(d.stage as never)) return false;
+      } else if (stageFilter !== "all" && d.stage !== stageFilter) return false;
       if (awaitingMine) {
         if (d.approval_status !== "pending") return false;
         if (d.approval_requested_by === userId) return false;
@@ -214,32 +226,48 @@ function DealsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            <StageChip
-              label="All"
-              count={stageCounts.all}
-              active={stageFilter === "all"}
-              onClick={() => setStageFilter("all")}
-            />
-            {STAGE_ORDER.map((s) => (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-1.5">
               <StageChip
-                key={s}
-                label={stageLabel(s)}
-                count={stageCounts[s] ?? 0}
-                active={stageFilter === s}
-                tone={stageToneClass(s)}
-                onClick={() => setStageFilter(s)}
+                label="All"
+                count={stageCounts.all}
+                active={stageFilter === "all"}
+                onClick={() => setStageFilter("all")}
               />
-            ))}
-            {requireApproval && (
-              <StageChip
-                label="Awaiting my approval"
-                count={awaitingMyApprovalCount}
-                active={awaitingMine}
-                tone="bg-amber-100 text-amber-800 border-amber-200"
-                onClick={() => setAwaitingMine((v) => !v)}
-              />
-            )}
+              {Object.entries(STAGE_GROUPS).map(([key, stages]) => (
+                <StageChip
+                  key={key}
+                  label={STAGE_GROUP_LABELS[key] ?? key}
+                  count={stages.reduce((sum, s) => sum + (stageCounts[s] ?? 0), 0)}
+                  active={stageFilter === `group:${key}`}
+                  onClick={() => setStageFilter(`group:${key}`)}
+                />
+              ))}
+              {requireApproval && (
+                <StageChip
+                  label="Awaiting my approval"
+                  count={awaitingMyApprovalCount}
+                  active={awaitingMine}
+                  onClick={() => setAwaitingMine((v) => !v)}
+                />
+              )}
+            </div>
+            <Select
+              value={stageFilter.startsWith("group:") || stageFilter === "all" ? "all" : stageFilter}
+              onValueChange={(v) => setStageFilter(v)}
+            >
+              <SelectTrigger className="h-8 w-[200px] text-xs">
+                <SelectValue placeholder="All stages" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All stages</SelectItem>
+                {STAGE_ORDER.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {stageLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Card>
@@ -249,7 +277,6 @@ function DealsPage() {
                   <thead className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="px-4 py-2 text-left font-medium">Client</th>
-                      <th className="px-4 py-2 text-left font-medium">Email</th>
                       <th className="px-4 py-2 text-left font-medium">Event date</th>
                       <th className="px-4 py-2 text-right font-medium">Guests</th>
                       <th className="px-4 py-2 text-right font-medium">Est. value</th>
@@ -283,46 +310,30 @@ function DealsPage() {
                           }
                         }}
                       >
-                        <td className="px-4 py-3">
+                        <td className="min-w-0 px-4 py-3">
                           <div className="font-medium">{d.client_name}</div>
                           {d.client_company && (
                             <div className="text-xs text-muted-foreground">{d.client_company}</div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{d.client_email}</td>
-                        <td className="px-4 py-3">
+                        <td className="whitespace-nowrap px-4 py-3">
                           {d.event_date ? formatEventDate(d.event_date) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                           {d.guest_count || "—"}
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums">
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                           {money(Number(d.estimated_value), currency)}
                         </td>
-                        <td
-                          className="px-4 py-3"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Select
-                            value={d.stage}
-                            onValueChange={(v) => updateStage(d.id, v)}
+                        <td className="px-4 py-3">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+                              stageToneClass(d.stage),
+                            )}
                           >
-                            <SelectTrigger
-                              className={cn(
-                                "h-8 w-[190px] border px-2 text-xs font-medium",
-                                stageToneClass(d.stage),
-                              )}
-                            >
-                              <SelectValue>{stageLabel(d.stage)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STAGE_ORDER.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {stageLabel(s)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {stageLabel(d.stage)}
+                          </span>
                         </td>
                         {requireApproval && (
                           <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
@@ -340,29 +351,51 @@ function DealsPage() {
                             )}
                           </td>
                         )}
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                           {formatRelative(d.updated_at)}
                         </td>
                         <td
-                          className="px-4 py-3 text-right"
+                          className="whitespace-nowrap px-4 py-3 text-right"
                           onClick={(e) => e.stopPropagation()}
                         >
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDeal(d.id, true)}
-                          >
-                            <Pencil className="mr-1 h-4 w-4" /> Edit
-                          </Button>
+                          <div className="inline-flex items-center gap-1">
+                            {canEditDeals && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button type="button" variant="outline" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+                                  <DropdownMenuLabel>Move to stage</DropdownMenuLabel>
+                                  {STAGE_ORDER.map((s) => (
+                                    <DropdownMenuItem
+                                      key={s}
+                                      disabled={s === d.stage}
+                                      onSelect={() => updateStage(d.id, s)}
+                                    >
+                                      {stageLabel(s)}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDeal(d.id, true)}
+                            >
+                              <Pencil className="mr-1 h-4 w-4" /> Edit
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                     {filtered.length === 0 && (
                       <tr>
                         <td
-                          colSpan={requireApproval ? 9 : 8}
+                          colSpan={requireApproval ? 8 : 7}
                           className="px-4 py-8 text-center text-sm text-muted-foreground"
                         >
                           No deals match your filters.
