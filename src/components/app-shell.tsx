@@ -2,13 +2,14 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles, BarChart3 } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, Settings, Sparkles, BarChart3, ShieldCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { useTranslation, applyStoredLanguage } from "@/i18n";
 import { usePermissions } from "@/lib/use-permissions";
 import type { PermissionModule } from "@/lib/permissions";
 import { PaywallGate } from "@/components/paywall-gate";
+import { usePlatformAdmin } from "@/lib/use-platform-admin";
 
 type Company = {
   id: string;
@@ -25,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [company, setCompany] = useState<Company | null>(null);
   const { can, loading: permLoading } = usePermissions();
+  const { isPlatformAdmin } = usePlatformAdmin();
 
   useEffect(() => {
     applyStoredLanguage();
@@ -83,6 +85,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       modules: ["settings", "team", "invoices", "lead_forms", "contracts"],
     },
   ] as NavItem[]).filter((n) => permLoading || n.modules.some((m) => can(m, "view")));
+
+  if (isPlatformAdmin) {
+    nav.push({ to: "/admin", label: "Platform", icon: ShieldCheck, modules: [] });
+  }
 
 
   return (
