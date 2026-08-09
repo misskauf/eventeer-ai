@@ -89,6 +89,29 @@ export const STAGE_TONES: Record<string, BadgeTone> = {
   accepted: { className: "bg-amber-100 text-amber-800 border-amber-200" },
 };
 
+// Grouped pipeline used for compact filter chips.
+export const STAGE_GROUPS: Record<string, DealStage[]> = {
+  new: ["new", "contacted", "meeting_scheduled", "inquiry"],
+  proposal: ["proposal_sent", "changes_requested", "proposal_draft", "client_selected", "manager_review"],
+  won: ["client_approved", "signed", "accepted"],
+  payment: [
+    "waiting_payment",
+    "invoice_sent",
+    "downpayment_received",
+    "paid_in_full",
+    "payment_delayed",
+  ],
+  lost: ["lost"],
+};
+
+export const STAGE_GROUP_LABELS: Record<string, string> = {
+  new: "New & contact",
+  proposal: "Proposal",
+  won: "Won",
+  payment: "Payment",
+  lost: "Lost",
+};
+
 export function stageLabel(stage: string): string {
   return STAGE_LABELS[stage] ?? stage;
 }

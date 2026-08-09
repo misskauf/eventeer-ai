@@ -142,7 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="flex h-14 items-center justify-end gap-2 border-b bg-background px-6">
           <NotificationsBell />
         </header>
-        <div className="mx-auto max-w-6xl p-6">
+        <div className="mx-auto max-w-screen-2xl p-6">
           <PaywallGate>{children}</PaywallGate>
         </div>
       </div>
