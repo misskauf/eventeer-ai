@@ -1,0 +1,1 @@
+ALTER TABLE public.fb_packages ADD COLUMN max_guests integer;

@@ -686,6 +686,7 @@ export type Database = {
           kind: string
           long_description: string | null
           long_description_de: string | null
+          max_guests: number | null
           min_guests: number
           name: string
           name_de: string | null
@@ -713,6 +714,7 @@ export type Database = {
           kind?: string
           long_description?: string | null
           long_description_de?: string | null
+          max_guests?: number | null
           min_guests?: number
           name: string
           name_de?: string | null
@@ -740,6 +742,7 @@ export type Database = {
           kind?: string
           long_description?: string | null
           long_description_de?: string | null
+          max_guests?: number | null
           min_guests?: number
           name?: string
           name_de?: string | null
