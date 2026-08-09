@@ -28,6 +28,20 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
   const def = categoryDefault(defaults, cat);
   const defHours = categoryDefaultHours(defaults, kind);
   const label = kind === "food" ? "food package" : "beverage package";
+  const isFood = kind === "food";
+  const selectionTitle = isFood ? "Menu selection" : "Package selection";
+  const itemNoun = isFood ? "dish" : "drink";
+  const selectionModeLabels = isFood
+    ? {
+        fixed: "Fixed menu",
+        single_group: "Dishes selection (1 group)",
+        multi_group: "Dishes selection (multiple groups)",
+      }
+    : {
+        fixed: "Fixed package",
+        single_group: "Drinks selection (1 group)",
+        multi_group: "Drinks selection (multiple groups)",
+      };
 
 
   return (
@@ -58,19 +72,27 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
         companyId={companyId}
         filter={{ kind }}
         staticValues={{ kind }}
+        sectionOrder={[
+          "Basics",
+          "Pricing",
+          "Cost (internal)",
+          ...(kind === "beverage" ? ["Event hours"] : []),
+          "For how many guests",
+          selectionTitle,
+          "Details (optional)",
+        ]}
         fields={[
-          { name: "name", label: "Name" },
-          { name: "description", label: "Short description", type: "textarea", rows: 2 },
-          { name: "price_per_person", label: "Price per person", type: "number", step: "0.01" },
-          ...(canViewCosts ? [costField("Internal cost per person")] : []),
-          { name: "min_guests", label: "Minimum guests", type: "number", nullable: true },
+          { name: "name", label: "Name", section: "Basics" },
+          { name: "description", label: "Short description", type: "textarea", rows: 2, section: "Basics" },
           {
             name: "event_types",
             label: "Suits event types",
             type: "tags",
             suggestions: ["Wedding", "Corporate", "Birthday", "Conference", "Gala", "Private dining"],
             hint: "Leave empty to suit all event types. Used to suggest a draft proposal for new leads.",
+            section: "Basics",
           },
+          { name: "price_per_person", label: "Price per person", type: "number", step: "0.01", section: "Pricing" },
           {
             name: "basis",
             label: "Price basis",
@@ -82,6 +104,7 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
               { value: "gross", label: "Gross (tax included)" },
             ],
             hint: "Choose whether the price above is entered net or gross.",
+            section: "Pricing",
           },
           {
             name: "tax_rate_pct",
@@ -90,41 +113,59 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
             step: "0.01",
             nullable: true,
             hint: `Leave blank to use the ${cat} default (${def.rate}%).`,
+            section: "Pricing",
           },
+          ...(canViewCosts
+            ? [
+                {
+                  ...costField("Internal cost per person"),
+                  hint: "Not shown to clients. Same unit as the price above.",
+                  section: "Cost (internal)",
+                } as const,
+              ]
+            : []),
+          ...(kind === "beverage"
+            ? ([
+                {
+                  name: "included_hours",
+                  label: "Standard hours included",
+                  type: "number",
+                  step: "0.5",
+                  nullable: true,
+                  hint: `Leave blank to use the ${cat} default (${defHours}h).`,
+                  section: "Event hours",
+                },
+                {
+                  name: "overage_price_per_person_per_hour",
+                  label: "Overtime price per guest / hour",
+                  type: "number",
+                  step: "0.01",
+                  hint: "Charged per guest for each hour beyond the standard duration. Set 0 to disable.",
+                  section: "Event hours",
+                },
+              ] as const)
+            : []),
           {
-            name: "included_hours",
-            label: "Standard hours included",
+            name: "min_guests",
+            label: "Minimum guests",
             type: "number",
-            step: "0.5",
             nullable: true,
-            hint: `Leave blank to use the ${cat} default (${defHours}h).`,
+            section: "For how many guests",
+            hint: "Used to match this menu to an event's guest count.",
           },
           {
-            name: "overage_price_per_person_per_hour",
-            label: "Overtime price per guest / hour",
+            name: "max_guests",
+            label: "Maximum guests",
             type: "number",
-            step: "0.01",
-            hint: "Charged per guest for each hour beyond the standard duration. Set 0 to disable.",
-          },
-          {
-            name: "long_description",
-            label: "Full details",
-            type: "textarea",
-            rows: 6,
-            hint: "Shown to the client on the proposal. Markdown supported.",
-          },
-          {
-            name: "details_url",
-            label: "Link to package details",
-            type: "url",
             nullable: true,
-            placeholder: "https://…",
-            hint: "Optional link to a menu, PDF, or product page.",
+            section: "For how many guests",
+            hint: "Leave blank for no upper limit.",
           },
           {
             name: "selection_groups",
-            label: "Menu selection",
+            label: "",
             type: "custom",
+            section: selectionTitle,
             render: (cur: any, editing: any) => (
               <MenuSelectionEditor
                 modeName="selection_mode"
@@ -133,12 +174,33 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
                 defaultMode={(editing?.selection_mode as any) ?? "fixed"}
                 defaultGroups={(Array.isArray(cur) ? cur : []) as MenuGroup[]}
                 defaultTotalMax={(editing?.selection_total_max as number | null) ?? null}
+                title={selectionTitle}
+                modeLabels={selectionModeLabels}
+                itemNoun={itemNoun}
               />
             ),
           },
-          { name: "selection_mode", label: "", type: "custom", render: () => null, defaultValue: "fixed" },
-          { name: "selection_total_max", label: "", type: "custom", render: () => null, nullable: true },
+          { name: "selection_mode", label: "", type: "custom", render: () => null, defaultValue: "fixed", section: selectionTitle },
+          { name: "selection_total_max", label: "", type: "custom", render: () => null, nullable: true, section: selectionTitle },
+          {
+            name: "long_description",
+            label: "Full details",
+            type: "textarea",
+            rows: 6,
+            hint: "Optional. Shown to the client on the proposal. Markdown supported.",
+            section: "Details (optional)",
+          },
+          {
+            name: "details_url",
+            label: "Link to package details",
+            type: "url",
+            nullable: true,
+            placeholder: "https://…",
+            hint: "Optional link to a menu, PDF, or product page.",
+            section: "Details (optional)",
+          },
         ]}
+
 
         render={(r: any) => {
           const amount = Number(r.price_per_person) * sampleGuests;
@@ -150,9 +212,11 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
                 <div>
                   <div className="font-medium">{r.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {money(Number(r.price_per_person), currency)} / guest · min {r.min_guests ?? 0} ·{" "}
-                    {basis === "gross" ? "Gross" : "Net"} · Tax {rate}% · {r.included_hours ?? defHours}h included
-                    {Number(r.overage_price_per_person_per_hour ?? 0) > 0 && (
+                    {money(Number(r.price_per_person), currency)} / guest · guests {r.min_guests ?? 0}
+                    {r.max_guests ? `–${r.max_guests}` : "+"} ·{" "}
+                    {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
+                    {!isFood && <> · {r.included_hours ?? defHours}h included</>}
+                    {!isFood && Number(r.overage_price_per_person_per_hour ?? 0) > 0 && (
                       <> · +{money(Number(r.overage_price_per_person_per_hour), currency)}/guest/h overtime</>
                     )}
                   </div>

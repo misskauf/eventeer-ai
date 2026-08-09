@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, LayoutList, ListChecks, Layers } from "lucide-react";
 
 export type MenuOption = { label: string; description?: string };
 export type MenuGroup = { label: string; max_select: number; options: MenuOption[] };
@@ -15,6 +15,9 @@ export function MenuSelectionEditor({
   defaultMode,
   defaultGroups,
   defaultTotalMax,
+  title = "Menu selection",
+  modeLabels,
+  itemNoun = "menu item",
 }: {
   modeName: string;
   groupsName: string;
@@ -22,7 +25,16 @@ export function MenuSelectionEditor({
   defaultMode: "fixed" | "single_group" | "multi_group";
   defaultGroups: MenuGroup[];
   defaultTotalMax?: number | null;
+  title?: string;
+  modeLabels?: { fixed: string; single_group: string; multi_group: string };
+  itemNoun?: string;
 }) {
+  const labels = modeLabels ?? {
+    fixed: "Fixed menu",
+    single_group: "Menu items (one group)",
+    multi_group: "Menu items (multiple groups)",
+  };
+  const nounTitle = itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1);
   const [mode, setMode] = useState<"fixed" | "single_group" | "multi_group">(defaultMode);
   const [groups, setGroups] = useState<MenuGroup[]>(
     defaultGroups.length
@@ -82,41 +94,56 @@ export function MenuSelectionEditor({
       {totalName && <input type="hidden" name={totalName} value={serializedTotal} />}
 
       <div className="space-y-2">
-        <Label>Menu selection</Label>
-        <div className="flex flex-wrap gap-2 text-xs">
+        <Label>{title}</Label>
+        <div className="grid gap-2 sm:grid-cols-3">
           {(
             [
-              { v: "fixed", label: "Fixed menu" },
-              { v: "single_group", label: "Menu items (one group)" },
-              { v: "multi_group", label: "Menu items (multiple groups)" },
+              {
+                v: "fixed",
+                icon: LayoutList,
+                label: labels.fixed,
+                desc: "Served as-is, no guest choice.",
+              },
+              {
+                v: "single_group",
+                icon: ListChecks,
+                label: labels.single_group,
+                desc: `Guests pick from one list of ${itemNoun}s.`,
+              },
+              {
+                v: "multi_group",
+                icon: Layers,
+                label: labels.multi_group,
+                desc: "Several groups, guests pick from each.",
+              },
             ] as const
           ).map((o) => {
             const active = mode === o.v;
+            const Icon = o.icon;
             return (
               <button
                 key={o.v}
                 type="button"
                 onClick={() => setMode(o.v)}
+                aria-pressed={active}
                 className={
-                  "rounded-full border px-3 py-1 transition " +
+                  "flex h-full flex-col items-start gap-1 rounded-md border p-3 text-left transition " +
                   (active
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground")
+                    : "border-border hover:border-primary/50")
                 }
               >
-                {o.label}
+                <Icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{o.label}</span>
+                <span className={"text-xs " + (active ? "text-primary/80" : "text-muted-foreground")}>
+                  {o.desc}
+                </span>
               </button>
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {mode === "fixed"
-            ? "The package is served as-is — no guest choice."
-            : mode === "single_group"
-              ? "Guests pick from one list of menu items."
-              : "Add up to 5 groups (e.g. Starters, Mains, Desserts) — guests pick from each."}
-        </p>
       </div>
+
 
       {mode === "multi_group" && (
         <div className="flex items-center gap-2 text-xs">
@@ -167,7 +194,7 @@ export function MenuSelectionEditor({
                       <Input
                         value={o.label}
                         onChange={(e) => updateOption(gi, oi, { label: e.target.value })}
-                        placeholder="Menu item name"
+                        placeholder={`${nounTitle} name`}
                       />
                       <Textarea
                         rows={1}
@@ -183,7 +210,7 @@ export function MenuSelectionEditor({
                   </div>
                 ))}
                 <Button type="button" size="sm" variant="outline" onClick={() => addOption(gi)}>
-                  <Plus className="mr-1 h-3 w-3" /> Add menu item
+                  <Plus className="mr-1 h-3 w-3" /> Add {itemNoun}
                 </Button>
               </div>
             </div>

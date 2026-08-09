@@ -43,6 +43,8 @@ export type Field = {
   placeholder?: string;
   /** Optional tab grouping. If no field has a group, the form renders ungrouped. */
   group?: FieldGroup;
+  /** Optional stacked section header grouping (mutually exclusive with tabs). */
+  section?: string;
   // For type "custom": renders arbitrary UI that must write a JSON string to a
   // hidden input named `name`. The stored value is JSON.parse'd on submit.
   render?: (currentValue: any, editingRow: any) => ReactNode;
@@ -58,6 +60,7 @@ export function CrudList<T extends { id: string }>({
   filter,
   staticValues,
   extraFormContent,
+  sectionOrder,
   module = "catalog",
 }: {
   table: string;
@@ -69,6 +72,8 @@ export function CrudList<T extends { id: string }>({
   filter?: Record<string, any>; // eq() filters applied on load
   staticValues?: Record<string, any>; // merged into every insert/update payload
   extraFormContent?: (row: T | null) => ReactNode;
+  /** Optional explicit order of section headers (see Field.section). */
+  sectionOrder?: string[];
   module?: PermissionModule;
 }) {
   const { can } = usePermissions();
@@ -133,6 +138,14 @@ export function CrudList<T extends { id: string }>({
   useEffect(() => {
     if (open) setTab(activeGroups[0] ?? "basics");
   }, [open]);
+
+  const sectioned = !grouped && fields.some((f) => f.section);
+  const activeSections = sectioned
+    ? (sectionOrder && sectionOrder.length
+        ? sectionOrder
+        : Array.from(new Set(fields.map((f) => f.section ?? "")))
+      ).filter((s) => fields.some((f) => (f.section ?? "") === s))
+    : [];
 
   function renderField(f: Field) {
     {
@@ -217,7 +230,7 @@ export function CrudList<T extends { id: string }>({
               <Plus className="mr-1 h-4 w-4" /> Add {title}
             </Button>
           </DialogTrigger>
-          <DialogContent className={`max-h-[85vh] overflow-y-auto${grouped ? " sm:max-w-2xl" : ""}`}>
+          <DialogContent className={`max-h-[85vh] overflow-y-auto${grouped || sectioned ? " sm:max-w-2xl" : ""}`}>
             <DialogHeader>
               <DialogTitle>{editing ? `Edit ${title}` : `New ${title}`}</DialogTitle>
             </DialogHeader>
@@ -248,6 +261,17 @@ export function CrudList<T extends { id: string }>({
                     </div>
                   ))}
                 </>
+              ) : sectioned ? (
+                activeSections.map((s, i) => (
+                  <div key={s || `_${i}`} className={`space-y-3${i > 0 ? " border-t pt-4" : ""}`}>
+                    {s && (
+                      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {s}
+                      </div>
+                    )}
+                    {fields.filter((f) => (f.section ?? "") === s).map((f) => renderField(f))}
+                  </div>
+                ))
               ) : (
                 fields.map((f) => renderField(f))
               )}
