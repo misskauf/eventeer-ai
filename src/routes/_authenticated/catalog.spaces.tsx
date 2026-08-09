@@ -4,13 +4,12 @@ import { CrudList } from "@/components/crud-list";
 import { useCurrentCompany } from "@/lib/auth-hooks";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { money, type WeekdayPricing } from "@/lib/pricing";
-import { PriceBreakdown } from "@/components/price-breakdown";
-import { categoryDefault, resolveBasis, resolveTaxRate, type CategoryDefaults } from "@/lib/tax";
+import { resolveTaxRate, categoryDefault, type CategoryDefaults } from "@/lib/tax";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
-import { CostMargin, costField, useCanViewCosts } from "@/lib/cost-visibility";
+import { costField, useCanViewCosts } from "@/lib/cost-visibility";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
   component: SpacesPage,
@@ -26,12 +25,33 @@ const WEEKDAYS = [
   { d: 6, s: "Sat" },
 ];
 
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+/** Condense a day array into ranges, e.g. [2,3,4,5,6] -> "Tue–Sat". */
+export function formatAvailableDays(days: number[] | null | undefined): string {
+  const list = days && days.length ? [...new Set(days)].sort((a, b) => a - b) : ALL_DAYS;
+  if (list.length === 7) return "Every day";
+  if (list.length === 0) return "Closed";
+  const parts: string[] = [];
+  let start = list[0];
+  let prev = list[0];
+  for (let i = 1; i <= list.length; i++) {
+    const cur = list[i];
+    if (cur !== prev + 1) {
+      const label = WEEKDAYS[start].s;
+      parts.push(start === prev ? label : `${label}–${WEEKDAYS[prev].s}`);
+      start = cur;
+    }
+    prev = cur;
+  }
+  return parts.join(", ");
+}
+
 function SpacesPage() {
   const { companyId } = useCurrentCompany();
   const currency = useCompanyCurrency();
   const { canViewCosts } = useCanViewCosts();
   const [defaults, setDefaults] = useState<CategoryDefaults | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!companyId) return;
@@ -41,56 +61,37 @@ function SpacesPage() {
 
   const def = categoryDefault(defaults, "rental");
 
-  async function toggleDay(row: any, day: number) {
-    const cur: number[] = row.available_days && row.available_days.length ? row.available_days : [0, 1, 2, 3, 4, 5, 6];
-    const next = cur.includes(day) ? cur.filter((x) => x !== day) : [...cur, day].sort();
-    const { error } = await supabase.from("spaces").update({ available_days: next }).eq("id", row.id);
-    if (error) return toast.error(error.message);
-    setReloadKey((k) => k + 1);
-  }
-
   return (
     <div className="space-y-4">
       <CategoryDefaultsBar companyId={companyId} category="rental" defaults={defaults} onSaved={setDefaults} />
 
       <CrudList
-        key={reloadKey}
         title="space"
         table="spaces"
         companyId={companyId}
         fields={[
-          { name: "name", label: "Name" },
-          { name: "description", label: "Short description", type: "textarea", rows: 2 },
-          { name: "capacity_standing", label: "Capacity (standing)", type: "number", nullable: true },
-          { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true },
-          { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01" },
-          { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01" },
-          ...(canViewCosts ? [costField("Internal cost per event")] : []),
+          { name: "name", label: "Name", group: "basics" },
+          { name: "description", label: "Short description", type: "textarea", rows: 2, group: "basics" },
+          { name: "capacity_standing", label: "Capacity (standing)", type: "number", nullable: true, group: "basics" },
+          { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true, group: "basics" },
           {
             name: "event_types",
             label: "Suits event types",
             type: "tags" as const,
+            group: "basics" as const,
             suggestions: ["Wedding", "Corporate", "Birthday", "Conference", "Gala", "Private dining"],
             hint: "Leave empty to suit all event types. Used to suggest a draft proposal for new leads.",
           },
-          {
-            name: "weekday_pricing",
-            label: "Price per weekday",
-            type: "custom",
-            hint: "Optional. Overrides the default fees above for the selected day. Leave a row blank to use the defaults.",
-            render: (cur, row) => (
-              <WeekdayPricingEditor
-                name="weekday_pricing"
-                defaultValue={cur ?? row?.weekday_pricing ?? {}}
-                currency={currency}
-              />
-            ),
-          },
+
+          { name: "base_rental_fee", label: "Base rental fee", type: "number", step: "0.01", group: "pricing" },
+          { name: "min_rental_fee", label: "Minimum rental fee", type: "number", step: "0.01", group: "pricing" },
+          ...(canViewCosts ? [{ ...costField("Internal cost per event"), group: "pricing" as const }] : []),
           {
             name: "basis",
             label: "Price basis",
             type: "select",
             nullable: true,
+            group: "pricing",
             options: [
               { value: "", label: `Use rental default (${def.basis === "gross" ? "Gross" : "Net"})` },
               { value: "net", label: "Net (tax added on top)" },
@@ -103,33 +104,42 @@ function SpacesPage() {
             type: "number",
             step: "0.01",
             nullable: true,
+            group: "pricing",
             hint: `Leave blank to use the rental default (${def.rate}%).`,
           },
+
           {
-            name: "details_url",
-            label: "Link to space details",
-            type: "url",
-            nullable: true,
-            placeholder: "https://example.com/spaces/bellboy",
-            hint: "Optional link shown on the deal page for quick reference.",
+            name: "weekday_pricing",
+            label: "Weekly schedule",
+            type: "custom",
+            group: "schedule",
+            hint: "Switch off days the space cannot be booked. Fee overrides replace the default base and minimum fees for that day.",
+            render: (cur, row) => (
+              <ScheduleEditor
+                pricingName="weekday_pricing"
+                daysName="available_days"
+                defaultPricing={(cur ?? row?.weekday_pricing ?? {}) as WeekdayPricing}
+                defaultDays={(row?.available_days as number[] | null) ?? null}
+                currency={currency}
+              />
+            ),
           },
-          {
-            name: "available_days",
-            label: "Available days",
-            type: "weekdays",
-            hint: "Days of the week this space can be booked.",
-          },
+          // Value is written by ScheduleEditor's hidden input; nothing to render.
+          { name: "available_days", label: "", type: "custom", group: "schedule", render: () => null },
+
           {
             name: "long_description",
             label: "Full details",
             type: "textarea",
             rows: 6,
+            group: "client",
             hint: "Shown to the client on the proposal. Markdown supported.",
           },
           {
             name: "features",
             label: "Features",
             type: "tags",
+            group: "client",
             suggestions: [
               "Stage",
               "Lighting",
@@ -153,111 +163,98 @@ function SpacesPage() {
             ],
             hint: "Pick from suggestions or add your own.",
           },
+          {
+            name: "details_url",
+            label: "Link to space details",
+            type: "url",
+            nullable: true,
+            group: "client",
+            placeholder: "https://example.com/spaces/bellboy",
+            hint: "Optional link shown on the deal page for quick reference.",
+          },
         ]}
-        render={(r: any) => {
-          const amount = Math.max(Number(r.base_rental_fee), Number(r.min_rental_fee));
-          const basis = resolveBasis(r, defaults, "rental");
-          const rate = resolveTaxRate(r, defaults, "rental");
-          const days: number[] = r.available_days && r.available_days.length ? r.available_days : [0, 1, 2, 3, 4, 5, 6];
-          return (
-            <div className="space-y-2">
-              <div>
+        columns={[
+          {
+            key: "name",
+            label: "Space",
+            cell: (r: any) => (
+              <div className="min-w-0">
                 <div className="font-medium">{r.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {(() => {
-                    const stand = r.capacity_standing ?? null;
-                    const seat = r.capacity_seated ?? null;
-                    const legacy = r.capacity ?? null;
-                    const capParts: string[] = [];
-                    if (stand != null) capParts.push(`${stand} standing`);
-                    if (seat != null) capParts.push(`${seat} seated`);
-                    const capStr = capParts.length
-                      ? capParts.join(" / ")
-                      : legacy != null
-                        ? `${legacy}`
-                        : "—";
-                    return `Cap ${capStr}`;
-                  })()}{" "}
-                  · Base {money(Number(r.base_rental_fee), currency)} · Min{" "}
-                  {money(Number(r.min_rental_fee), currency)} · {basis === "gross" ? "Gross" : "Net"} · Tax {rate}%
-                </div>
-                {(() => {
-                  const wp: WeekdayPricing | null = r.weekday_pricing ?? null;
-                  if (!wp) return null;
-                  const custom = WEEKDAYS.filter((w) => wp[String(w.d) as keyof WeekdayPricing]);
-                  if (custom.length === 0) return null;
-                  return (
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      Custom pricing: {custom.map((w) => w.s).join(", ")}
-                    </div>
-                  );
-                })()}
-                {r.details_url && (
-                  <div className="mt-1 text-xs">
-                    <a
-                      href={r.details_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline-offset-2 hover:underline"
-                    >
-                      View space details ↗
-                    </a>
-                  </div>
-                )}
-                {Array.isArray(r.features) && r.features.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {r.features.map((f: string) => (
-                      <span
-                        key={f}
-                        className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                      >
-                        {f}
-                      </span>
-                    ))}
-                  </div>
+                {r.description && (
+                  <div className="max-w-[28rem] truncate text-xs text-muted-foreground">{r.description}</div>
                 )}
               </div>
-              {canViewCosts && <CostMargin cost={r.cost} price={r.base_rental_fee} currency={currency} />}
-              <PriceBreakdown amount={amount} basis={basis} taxRatePct={rate} currency={currency} />
-              <div className="flex flex-wrap items-center gap-1 pt-1">
-                <span className="mr-1 text-[11px] uppercase tracking-wide text-muted-foreground">Available</span>
-                {WEEKDAYS.map((w) => {
-                  const active = days.includes(w.d);
-                  return (
-                    <button
-                      key={w.d}
-                      type="button"
-                      onClick={() => toggleDay(r, w.d)}
-                      className={
-                        "rounded-full border px-2 py-0.5 text-[11px] transition " +
-                        (active
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:text-foreground")
-                      }
-                    >
-                      {w.s}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }}
+            ),
+          },
+          {
+            key: "capacity",
+            label: "Capacity",
+            cell: (r: any) => {
+              const parts: string[] = [];
+              if (r.capacity_standing != null) parts.push(`${r.capacity_standing} standing`);
+              if (r.capacity_seated != null) parts.push(`${r.capacity_seated} seated`);
+              const legacy = r.capacity ?? null;
+              return (
+                <span className="text-muted-foreground">
+                  {parts.length ? parts.join(" / ") : legacy != null ? String(legacy) : "—"}
+                </span>
+              );
+            },
+          },
+          {
+            key: "base",
+            label: "Base",
+            align: "right",
+            cell: (r: any) => money(Number(r.base_rental_fee ?? 0), currency),
+          },
+          {
+            key: "min",
+            label: "Min",
+            align: "right",
+            cell: (r: any) => (
+              <span className="text-muted-foreground">{money(Number(r.min_rental_fee ?? 0), currency)}</span>
+            ),
+          },
+          {
+            key: "days",
+            label: "Days",
+            cell: (r: any) => <span className="text-muted-foreground">{formatAvailableDays(r.available_days)}</span>,
+          },
+          {
+            key: "tax",
+            label: "Tax",
+            align: "right",
+            cell: (r: any) => (
+              <span className="text-muted-foreground">{resolveTaxRate(r, defaults, "rental")}%</span>
+            ),
+          },
+        ]}
+        render={(r: any) => <div className="font-medium">{r.name}</div>}
       />
     </div>
   );
 }
 
-function WeekdayPricingEditor({
-  name,
-  defaultValue,
+function ScheduleEditor({
+  pricingName,
+  daysName,
+  defaultPricing,
+  defaultDays,
   currency,
 }: {
-  name: string;
-  defaultValue: WeekdayPricing;
+  pricingName: string;
+  daysName: string;
+  defaultPricing: WeekdayPricing;
+  defaultDays: number[] | null;
   currency: string;
 }) {
-  const [val, setVal] = useState<WeekdayPricing>(defaultValue ?? {});
+  const [days, setDays] = useState<number[]>(defaultDays && defaultDays.length ? [...defaultDays].sort() : ALL_DAYS);
+  const [val, setVal] = useState<WeekdayPricing>(defaultPricing ?? {});
+
+  function toggleDay(day: number, on: boolean) {
+    setDays((prev) => (on ? [...new Set([...prev, day])].sort((a, b) => a - b) : prev.filter((d) => d !== day)));
+  }
+
   function update(day: number, field: "base" | "min", raw: string) {
     const key = String(day) as keyof WeekdayPricing;
     setVal((prev) => {
@@ -270,26 +267,49 @@ function WeekdayPricingEditor({
       return next;
     });
   }
+
+  // Overrides for closed days are stripped before submit.
+  const submitted: WeekdayPricing = Object.fromEntries(
+    Object.entries(val).filter(([k]) => days.includes(Number(k))),
+  ) as WeekdayPricing;
+
   const sym = (() => {
-    try { return (0).toLocaleString("en-US", { style: "currency", currency }).replace(/[\d.,\s]/g, ""); } catch { return currency; }
+    try {
+      return (0).toLocaleString("en-US", { style: "currency", currency }).replace(/[\d.,\s]/g, "");
+    } catch {
+      return currency;
+    }
   })();
+
   return (
     <div className="space-y-1.5">
-      <input type="hidden" name={name} value={JSON.stringify(val)} />
-      <div className="grid grid-cols-[auto_1fr_1fr] gap-2 text-xs">
+      <input type="hidden" name={pricingName} value={JSON.stringify(submitted)} />
+      <input type="hidden" name={daysName} value={JSON.stringify(days)} />
+      <div className="grid grid-cols-[auto_auto_1fr_1fr] items-center gap-2 text-xs">
         <div />
+        <div className="text-muted-foreground">Open</div>
         <div className="text-muted-foreground">Base fee ({sym})</div>
         <div className="text-muted-foreground">Min fee ({sym})</div>
         {WEEKDAYS.map((w) => {
           const key = String(w.d) as keyof WeekdayPricing;
           const row = val[key] ?? {};
+          const open = days.includes(w.d);
           return (
             <React.Fragment key={w.d}>
-              <div className="flex items-center text-sm">{w.s}</div>
+              <div className={`flex items-center text-sm ${open ? "" : "text-muted-foreground"}`}>{w.s}</div>
+              <div className="flex items-center">
+                <Switch
+                  checked={open}
+                  onCheckedChange={(v) => toggleDay(w.d, v)}
+                  aria-label={`${w.s} available`}
+                />
+              </div>
               <Input
                 type="number"
                 step="0.01"
                 placeholder="default"
+                disabled={!open}
+                className={open ? "" : "opacity-50"}
                 defaultValue={row.base ?? ""}
                 onChange={(e) => update(w.d, "base", e.target.value)}
               />
@@ -297,6 +317,8 @@ function WeekdayPricingEditor({
                 type="number"
                 step="0.01"
                 placeholder="default"
+                disabled={!open}
+                className={open ? "" : "opacity-50"}
                 defaultValue={row.min ?? ""}
                 onChange={(e) => update(w.d, "min", e.target.value)}
               />
