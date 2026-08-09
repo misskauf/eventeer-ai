@@ -7,6 +7,7 @@ import { Clock, Lock, LogOut } from "lucide-react";
 import { usePermissions } from "@/lib/use-permissions";
 import { useSubscription } from "@/lib/use-subscription";
 import { BILLING_CONTACT_EMAIL, TRIAL_DAYS } from "@/lib/billing";
+import { usePlatformAdmin } from "@/lib/use-platform-admin";
 
 /**
  * Gates the authenticated app on the company's subscription:
@@ -16,6 +17,7 @@ import { BILLING_CONTACT_EMAIL, TRIAL_DAYS } from "@/lib/billing";
 export function PaywallGate({ children }: { children: React.ReactNode }) {
   const { locked, isTrialing, daysLeft, loading } = useSubscription();
   const { isOwner } = usePermissions();
+  const { isPlatformAdmin } = usePlatformAdmin();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -26,7 +28,7 @@ export function PaywallGate({ children }: { children: React.ReactNode }) {
     await navigate({ to: "/auth", replace: true });
   }
 
-  if (loading) return <>{children}</>;
+  if (loading || isPlatformAdmin) return <>{children}</>;
 
   if (locked) {
     return (
