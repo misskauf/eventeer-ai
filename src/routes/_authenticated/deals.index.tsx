@@ -167,7 +167,10 @@ function DealsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return deals.filter((d) => {
-      if (stageFilter !== "all" && d.stage !== stageFilter) return false;
+      if (stageFilter.startsWith("group:")) {
+        const group = STAGE_GROUPS[stageFilter.slice(6)] ?? [];
+        if (!group.includes(d.stage as never)) return false;
+      } else if (stageFilter !== "all" && d.stage !== stageFilter) return false;
       if (awaitingMine) {
         if (d.approval_status !== "pending") return false;
         if (d.approval_requested_by === userId) return false;
