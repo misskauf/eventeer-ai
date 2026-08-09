@@ -28,6 +28,20 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
   const def = categoryDefault(defaults, cat);
   const defHours = categoryDefaultHours(defaults, kind);
   const label = kind === "food" ? "food package" : "beverage package";
+  const isFood = kind === "food";
+  const selectionTitle = isFood ? "Menu selection" : "Package selection";
+  const itemNoun = isFood ? "dish" : "drink";
+  const selectionModeLabels = isFood
+    ? {
+        fixed: "Fixed menu",
+        single_group: "Dishes selection (1 group)",
+        multi_group: "Dishes selection (multiple groups)",
+      }
+    : {
+        fixed: "Fixed package",
+        single_group: "Drinks selection (1 group)",
+        multi_group: "Drinks selection (multiple groups)",
+      };
 
 
   return (
