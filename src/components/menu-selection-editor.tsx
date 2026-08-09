@@ -210,7 +210,7 @@ export function MenuSelectionEditor({
                   </div>
                 ))}
                 <Button type="button" size="sm" variant="outline" onClick={() => addOption(gi)}>
-                  <Plus className="mr-1 h-3 w-3" /> Add menu item
+                  <Plus className="mr-1 h-3 w-3" /> Add {itemNoun}
                 </Button>
               </div>
             </div>
