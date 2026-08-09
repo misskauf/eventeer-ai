@@ -98,6 +98,13 @@ function AuthPage() {
     <div className="grid min-h-screen place-items-center bg-muted/30 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
+          <img
+            src="/eventeer-logo.svg"
+            alt={`${APP_NAME} logo`}
+            className="mb-2 h-9 w-auto self-start"
+            width={376}
+            height={96}
+          />
           <CardTitle>Welcome to {APP_NAME}</CardTitle>
           <CardDescription>Sign in or create your workspace.</CardDescription>
         </CardHeader>

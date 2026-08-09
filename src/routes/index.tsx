@@ -30,13 +30,13 @@ function Index() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2 font-semibold">
-            <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">
-              {APP_NAME[0]}
-
-            </div>
-            <span>{APP_NAME}</span>
-          </div>
+          <img
+            src="/eventeer-logo.svg"
+            alt={`${APP_NAME} logo`}
+            className="h-8 w-auto sm:h-9"
+            width={376}
+            height={96}
+          />
           <Link to="/auth">
             <Button size="sm">Sign in</Button>
           </Link>
@@ -44,6 +44,13 @@ function Index() {
       </header>
       <main className="mx-auto max-w-6xl px-6 py-24">
         <div className="mx-auto max-w-3xl text-center">
+          <img
+            src="/eventeer-logo.svg"
+            alt={`${APP_NAME} logo`}
+            className="mx-auto mb-8 h-10 w-auto sm:h-12"
+            width={376}
+            height={96}
+          />
           <h1 className="text-5xl font-bold tracking-tight">
             Event proposals, from inquiry to signed.
           </h1>
