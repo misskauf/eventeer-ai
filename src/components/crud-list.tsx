@@ -139,6 +139,14 @@ export function CrudList<T extends { id: string }>({
     if (open) setTab(activeGroups[0] ?? "basics");
   }, [open]);
 
+  const sectioned = !grouped && fields.some((f) => f.section);
+  const activeSections = sectioned
+    ? (sectionOrder && sectionOrder.length
+        ? sectionOrder
+        : Array.from(new Set(fields.map((f) => f.section ?? "")))
+      ).filter((s) => fields.some((f) => (f.section ?? "") === s))
+    : [];
+
   function renderField(f: Field) {
     {
                 const cur = editing ? (editing as any)[f.name] : f.defaultValue ?? "";
