@@ -126,21 +126,16 @@ export function CrudList<T extends { id: string }>({
     load();
   }
 
-  return (
-    <div>
-      <div className={`mb-4 flex justify-end ${canEdit ? "" : "hidden"}`}>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditing(null)}>
-              <Plus className="mr-1 h-4 w-4" /> Add {title}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editing ? `Edit ${title}` : `New ${title}`}</DialogTitle>
-            </DialogHeader>
-            <form className="space-y-3" onSubmit={onSubmit}>
-              {fields.map((f) => {
+  const grouped = fields.some((f) => f.group);
+  const groupOf = (f: Field): FieldGroup => f.group ?? "basics";
+  const activeGroups = FIELD_GROUP_ORDER.filter((g) => fields.some((f) => groupOf(f) === g));
+  const [tab, setTab] = useState<FieldGroup>("basics");
+  useEffect(() => {
+    if (open) setTab(activeGroups[0] ?? "basics");
+  }, [open]);
+
+  function renderField(f: Field) {
+    {
                 const cur = editing ? (editing as any)[f.name] : f.defaultValue ?? "";
                 if (f.type === "custom" && !f.label) {
                   return <div key={f.name}>{f.render ? f.render(cur, editing) : null}</div>;
