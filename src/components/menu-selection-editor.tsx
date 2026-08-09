@@ -194,7 +194,7 @@ export function MenuSelectionEditor({
                       <Input
                         value={o.label}
                         onChange={(e) => updateOption(gi, oi, { label: e.target.value })}
-                        placeholder="Menu item name"
+                        placeholder={`${nounTitle} name`}
                       />
                       <Textarea
                         rows={1}
