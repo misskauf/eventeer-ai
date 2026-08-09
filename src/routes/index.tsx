@@ -44,6 +44,13 @@ function Index() {
       </header>
       <main className="mx-auto max-w-6xl px-6 py-24">
         <div className="mx-auto max-w-3xl text-center">
+          <img
+            src="/eventeer-logo.svg"
+            alt={`${APP_NAME} logo`}
+            className="mx-auto mb-8 h-10 w-auto sm:h-12"
+            width={376}
+            height={96}
+          />
           <h1 className="text-5xl font-bold tracking-tight">
             Event proposals, from inquiry to signed.
           </h1>
