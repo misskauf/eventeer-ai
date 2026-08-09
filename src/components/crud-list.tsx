@@ -11,6 +11,24 @@ import { toast } from "sonner";
 import { usePermissions } from "@/lib/use-permissions";
 import type { PermissionModule } from "@/lib/permissions";
 
+export type FieldGroup = "basics" | "pricing" | "schedule" | "client";
+
+export const FIELD_GROUP_ORDER: FieldGroup[] = ["basics", "pricing", "schedule", "client"];
+export const FIELD_GROUP_LABELS: Record<FieldGroup, string> = {
+  basics: "Basics",
+  pricing: "Pricing",
+  schedule: "Schedule",
+  client: "Client-facing",
+};
+
+export type Column<T> = {
+  key: string;
+  label: string;
+  align?: "left" | "right" | "center";
+  width?: string;
+  cell: (row: T) => ReactNode;
+};
+
 export type Field = {
   name: string;
   label: string;
@@ -23,6 +41,8 @@ export type Field = {
   hint?: string;
   rows?: number;
   placeholder?: string;
+  /** Optional tab grouping. If no field has a group, the form renders ungrouped. */
+  group?: FieldGroup;
   // For type "custom": renders arbitrary UI that must write a JSON string to a
   // hidden input named `name`. The stored value is JSON.parse'd on submit.
   render?: (currentValue: any, editingRow: any) => ReactNode;
