@@ -48,6 +48,8 @@ type Props = {
   minHeight?: number;
   /** "basic" hides contract-only tools (logo, signature, placeholders, image). */
   toolbar?: ToolbarMode;
+  /** Placeholder list for the insert dropdown (defaults to contract placeholders). */
+  placeholders?: Array<{ key: string; label: string }>;
 };
 
 function ToolBtn({
@@ -280,7 +282,7 @@ function Toolbar({
             <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
               Company
             </div>
-            {CONTRACT_PLACEHOLDERS.filter((p) => p.key.startsWith("company_")).map((p) => (
+            {placeholders.filter((p) => p.key.startsWith("company_")).map((p) => (
               <SelectItem key={p.key} value={p.key}>
                 <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
                 <span className="ml-2 text-muted-foreground">{p.label}</span>
@@ -289,7 +291,7 @@ function Toolbar({
             <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
               Deal
             </div>
-            {CONTRACT_PLACEHOLDERS.filter((p) => !p.key.startsWith("company_")).map((p) => (
+            {placeholders.filter((p) => !p.key.startsWith("company_")).map((p) => (
               <SelectItem key={p.key} value={p.key}>
                 <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
                 <span className="ml-2 text-muted-foreground">{p.label}</span>
@@ -304,7 +306,7 @@ function Toolbar({
   );
 }
 
-export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, toolbar = "full" }: Props) {
+export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, toolbar = "full", placeholders }: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -339,7 +341,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, 
 
   return (
     <div className="rounded-md border bg-background">
-      <Toolbar editor={editor} mode={toolbar} />
+      <Toolbar editor={editor} mode={toolbar} placeholders={placeholders} />
       <EditorContent editor={editor} />
     </div>
   );
