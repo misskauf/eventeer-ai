@@ -92,7 +92,15 @@ const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;marg
 
 const SIGNATURE_BLOCK = `<hr/><h3>Signatures</h3><table style="width:100%;border-collapse:collapse;margin-top:12px"><tbody><tr><td style="width:50%;vertical-align:top;padding:8px 12px 8px 0"><p style="margin:0 0 4px;font-size:12px;color:#555">Client</p><p style="margin:0 0 8px;min-height:60px">{{client_signature}}</p><p style="margin:0 0 4px">Name: {{client_signature_name}}</p><p style="margin:0 0 4px">Date: {{client_signature_date}}</p><p style="margin:0">Place: {{client_signature_place}}</p></td><td style="width:50%;vertical-align:top;padding:8px 0 8px 12px"><p style="margin:0 0 4px;font-size:12px;color:#555">Company representative</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td></tr></tbody></table><p></p>`;
 
-function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode }) {
+function Toolbar({
+  editor,
+  mode = "full",
+  placeholders = CONTRACT_PLACEHOLDERS,
+}: {
+  editor: Editor;
+  mode?: ToolbarMode;
+  placeholders?: Array<{ key: string; label: string }>;
+}) {
   const insert = (html: string) => editor.chain().focus().insertContent(html).run();
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/30 px-1 py-1">
