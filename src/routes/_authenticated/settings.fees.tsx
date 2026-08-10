@@ -131,3 +131,19 @@ function CategoryRow({ cat, label, fees }: { cat: string; label: string; fees: a
     </div>
   );
 }
+
+function SelectModeRow({ name, label, value }: { name: string; label: string; value?: string | null }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-center gap-2 text-sm">
+      <div>{label}</div>
+      <select
+        name={name}
+        defaultValue={value === "multi" ? "multi" : "single"}
+        className="rounded-md border bg-background px-2 py-1 text-xs"
+      >
+        <option value="single">Client selects one</option>
+        <option value="multi">Client selects multiple</option>
+      </select>
+    </div>
+  );
+}
