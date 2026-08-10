@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -491,6 +492,32 @@ function WeekdaysInput({ name, defaultValue }: { name: string; defaultValue: num
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** Rich-text field: TipTap editor writing HTML into a hidden input for FormData. */
+function RichTextField({
+  name,
+  defaultValue,
+  placeholder,
+}: {
+  name: string;
+  defaultValue: string;
+  placeholder?: string;
+}) {
+  const [html, setHtml] = useState(defaultValue ?? "");
+  const isEmpty = html.replace(/<[^>]*>/g, "").trim() === "";
+  return (
+    <div>
+      <input type="hidden" name={name} value={isEmpty ? "" : html} />
+      <RichTextEditor
+        value={html}
+        onChange={setHtml}
+        toolbar="basic"
+        minHeight={160}
+        placeholder={placeholder}
+      />
     </div>
   );
 }
