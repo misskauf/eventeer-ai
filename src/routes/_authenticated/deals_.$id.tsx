@@ -1357,6 +1357,9 @@ function DealDetail() {
                     title={s.name}
                     subtitle={`Base ${money(s.base_rental_fee, currency)} · min ${money(s.min_rental_fee, currency)}`}
                     link={s.details_url ? { href: s.details_url } : null}
+                    singleChoice={isSingleChoice(categoryModes.space)}
+                    isPrimary={primaryIds.space === s.id}
+                    onMakePrimary={() => setPrimaryIds((c) => ({ ...c, space: s.id }))}
                   />
                   {selectedSpaces.includes(s.id) && (
                     <SeatingSection
