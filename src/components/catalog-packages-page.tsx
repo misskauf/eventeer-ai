@@ -185,9 +185,8 @@ export function PackagesPage({ kind }: { kind: "food" | "beverage" }) {
           {
             name: "long_description",
             label: "Full details",
-            type: "textarea",
-            rows: 6,
-            hint: "Optional. Shown to the client on the proposal. Markdown supported.",
+            type: "richtext",
+                        hint: "Optional. Shown to the client on the proposal.",
             section: "Details (optional)",
           },
           {

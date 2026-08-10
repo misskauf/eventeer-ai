@@ -91,9 +91,8 @@ function ExtrasPage() {
           {
             name: "long_description",
             label: "Full details",
-            type: "textarea",
-            rows: 6,
-            hint: "Shown to the client on the proposal. Markdown supported.",
+            type: "richtext",
+                        hint: "Shown to the client on the proposal.",
           },
         ]}
         render={(r: any) => {
