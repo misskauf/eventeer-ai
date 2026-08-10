@@ -1076,11 +1076,18 @@ function SingleChoicePackages({
                 className={"rounded-md border p-3 " + (isSelected ? "border-primary" : "")}
               >
                 <label className="flex cursor-pointer items-start gap-3">
-                  {multi ? (
+                  {isMulti ? (
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(v) => onToggleSelect(p.id, v === true)}
+                      className="mt-1"
+                    />
+                  ) : choosable ? (
                     <RadioGroupItem value={p.id} className="mt-1" />
                   ) : (
                     <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
                   )}
+
                   <div className="flex-1">
                     <div className="font-medium">{pickLocalized(p, lang, "name")}</div>
                     <div className="text-xs text-muted-foreground">
