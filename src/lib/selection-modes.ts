@@ -92,3 +92,15 @@ export function resolveCategoryModes(
   }
   return out;
 }
+
+/**
+ * Fixed display order of the category sections on the client proposal page.
+ * Reorder this array to change the order everywhere.
+ */
+export const CATEGORY_SECTION_ORDER: CategoryKey[] = [
+  "space",
+  "food",
+  "beverage",
+  "extra",
+  "staff",
+];
