@@ -45,7 +45,8 @@ import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-select
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock } from "lucide-react";
+import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock, ChevronRight } from "lucide-react";
+import { SEATING_STYLES } from "@/lib/seating";
 import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
@@ -97,6 +98,8 @@ type SpaceRow = SpaceSel & {
   capacity_seated?: number | null;
   capacity_standing?: number | null;
   event_types?: string[] | null;
+  size?: string | null;
+  seating_capacities?: Record<string, number> | null;
 };
 
 /** Catalog fit helpers — same rules the auto-suggest uses (lead-suggest.server.ts). */
@@ -168,6 +171,8 @@ function DealDetail() {
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [staffConfig, setStaffConfig] = useState<Record<string, { count?: number; hours?: number }>>({});
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
+  const [seatingStyle, setSeatingStyle] = useState<Record<string, string>>({});
+
   const [packageHours, setPackageHours] = useState<Record<string, number>>({});
 
   const [seasonId, setSeasonId] = useState<string>("none");
@@ -218,7 +223,7 @@ function DealDetail() {
     setDeal(d as Deal);
 
     const [sp, pk, ex, stf, fc, ss, mr, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing, capacity, capacity_seated, capacity_standing, event_types").eq("active", true),
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing, capacity, capacity_seated, capacity_standing, event_types, size, seating_capacities").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, min_guests, max_guests, event_types, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("staff_roles").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
@@ -264,6 +269,8 @@ function DealDetail() {
       setSelectedStaff(cfg.staff_ids ?? []);
       setStaffConfig(cfg.staff_config ?? {});
       setPackageGuests(cfg.package_guests ?? {});
+      setSeatingStyle((cfg.seating_style as Record<string, string>) ?? {});
+
       setPackageHours(cfg.package_hours ?? {});
       setSeasonId(cfg.season_id ?? "none");
       const savedDiscount = Number(cfg.discount ?? 0);
@@ -479,6 +486,10 @@ function DealDetail() {
       alternative_groups: altGroups,
       optional_items,
       select_mode: selectModeCfg,
+      seating_style: Object.fromEntries(
+        Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
+      ),
+
 
       menu_selection_mode_by_pkg: menuModeByPkg,
       menu_choices_by_pkg: menuChoicesByPkg,
@@ -1270,6 +1281,14 @@ function DealDetail() {
                       defaultOn={optionalItems[s.id]?.default_on ?? true}
                       onOptionalChange={(v) => setItemOptional(s.id, v)}
                       onDefaultChange={(v) => setItemDefaultOn(s.id, v)}
+                    />
+                  )}
+                  {selectedSpaces.includes(s.id) && (
+                    <SeatingSection
+                      size={s.size ?? null}
+                      capacities={(s.seating_capacities as Record<string, number> | null) ?? null}
+                      value={seatingStyle[s.id] ?? ""}
+                      onChange={(v) => setSeatingStyle((prev) => ({ ...prev, [s.id]: v }))}
                     />
                   )}
                 </div>
@@ -2341,5 +2360,75 @@ function EmptyHint({ to, label }: { to: string; label: string }) {
     <Link to={to as string} className="block rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/40">
       {label} →
     </Link>
+  );
+}
+
+/** Internal-only reference: space size + seating capacities, collapsed by default. */
+function SeatingSection({
+  size,
+  capacities,
+  value,
+  onChange,
+}: {
+  size: string | null;
+  capacities: Record<string, number> | null;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const entries = SEATING_STYLES.filter((s) => Number(capacities?.[s] ?? 0) > 0).map(
+    (s) => [s, Number(capacities![s])] as const,
+  );
+  if (!size && entries.length === 0) return null;
+
+  return (
+    <div className="ml-6 rounded-md border">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
+      >
+        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+        <span className="font-medium">Seating arrangements</span>
+        <span className="ml-auto text-muted-foreground">{value || "Internal reference"}</span>
+      </button>
+      {open && (
+        <div className="space-y-2 border-t px-3 py-2 text-xs">
+          {size && (
+            <div className="text-muted-foreground">
+              Size: <span className="text-foreground">{size}</span>
+            </div>
+          )}
+          {entries.length > 0 && (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                {entries.map(([style, n]) => (
+                  <div key={style} className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">{style}</span>
+                    <span>{n}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-muted-foreground">Used for this event</span>
+                <select
+                  className="rounded-md border bg-background px-2 py-1 text-xs"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                >
+                  <option value="">Not set</option>
+                  {entries.map(([style]) => (
+                    <option key={style} value={style}>
+                      {style}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
