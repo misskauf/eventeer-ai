@@ -205,18 +205,23 @@ function ClientProposal() {
       else if (g.category === "extra") extExtra.push(chosen);
       else pkgExtra.push(chosen);
     }
+    // Optional items are included only while the client keeps them checked.
+    const optOn = (ids: string[]) => ids.filter((id) => optionalMap[id] && optSel[id]);
+    const dropOpt = (ids: string[]) => ids.filter((id) => !optionalMap[id]);
     return {
       guest_count: state.deal.guest_count,
-      space_ids: Array.from(new Set([...selSpaces, ...spaceExtra])),
-      package_ids: Array.from(new Set([...selFoodPkgs, ...selBevPkgs, ...pkgExtra])),
-      extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
-      staff_ids: staffIds,
+      space_ids: Array.from(new Set([...dropOpt(selSpaces), ...spaceExtra, ...optOn(baseSpaces)])),
+      package_ids: Array.from(
+        new Set([...dropOpt([...selFoodPkgs, ...selBevPkgs]), ...pkgExtra, ...optOn(basePkgs)]),
+      ),
+      extra_ids: Array.from(new Set([...dropOpt(selExtras), ...extExtra, ...optOn(baseExtras)])),
+      staff_ids: Array.from(new Set([...dropOpt(staffIds), ...optOn(staffIds)])),
       staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: state.deal.event_date ?? null,
     };
-  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices]);
+  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices, optionalMap, optSel, baseSpaces, basePkgs, baseExtras]);
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
