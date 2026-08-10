@@ -1255,16 +1255,7 @@ function DealDetail() {
                     title={s.name}
                     subtitle={`Base ${money(s.base_rental_fee, currency)} · min ${money(s.min_rental_fee, currency)}`}
                     link={s.details_url ? { href: s.details_url } : null}
-                    optional={!!optionalItems[s.id]}
                   />
-                  {selectedSpaces.includes(s.id) && (
-                    <OptionalControls
-                      isOptional={!!optionalItems[s.id]}
-                      defaultOn={optionalItems[s.id]?.default_on ?? true}
-                      onOptionalChange={(v) => setItemOptional(s.id, v)}
-                      onDefaultChange={(v) => setItemDefaultOn(s.id, v)}
-                    />
-                  )}
                   {selectedSpaces.includes(s.id) && (
                     <SeatingSection
                       size={s.size ?? null}
@@ -1301,9 +1292,6 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
-            optionalItems={optionalItems}
-            onOptionalChange={setItemOptional}
-            onOptionalDefaultChange={setItemDefaultOn}
           />
           <PackageCard
             title="Beverage packages"
@@ -1328,9 +1316,6 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
-            optionalItems={optionalItems}
-            onOptionalChange={setItemOptional}
-            onOptionalDefaultChange={setItemDefaultOn}
           />
 
 
@@ -1345,16 +1330,7 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedExtras, e.id, v)}
                     title={e.name}
                     subtitle={`${money(e.price, currency)} · ${e.pricing_type.replace("_", " ")}`}
-                    optional={!!optionalItems[e.id]}
                   />
-                  {selectedExtras.includes(e.id) && (
-                    <OptionalControls
-                      isOptional={!!optionalItems[e.id]}
-                      defaultOn={optionalItems[e.id]?.default_on ?? true}
-                      onOptionalChange={(v) => setItemOptional(e.id, v)}
-                      onDefaultChange={(v) => setItemDefaultOn(e.id, v)}
-                    />
-                  )}
                 </div>
               ))}
             </CardContent>
@@ -1371,16 +1347,7 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedStaff, x.id, v)}
                     title={x.name}
                     subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
-                    optional={!!optionalItems[x.id]}
                   />
-                  {selectedStaff.includes(x.id) && (
-                    <OptionalControls
-                      isOptional={!!optionalItems[x.id]}
-                      defaultOn={optionalItems[x.id]?.default_on ?? true}
-                      onOptionalChange={(v) => setItemOptional(x.id, v)}
-                      onDefaultChange={(v) => setItemDefaultOn(x.id, v)}
-                    />
-                  )}
                   {selectedStaff.includes(x.id) && x.pricing_type !== "per_person" && (
                     <div className="flex flex-wrap items-center gap-3 pl-9 text-xs text-muted-foreground">
                       <label className="flex items-center gap-2">
@@ -2082,7 +2049,6 @@ function PackageCard({
   title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
-  optionalItems, onOptionalChange, onOptionalDefaultChange,
   hiddenCount = 0, showAll = false, onShowAllChange, fitLabel = "this deal",
 }: {
   hiddenCount?: number;
@@ -2105,9 +2071,6 @@ function PackageCard({
   onMenuModeChange: (pid: string, mode: "manager" | "client") => void;
   menuChoicesByPkg: Record<string, Record<string, string[]>>;
   onMenuChoiceChange: (pid: string, groupLabel: string, next: string[]) => void;
-  optionalItems: Record<string, { default_on: boolean }>;
-  onOptionalChange: (id: string, v: boolean) => void;
-  onOptionalDefaultChange: (id: string, v: boolean) => void;
 }) {
   return (
     <Card>
@@ -2137,7 +2100,6 @@ function PackageCard({
           const groups = (Array.isArray(p.selection_groups) ? p.selection_groups : []) as MenuGroupDef[];
           const hasSelection = selMode !== "fixed" && groups.length > 0;
           const pickerMode = menuModeByPkg[p.id] ?? "client";
-          const isOptional = !!optionalItems[p.id];
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -2145,7 +2107,6 @@ function PackageCard({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{p.name}</span>
-                    {isOptional && <OptionalBadge />}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {money(p.price_per_person, currency)} per guest · {standardHours}h included
@@ -2164,16 +2125,6 @@ function PackageCard({
                   )}
                 </div>
               </label>
-              {checked && (
-                <div className="mt-2">
-                  <OptionalControls
-                    isOptional={isOptional}
-                    defaultOn={optionalItems[p.id]?.default_on ?? true}
-                    onOptionalChange={(v) => onOptionalChange(p.id, v)}
-                    onDefaultChange={(v) => onOptionalDefaultChange(p.id, v)}
-                  />
-                </div>
-              )}
               {checked && (
                 <div className="mt-2 space-y-2 border-t pt-2 text-xs">
                   <div className="flex items-center gap-2">
@@ -2294,23 +2245,19 @@ function OptionalControls({
 }
 
 function PickRow({
-  checked, onChange, title, subtitle, link, optional,
+  checked, onChange, title, subtitle, link,
 }: {
   checked: boolean;
   onChange: (v: boolean | "indeterminate") => void;
   title: string;
   subtitle: string;
   link?: { href: string; label?: string } | null;
-  optional?: boolean;
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3 hover:bg-muted/40">
       <Checkbox checked={checked} onCheckedChange={onChange} />
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{title}</span>
-          {optional && <OptionalBadge />}
-        </div>
+        <div className="font-medium">{title}</div>
         <div className="text-xs text-muted-foreground">{subtitle}</div>
         {link?.href && (
           <a
