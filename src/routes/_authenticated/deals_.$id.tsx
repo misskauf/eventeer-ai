@@ -202,7 +202,16 @@ function DealDetail() {
   const [categoryModes, setCategoryModes] = useState<Record<CategoryKey, CategoryMode>>(
     DEFAULT_CATEGORY_MODES,
   );
+  // The proposed / recommended pick per single-choice category (charged + pre-selected).
+  const [primaryIds, setPrimaryIds] = useState<Record<CategoryKey, string>>({
+    space: "", food: "", beverage: "", extra: "", staff: "",
+  });
+  // Whether the client sees the other selected items as switchable alternatives.
+  const [offerAlternatives, setOfferAlternatives] = useState<Record<CategoryKey, boolean>>(
+    DEFAULT_OFFER_ALTERNATIVES,
+  );
   const [companyRow, setCompanyRow] = useState<any>(null);
+
 
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
