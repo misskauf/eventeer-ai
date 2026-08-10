@@ -19,9 +19,10 @@ import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { formatEventDate } from "@/lib/date-format";
 import { RichText } from "@/components/markdown";
 import { toast } from "sonner";
-import { MessageSquare, Download } from "lucide-react";
+import { MessageSquare, Download, Building2, UtensilsCrossed, Wine, Sparkles, Users } from "lucide-react";
 import { t, pickLocalized, normalizeLang, type Lang } from "@/lib/i18n";
 import {
+  CATEGORY_SECTION_ORDER,
   DEFAULT_CATEGORY_MODES,
   resolveCategoryModes,
   type CategoryKey,
@@ -897,6 +898,53 @@ function StaffWrapper({
   return <div className="space-y-2">{children}</div>;
 }
 
+const CATEGORY_ICONS: Record<CategoryKey, React.ComponentType<{ className?: string }>> = {
+  space: Building2,
+  food: UtensilsCrossed,
+  beverage: Wine,
+  extra: Sparkles,
+  staff: Users,
+};
+
+function categoryTitle(lang: Lang, cat: CategoryKey): string {
+  switch (cat) {
+    case "space":
+      return t(lang, "section_space");
+    case "food":
+      return t(lang, "section_food");
+    case "beverage":
+      return t(lang, "section_beverages");
+    case "extra":
+      return t(lang, "section_extras");
+    case "staff":
+      return t(lang, "section_staffing");
+  }
+}
+
+/** Titled wrapper so every category looks the same, in the same order. */
+function CategorySection({
+  cat, mode, lang, children,
+}: {
+  cat: CategoryKey;
+  mode: CategoryMode;
+  lang: Lang;
+  children: React.ReactNode;
+}) {
+  const Icon = CATEGORY_ICONS[cat];
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3 border-b pb-2">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          {categoryTitle(lang, cat)}
+        </h2>
+        <span className="text-xs text-muted-foreground">{modeHint(lang, mode)}</span>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
 function NoneRow({ lang }: { lang: Lang }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/40">
@@ -907,7 +955,7 @@ function NoneRow({ lang }: { lang: Lang }) {
 }
 
 function OptionGroup({
-  title, items, selected, onToggle, mode = "multi", onSelect, onClear,
+  title, items, selected, onToggle, mode = "multi", onSelect, onClear, headless,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   title: string;
@@ -917,6 +965,7 @@ function OptionGroup({
   mode?: CategoryMode;
   onSelect?: (id: string) => void;
   onClear?: () => void;
+  headless?: boolean;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -953,11 +1002,13 @@ function OptionGroup({
   ));
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
-      </CardHeader>
-      <CardContent>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="text-base">{title}</CardTitle>
+          <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
+        </CardHeader>
+      )}
+      <CardContent className={headless ? "pt-6" : undefined}>
         {showRadio ? (
           <RadioGroup
             value={selected[0] ?? NONE_VALUE}
@@ -977,7 +1028,7 @@ function OptionGroup({
 
 
 function SingleChoiceSpaces({
-  items, currency, selectedIds, mode, onSelect, onToggle, onClear,
+  items, currency, selectedIds, mode, onSelect, onToggle, onClear, headless,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
@@ -987,6 +1038,7 @@ function SingleChoiceSpaces({
   onSelect: (id: string) => void;
   onToggle: (id: string, on: boolean) => void;
   onClear: () => void;
+  headless?: boolean;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -1039,11 +1091,13 @@ function SingleChoiceSpaces({
   });
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
-        <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
-      </CardHeader>
-      <CardContent>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
+        </CardHeader>
+      )}
+      <CardContent className={headless ? "pt-6" : undefined}>
         {showRadio ? (
           <RadioGroup
             value={selectedIds[0] ?? NONE_VALUE}
@@ -1063,7 +1117,7 @@ function SingleChoiceSpaces({
 
 
 function SingleChoicePackages({
-  title, items, currency, selectedIds, mode: categoryMode, onSelect, onToggleSelect, onClear,
+  title, items, currency, selectedIds, mode: categoryMode, onSelect, onToggleSelect, onClear, headless,
   dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
@@ -1078,6 +1132,7 @@ function SingleChoicePackages({
   onSelect: (id: string) => void;
   onToggleSelect: (id: string, on: boolean) => void;
   onClear: () => void;
+  headless?: boolean;
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
@@ -1120,11 +1175,13 @@ function SingleChoicePackages({
     );
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <p className="text-xs text-muted-foreground">{modeHint(lang, categoryMode)}</p>
-      </CardHeader>
-      <CardContent>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="text-base">{title}</CardTitle>
+          <p className="text-xs text-muted-foreground">{modeHint(lang, categoryMode)}</p>
+        </CardHeader>
+      )}
+      <CardContent className={headless ? "pt-6" : undefined}>
         <Wrapper>
           {items.map((p) => {
             const isSelected = selectedIds.includes(p.id);
