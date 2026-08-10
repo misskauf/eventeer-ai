@@ -600,8 +600,10 @@ function ClientProposal() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">{t(lang, "section_staffing")}</CardTitle>
+                  <p className="text-xs text-muted-foreground">{modeHint(lang, categoryModes.staff)}</p>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent>
+                  <StaffWrapper mode={categoryModes.staff} selected={selStaff} onSelect={(id) => setSelStaff([id])} onClear={() => setSelStaff([])} lang={lang}>
                   {staffItems.map((x) => {
                     const cfg = staffConfig[x.id] ?? {};
                     const count = Math.max(1, Number(cfg.count ?? 1));
@@ -614,18 +616,36 @@ function ClientProposal() {
                         : x.pricing_type === "per_hour"
                         ? `${count} × ${hours}h × ${money(x.price, currency)}`
                         : `${count} × ${money(x.price, currency)}`;
+                    const staffMode = categoryModes.staff;
+                    const isSelected = selStaff.includes(x.id);
                     return (
-                      <div key={x.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
-                        <div className="min-w-0">
-                          <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
-                          <div className="text-xs text-muted-foreground">{meta}</div>
-                          {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+                      <label key={x.id} className={"flex items-start justify-between gap-3 rounded-md border p-3 " + (staffMode === "fixed" ? "" : "cursor-pointer hover:bg-muted/40 ") + (isSelected ? "border-primary" : "")}>
+                        <div className="flex min-w-0 items-start gap-3">
+                          {staffMode === "multi" ? (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(v) => toggle(setSelStaff, x.id, v)}
+                              className="mt-1"
+                            />
+                          ) : staffMode === "fixed" ? (
+                            <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+                          ) : (
+                            <RadioGroupItem value={x.id} className="mt-1" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
+                            <div className="text-xs text-muted-foreground">{meta}</div>
+                            {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+                          </div>
                         </div>
                         {line && <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>}
-                      </div>
+                      </label>
                     );
                   })}
-                  <div className="text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
+                  </StaffWrapper>
+                  {categoryModes.staff === "fixed" && (
+                    <div className="mt-2 text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -850,6 +870,31 @@ function itemsForGroup(
       return p ? { id: p.id, name: pickLocalized(p, lang, "name"), note: lang === "de" ? `pro Gast` : `per guest`, details: pickLocalized(p, lang, "long_description") || null } : null;
     })
     .filter(Boolean) as { id: string; name: string; note: string; details?: string | null }[];
+}
+
+function StaffWrapper({
+  mode, selected, onSelect, onClear, lang, children,
+}: {
+  mode: CategoryMode;
+  selected: string[];
+  onSelect: (id: string) => void;
+  onClear: () => void;
+  lang: Lang;
+  children: React.ReactNode;
+}) {
+  if (mode === "required_one" || mode === "optional_one") {
+    return (
+      <RadioGroup
+        value={selected[0] ?? NONE_VALUE}
+        onValueChange={(v) => (v === NONE_VALUE ? onClear() : onSelect(v))}
+        className="space-y-2"
+      >
+        {children}
+        {mode === "optional_one" && <NoneRow lang={lang} />}
+      </RadioGroup>
+    );
+  }
+  return <div className="space-y-2">{children}</div>;
 }
 
 function NoneRow({ lang }: { lang: Lang }) {
