@@ -474,6 +474,18 @@ function DealsPage() {
           </Card>
         </div>
       )}
+      {deleteTarget && (
+        <DeleteDealDialog
+          open={!!deleteTarget}
+          onOpenChange={(v) => !v && setDeleteTarget(null)}
+          dealId={deleteTarget.id}
+          clientName={deleteTarget.client_name}
+          onDeleted={() => {
+            setDeleteTarget(null);
+            refresh();
+          }}
+        />
+      )}
     </AppShell>
   );
 }
