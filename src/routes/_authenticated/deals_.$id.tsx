@@ -40,7 +40,8 @@ import {
   type DiscountTarget,
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
-import { Markdown } from "@/components/markdown";
+import { RichText } from "@/components/markdown";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-selection-picker";
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
@@ -520,7 +521,11 @@ function DealDetail() {
     if (altGroups.length) lines.push(`We've included a few **choices** below so you can shape the experience yourself.`);
     lines.push("");
     lines.push("Let me know what you think, or reply directly with any tweaks.");
-    setIntroMarkdown(lines.join("\n"));
+    const html = lines
+      .filter((l) => l.trim() !== "")
+      .map((l) => `<p>${l.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`)
+      .join("");
+    setIntroMarkdown(html);
     toast.success("Suggested text inserted");
   }
 
@@ -1168,7 +1173,7 @@ function DealDetail() {
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label>Intro message (Markdown supported)</Label>
+                  <Label>Intro message</Label>
                   <Button type="button" size="sm" variant="outline" onClick={suggestIntroText}>
                     <Sparkles className="mr-1 h-3.5 w-3.5" /> Suggest text
                   </Button>
@@ -1179,16 +1184,17 @@ function DealDetail() {
                     <TabsTrigger value="preview">Preview</TabsTrigger>
                   </TabsList>
                   <TabsContent value="write">
-                    <Textarea
-                      rows={6}
+                    <RichTextEditor
                       value={introMarkdown}
-                      onChange={(e) => setIntroMarkdown(e.target.value)}
-                      placeholder={"Dear Alex,\n\nWe're delighted to share the following options for your event.\n\n**What's included:**\n- Space rental\n- Menu options to choose from"}
+                      onChange={setIntroMarkdown}
+                      toolbar="basic"
+                      minHeight={180}
+                      placeholder={"Dear Alex, we're delighted to share the following options for your event."}
                     />
                   </TabsContent>
                   <TabsContent value="preview">
                     <div className="min-h-[8rem] rounded-md border p-3">
-                      {introMarkdown ? <Markdown source={introMarkdown} /> : (
+                      {introMarkdown ? <RichText source={introMarkdown} /> : (
                         <div className="text-sm text-muted-foreground">Nothing to preview yet.</div>
                       )}
                     </div>

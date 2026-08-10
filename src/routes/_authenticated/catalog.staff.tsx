@@ -92,16 +92,14 @@ function StaffPage() {
           {
             name: "long_description",
             label: "Full details",
-            type: "textarea",
-            rows: 6,
-            hint: "Shown to the client on the proposal. Markdown supported.",
+            type: "richtext",
+                        hint: "Shown to the client on the proposal.",
           },
           {
             name: "long_description_de",
             label: "Full details (Deutsch)",
-            type: "textarea",
-            rows: 6,
-            nullable: true,
+            type: "richtext",
+                        nullable: true,
             hint: "Used when the deal language is German. Falls back to the English text.",
           },
           {

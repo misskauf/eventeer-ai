@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ export type Column<T> = {
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url" | "custom" | "checkbox";
+  type?: "text" | "number" | "select" | "textarea" | "richtext" | "tags" | "weekdays" | "url" | "custom" | "checkbox";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
@@ -185,6 +186,8 @@ export function CrudList<T extends { id: string }>({
                           <option key={o.value} value={o.value}>{o.label}</option>
                         ))}
                       </select>
+                    ) : f.type === "richtext" ? (
+                      <RichTextField name={f.name} defaultValue={typeof cur === "string" ? cur : ""} placeholder={f.placeholder} />
                     ) : f.type === "textarea" ? (
                       <Textarea
                         id={f.name}
@@ -489,6 +492,32 @@ function WeekdaysInput({ name, defaultValue }: { name: string; defaultValue: num
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** Rich-text field: TipTap editor writing HTML into a hidden input for FormData. */
+function RichTextField({
+  name,
+  defaultValue,
+  placeholder,
+}: {
+  name: string;
+  defaultValue: string;
+  placeholder?: string;
+}) {
+  const [html, setHtml] = useState(defaultValue ?? "");
+  const isEmpty = html.replace(/<[^>]*>/g, "").trim() === "";
+  return (
+    <div>
+      <input type="hidden" name={name} value={isEmpty ? "" : html} />
+      <RichTextEditor
+        value={html}
+        onChange={setHtml}
+        toolbar="basic"
+        minHeight={160}
+        placeholder={placeholder}
+      />
     </div>
   );
 }

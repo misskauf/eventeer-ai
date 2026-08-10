@@ -154,10 +154,9 @@ function SpacesPage() {
           {
             name: "long_description",
             label: "Full details",
-            type: "textarea",
-            rows: 6,
-            group: "client",
-            hint: "Shown to the client on the proposal. Markdown supported.",
+            type: "richtext",
+                        group: "client",
+            hint: "Shown to the client on the proposal.",
           },
           {
             name: "features",

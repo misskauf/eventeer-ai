@@ -17,7 +17,7 @@ import { Slider } from "@/components/ui/slider";
 import { computeTotals, money, type Offer, type Selection, type SpaceSel, type PackageSel, type ExtraSel, type StaffSel } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { formatEventDate } from "@/lib/date-format";
-import { Markdown } from "@/components/markdown";
+import { RichText } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare, Download } from "lucide-react";
 import { t, pickLocalized, normalizeLang, type Lang } from "@/lib/i18n";
@@ -460,7 +460,7 @@ function ClientProposal() {
         {introMarkdown && (
           <Card className="mb-6">
             <CardContent className="pt-6">
-              <Markdown source={introMarkdown} />
+              <RichText source={introMarkdown} />
             </CardContent>
           </Card>
         )}
@@ -500,7 +500,7 @@ function ClientProposal() {
                             <div className="flex-1">
                               <div className="font-medium">{it.name}</div>
                               <div className="text-xs text-muted-foreground">{it.note}</div>
-                              {it.details && <Markdown source={it.details} className="mt-2" />}
+                              {it.details && <RichText source={it.details} className="mt-2" />}
                               {isSelectedBeverage && beverageStandardHours != null && (
                                 <BeverageHoursField
                                   packageId={beveragePackage.id}
@@ -943,7 +943,7 @@ function OptionGroup({
             <div className="flex-1">
               <div className="font-medium">{i.name}</div>
               <div className="text-xs text-muted-foreground">{i.note}</div>
-              {i.details && <Markdown source={i.details} className="mt-2" />}
+              {i.details && <RichText source={i.details} className="mt-2" />}
               <NoteToggle
                 itemId={i.id}
                 open={!!openNoteFor[i.id]}
@@ -1006,7 +1006,7 @@ function SingleChoiceSpaces({
           <div className="text-xs text-muted-foreground">
             {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
           </div>
-          {localDesc && <Markdown source={localDesc} className="mt-2" />}
+          {localDesc && <RichText source={localDesc} className="mt-2" />}
           <NoteToggle
             itemId={s.id}
             open={!!openNoteFor[s.id]}
@@ -1152,7 +1152,7 @@ function SingleChoicePackages({
                         {viewDetails}
                       </a>
                     )}
-                    {localDesc && <Markdown source={localDesc} className="mt-2" />}
+                    {localDesc && <RichText source={localDesc} className="mt-2" />}
                   </div>
                 </label>
                 {isSelected && (
