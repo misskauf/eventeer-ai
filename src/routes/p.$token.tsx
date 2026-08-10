@@ -21,6 +21,12 @@ import { RichText } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare, Download } from "lucide-react";
 import { t, pickLocalized, normalizeLang, type Lang } from "@/lib/i18n";
+import {
+  DEFAULT_CATEGORY_MODES,
+  resolveCategoryModes,
+  type CategoryKey,
+  type CategoryMode,
+} from "@/lib/selection-modes";
 
 export const Route = createFileRoute("/p/$token")({
   ssr: false,
@@ -618,44 +624,6 @@ function ClientProposal() {
               </Card>
             )}
 
-            {optionalEntries.length > 0 && (
-              <Card className="border-amber-300/70">
-                <CardHeader>
-                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                    {lang === "de" ? "Optionale Zusatzleistungen" : "Optional add-ons"}
-                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-800">
-                      {lang === "de" ? "Optional — nach Wunsch hinzufügen" : "Optional — add if you'd like"}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {optionalEntries.map((o) => {
-                    const on = !!optSel[o.id];
-                    const line = totals?.lines.find((l) => l.sourceId === o.id);
-                    return (
-                      <label
-                        key={o.id}
-                        className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
-                      >
-                        <Checkbox
-                          checked={on}
-                          onCheckedChange={(v) => setOptSel((c) => ({ ...c, [o.id]: v === true }))}
-                          className="mt-1"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium">{o.name}</div>
-                          <div className="text-xs text-muted-foreground">{o.note}</div>
-                          {o.details && <div className="mt-1 text-xs text-muted-foreground">{o.details}</div>}
-                        </div>
-                        {on && line && (
-                          <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>
-                        )}
-                      </label>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
 
 
 
@@ -878,14 +846,26 @@ function itemsForGroup(
     .filter(Boolean) as { id: string; name: string; note: string; details?: string | null }[];
 }
 
+function NoneRow({ lang }: { lang: Lang }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/40">
+      <RadioGroupItem value={NONE_VALUE} />
+      {noneLabel(lang)}
+    </label>
+  );
+}
+
 function OptionGroup({
-  title, items, selected, onToggle,
+  title, items, selected, onToggle, mode = "multi", onSelect, onClear,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   title: string;
   items: { id: string; name: string; note: string; details?: string | null }[];
   selected: string[];
   onToggle: (id: string, v: boolean | "indeterminate") => void;
+  mode?: CategoryMode;
+  onSelect?: (id: string) => void;
+  onClear?: () => void;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -893,13 +873,18 @@ function OptionGroup({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent className="space-y-2">
-        {items.map((i) => (
+  const isMulti = mode === "multi";
+  const isFixed = mode === "fixed";
+  const showRadio = !isMulti && !isFixed;
+  const rows = items.map((i) => (
           <label key={i.id} className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40">
-            <Checkbox checked={selected.includes(i.id)} onCheckedChange={(v) => onToggle(i.id, v)} className="mt-1" />
+            {isMulti ? (
+              <Checkbox checked={selected.includes(i.id)} onCheckedChange={(v) => onToggle(i.id, v)} className="mt-1" />
+            ) : showRadio ? (
+              <RadioGroupItem value={i.id} className="mt-1" />
+            ) : (
+              <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+            )}
             <div className="flex-1">
               <div className="font-medium">{i.name}</div>
               <div className="text-xs text-muted-foreground">{i.note}</div>
@@ -921,15 +906,16 @@ function OptionGroup({
 }
 
 function SingleChoiceSpaces({
-  items, currency, selectedIds, selectMode, onSelect, onToggle,
+  items, currency, selectedIds, mode, onSelect, onToggle, onClear,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
   currency: string;
   selectedIds: string[];
-  selectMode: SelectMode;
+  mode: CategoryMode;
   onSelect: (id: string) => void;
   onToggle: (id: string, on: boolean) => void;
+  onClear: () => void;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -937,8 +923,9 @@ function SingleChoiceSpaces({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const choosable = items.length > 1;
-  const isMulti = selectMode === "multi";
+  const isMulti = mode === "multi";
+  const isFixed = mode === "fixed";
+  const showRadio = !isMulti && !isFixed && (items.length > 1 || mode === "optional_one");
   const rows = items.map((s) => {
     const isSelected = selectedIds.includes(s.id);
     const localDesc = pickLocalized(s, lang, "long_description");
@@ -956,7 +943,7 @@ function SingleChoiceSpaces({
             onCheckedChange={(v) => onToggle(s.id, v === true)}
             className="mt-1"
           />
-        ) : choosable ? (
+        ) : showRadio ? (
           <RadioGroupItem value={s.id} className="mt-1" />
         ) : (
           <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
@@ -983,21 +970,20 @@ function SingleChoiceSpaces({
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          {!choosable
-            ? t(lang, "included_in_proposal")
-            : isMulti
-            ? chooseAnyLabel(lang)
-            : t(lang, "choose_one")}
-        </p>
+        <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
       </CardHeader>
       <CardContent>
-        {isMulti ? (
-          <div className="space-y-2">{rows}</div>
-        ) : (
-          <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+        {showRadio ? (
+          <RadioGroup
+            value={selectedIds[0] ?? NONE_VALUE}
+            onValueChange={(v) => (v === NONE_VALUE ? onClear() : onSelect(v))}
+            className="space-y-2"
+          >
             {rows}
+            {mode === "optional_one" && <NoneRow lang={lang} />}
           </RadioGroup>
+        ) : (
+          <div className="space-y-2">{rows}</div>
         )}
       </CardContent>
     </Card>
@@ -1006,7 +992,7 @@ function SingleChoiceSpaces({
 
 
 function SingleChoicePackages({
-  title, items, currency, selectedIds, selectMode, onSelect, onToggleSelect,
+  title, items, currency, selectedIds, mode: categoryMode, onSelect, onToggleSelect, onClear,
   dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
@@ -1017,9 +1003,10 @@ function SingleChoicePackages({
   items: PackageSel[];
   currency: string;
   selectedIds: string[];
-  selectMode: SelectMode;
+  mode: CategoryMode;
   onSelect: (id: string) => void;
   onToggleSelect: (id: string, on: boolean) => void;
+  onClear: () => void;
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
@@ -1037,8 +1024,9 @@ function SingleChoicePackages({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const choosable = items.length > 1;
-  const isMulti = selectMode === "multi";
+  const isMulti = categoryMode === "multi";
+  const isFixed = categoryMode === "fixed";
+  const showRadio = !isMulti && !isFixed && (items.length > 1 || categoryMode === "optional_one");
   const perGuest = lang === "de" ? "/ Gast" : "/ guest";
   const hIncluded = lang === "de" ? "Std. inklusive" : "h included";
   const viewDetails = lang === "de" ? "Details ansehen ↗" : "View details ↗";
@@ -1047,24 +1035,23 @@ function SingleChoicePackages({
   const selectUpTo = lang === "de" ? "Wählen Sie bis zu" : "Select up to";
   const selectedLabel = lang === "de" ? "gewählt" : "selected";
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    isMulti ? (
-      <div className="space-y-2">{children}</div>
-    ) : (
-      <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+    showRadio ? (
+      <RadioGroup
+        value={selectedIds[0] ?? NONE_VALUE}
+        onValueChange={(v) => (v === NONE_VALUE ? onClear() : onSelect(v))}
+        className="space-y-2"
+      >
         {children}
+        {categoryMode === "optional_one" && <NoneRow lang={lang} />}
       </RadioGroup>
+    ) : (
+      <div className="space-y-2">{children}</div>
     );
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          {!choosable
-            ? t(lang, "included_in_proposal")
-            : isMulti
-            ? chooseAnyLabel(lang)
-            : t(lang, "choose_one")}
-        </p>
+        <p className="text-xs text-muted-foreground">{modeHint(lang, categoryMode)}</p>
       </CardHeader>
       <CardContent>
         <Wrapper>
@@ -1089,7 +1076,7 @@ function SingleChoicePackages({
                       onCheckedChange={(v) => onToggleSelect(p.id, v === true)}
                       className="mt-1"
                     />
-                  ) : choosable ? (
+                  ) : showRadio ? (
                     <RadioGroupItem value={p.id} className="mt-1" />
                   ) : (
                     <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
