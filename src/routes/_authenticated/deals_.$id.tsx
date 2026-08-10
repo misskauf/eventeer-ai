@@ -1168,7 +1168,7 @@ function DealDetail() {
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label>Intro message (Markdown supported)</Label>
+                  <Label>Intro message</Label>
                   <Button type="button" size="sm" variant="outline" onClick={suggestIntroText}>
                     <Sparkles className="mr-1 h-3.5 w-3.5" /> Suggest text
                   </Button>
@@ -1179,11 +1179,12 @@ function DealDetail() {
                     <TabsTrigger value="preview">Preview</TabsTrigger>
                   </TabsList>
                   <TabsContent value="write">
-                    <Textarea
-                      rows={6}
+                    <RichTextEditor
                       value={introMarkdown}
-                      onChange={(e) => setIntroMarkdown(e.target.value)}
-                      placeholder={"Dear Alex,\n\nWe're delighted to share the following options for your event.\n\n**What's included:**\n- Space rental\n- Menu options to choose from"}
+                      onChange={setIntroMarkdown}
+                      toolbar="basic"
+                      minHeight={180}
+                      placeholder={"Dear Alex, we're delighted to share the following options for your event."}
                     />
                   </TabsContent>
                   <TabsContent value="preview">
