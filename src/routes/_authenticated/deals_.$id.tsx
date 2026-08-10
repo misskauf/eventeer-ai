@@ -1273,28 +1273,51 @@ function DealDetail() {
               </p>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              {CATEGORY_KEYS.map((cat) => (
-                <div key={cat} className="space-y-1">
-                  <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
-                  <Select
-                    value={categoryModes[cat]}
-                    onValueChange={(v) =>
-                      setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
-                    }
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
-                        <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {categoryModeSummary(cat, categoryModes[cat])}
-                  </p>
-                </div>
-              ))}
+              {CATEGORY_KEYS.map((cat) => {
+                const single = isSingleChoice(categoryModes[cat]);
+                const altCount = alternativesByCategory[cat]?.length ?? 0;
+                const chargedCount =
+                  selectedByCategory[cat].length - altCount;
+                return (
+                  <div key={cat} className="space-y-1 rounded-md border p-3">
+                    <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
+                    <Select
+                      value={categoryModes[cat]}
+                      onValueChange={(v) =>
+                        setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
+                          <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryModeSummary(cat, categoryModes[cat])}
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs">Offer alternatives to client</span>
+                      <Switch
+                        checked={single ? offerAlternatives[cat] : false}
+                        disabled={!single}
+                        onCheckedChange={(v) =>
+                          setOfferAlternatives((cur) => ({ ...cur, [cat]: v }))
+                        }
+                      />
+                    </div>
+                    {single && selectedByCategory[cat].length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {chargedCount} proposed + {altCount} alternative{altCount === 1 ? "" : "s"}
+                        {altCount > 0 && !offerAlternatives[cat] ? " (hidden from client)" : ""}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
+
           </Card>
 
 
