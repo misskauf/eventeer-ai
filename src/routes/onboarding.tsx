@@ -7,6 +7,9 @@ import { acceptInvites } from "@/lib/team.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CurrencySelect } from "@/components/currency-select";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
@@ -53,7 +56,7 @@ function Onboarding() {
     const { error } = await supabase.rpc("create_company_workspace", {
       _name: fd.get("name") as string,
       _primary_color: (fd.get("primary_color") as string) || "#0f172a",
-      _currency: (fd.get("currency") as string) || "USD",
+      _currency: (fd.get("currency") as string) || DEFAULT_CURRENCY,
     });
     if (error) {
       setBusy(false);
@@ -88,8 +91,9 @@ function Onboarding() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="currency">Currency</Label>
-                <Input id="currency" name="currency" defaultValue="USD" maxLength={3} />
+                <CurrencySelect id="currency" name="currency" />
               </div>
+
             </div>
             <Button className="w-full" disabled={busy}>
               Create workspace

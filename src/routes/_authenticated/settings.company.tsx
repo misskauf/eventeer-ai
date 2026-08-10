@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Field, useCompanySettings } from "@/components/settings-shared";
+import { Label } from "@/components/ui/label";
+import { CurrencySelect } from "@/components/currency-select";
+
 
 export const Route = createFileRoute("/_authenticated/settings/company")({
   component: CompanySettings,
@@ -51,7 +54,11 @@ function CompanySettings() {
             <Field name="contact_phone" label="Contact phone" defaultValue={company.contact_phone ?? ""} />
           </div>
           <Field name="website" label="Website" defaultValue={company.website ?? ""} />
-          <Field name="currency" label="Currency" defaultValue={company.currency} />
+          <div className="space-y-1.5">
+            <Label htmlFor="currency">Currency</Label>
+            <CurrencySelect id="currency" name="currency" defaultCode={company.currency} />
+          </div>
+
           <Button className="w-full">Save company</Button>
         </form>
       </CardContent>
