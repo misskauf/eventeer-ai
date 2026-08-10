@@ -268,11 +268,32 @@ function ClientProposal() {
 
   // Filter items shown in the free-pick lists to those the manager included as "base" (not part of any alt group).
   const groupItemSet = new Set<string>(altGroups.flatMap((g) => g.item_ids));
-  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id));
-  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
-  const staffItems = staff.filter((x) => staffIds.includes(x.id));
+  const isOptional = (id: string) => !!optionalMap[id];
+  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id) && !isOptional(s.id));
+  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
+  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
+  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id) && !isOptional(e.id));
+  const staffItems = staff.filter((x) => staffIds.includes(x.id) && !isOptional(x.id));
+
+  // Optional add-ons the client can toggle on/off.
+  const optionalEntries: Array<{ id: string; name: string; note: string }> = [
+    ...spaces
+      .filter((s) => baseSpaces.includes(s.id) && isOptional(s.id))
+      .map((s) => ({ id: s.id, name: (lang === "de" && s.name_de) || s.name, note: money(Number(s.base_rental_fee ?? 0), currency) })),
+    ...packages
+      .filter((p) => basePkgs.includes(p.id) && isOptional(p.id))
+      .map((p) => ({
+        id: p.id,
+        name: (lang === "de" && p.name_de) || p.name,
+        note: `${money(Number(p.price_per_person ?? 0), currency)} ${lang === "de" ? "pro Gast" : "per guest"}`,
+      })),
+    ...extras
+      .filter((e) => baseExtras.includes(e.id) && isOptional(e.id))
+      .map((e) => ({ id: e.id, name: (lang === "de" && e.name_de) || e.name, note: money(Number(e.price ?? 0), currency) })),
+    ...staff
+      .filter((x) => staffIds.includes(x.id) && isOptional(x.id))
+      .map((x) => ({ id: x.id, name: (lang === "de" && x.name_de) || x.name, note: money(Number(x.price ?? 0), currency) })),
+  ];
 
   async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
     if (action === "changes_requested" && !actionNote.trim()) {
