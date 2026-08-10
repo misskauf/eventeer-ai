@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,9 @@ function ClientProposal() {
   const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
+  // Optional line items the client can add/remove. Presence in the map = optional.
+  const [optionalMap, setOptionalMap] = useState<Record<string, { default_on: boolean }>>({});
+  const [optSel, setOptSel] = useState<Record<string, boolean>>({});
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
@@ -125,7 +129,18 @@ function ClientProposal() {
       const bSpaces: string[] = offerCfg.space_ids ?? [];
       const bPkgs: string[] = offerCfg.package_ids ?? [];
       const bExtras: string[] = offerCfg.extra_ids ?? [];
-      setStaffIds(offerCfg.staff_ids ?? []);
+      const bStaff: string[] = offerCfg.staff_ids ?? [];
+      const optMap: Record<string, { default_on: boolean }> = offerCfg.optional_items ?? {};
+      const isOpt = (id: string) => !!optMap[id];
+      setOptionalMap(optMap);
+      setOptSel(
+        Object.fromEntries(
+          [...bSpaces, ...bPkgs, ...bExtras, ...bStaff]
+            .filter((id) => isOpt(id))
+            .map((id) => [id, optMap[id]?.default_on !== false]),
+        ),
+      );
+      setStaffIds(bStaff);
       setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
       setBasePkgs(bPkgs);
@@ -136,20 +151,20 @@ function ClientProposal() {
       const groupItemIds = new Set<string>(groups.flatMap((g) => g.item_ids));
       const bFood = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id);
+        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id) && !isOpt(id);
       });
       const bBev = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && p.kind === "beverage" && !groupItemIds.has(id);
+        return p && p.kind === "beverage" && !groupItemIds.has(id) && !isOpt(id);
       });
-      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id));
+      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id) && !isOpt(id));
 
       // Single-choice defaults: pick the first item in each category (if any).
       setSelSpaces(bSpacesNonGroup.length ? [bSpacesNonGroup[0]] : []);
       setSelFoodPkgs(bFood.length ? [bFood[0]] : []);
       setSelBevPkgs(bBev.length ? [bBev[0]] : []);
       // Extras remain multi-select, pre-checked as the manager included them.
-      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id)));
+      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id) && !isOpt(id)));
 
       setPackageGuests(offerCfg.package_guests ?? {});
       // Seed beverage hours from each package's included hours, falling back to the company default.
@@ -191,18 +206,23 @@ function ClientProposal() {
       else if (g.category === "extra") extExtra.push(chosen);
       else pkgExtra.push(chosen);
     }
+    // Optional items are included only while the client keeps them checked.
+    const optOn = (ids: string[]) => ids.filter((id) => optionalMap[id] && optSel[id]);
+    const dropOpt = (ids: string[]) => ids.filter((id) => !optionalMap[id]);
     return {
       guest_count: state.deal.guest_count,
-      space_ids: Array.from(new Set([...selSpaces, ...spaceExtra])),
-      package_ids: Array.from(new Set([...selFoodPkgs, ...selBevPkgs, ...pkgExtra])),
-      extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
-      staff_ids: staffIds,
+      space_ids: Array.from(new Set([...dropOpt(selSpaces), ...spaceExtra, ...optOn(baseSpaces)])),
+      package_ids: Array.from(
+        new Set([...dropOpt([...selFoodPkgs, ...selBevPkgs]), ...pkgExtra, ...optOn(basePkgs)]),
+      ),
+      extra_ids: Array.from(new Set([...dropOpt(selExtras), ...extExtra, ...optOn(baseExtras)])),
+      staff_ids: Array.from(new Set([...dropOpt(staffIds), ...optOn(staffIds)])),
       staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: state.deal.event_date ?? null,
     };
-  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices]);
+  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices, optionalMap, optSel, baseSpaces, basePkgs, baseExtras]);
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
@@ -249,11 +269,48 @@ function ClientProposal() {
 
   // Filter items shown in the free-pick lists to those the manager included as "base" (not part of any alt group).
   const groupItemSet = new Set<string>(altGroups.flatMap((g) => g.item_ids));
-  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id));
-  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
-  const staffItems = staff.filter((x) => staffIds.includes(x.id));
+  const isOptional = (id: string) => !!optionalMap[id];
+  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id) && !isOptional(s.id));
+  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
+  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
+  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id) && !isOptional(e.id));
+  const staffItems = staff.filter((x) => staffIds.includes(x.id) && !isOptional(x.id));
+
+  // Optional add-ons the client can toggle on/off.
+  const optionalEntries: Array<{ id: string; name: string; note: string; details: string | null }> = [
+    ...spaces
+      .filter((s) => baseSpaces.includes(s.id) && isOptional(s.id))
+      .map((s) => ({
+        id: s.id,
+        name: pickLocalized(s, lang, "name"),
+        note: money(Number(s.base_rental_fee ?? 0), currency),
+        details: pickLocalized(s, lang, "long_description") || null,
+      })),
+    ...packages
+      .filter((p) => basePkgs.includes(p.id) && isOptional(p.id))
+      .map((p) => ({
+        id: p.id,
+        name: pickLocalized(p, lang, "name"),
+        note: `${money(Number(p.price_per_person ?? 0), currency)} ${lang === "de" ? "pro Gast" : "per guest"}`,
+        details: pickLocalized(p, lang, "long_description") || null,
+      })),
+    ...extras
+      .filter((e) => baseExtras.includes(e.id) && isOptional(e.id))
+      .map((e) => ({
+        id: e.id,
+        name: pickLocalized(e, lang, "name"),
+        note: money(Number(e.price ?? 0), currency),
+        details: pickLocalized(e, lang, "long_description") || null,
+      })),
+    ...staff
+      .filter((x) => staffIds.includes(x.id) && isOptional(x.id))
+      .map((x) => ({
+        id: x.id,
+        name: pickLocalized(x, lang, "name"),
+        note: money(Number(x.price ?? 0), currency),
+        details: pickLocalized(x, lang, "long_description") || null,
+      })),
+  ];
 
   async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
     if (action === "changes_requested" && !actionNote.trim()) {
@@ -553,6 +610,47 @@ function ClientProposal() {
                 </CardContent>
               </Card>
             )}
+
+            {optionalEntries.length > 0 && (
+              <Card className="border-amber-300/70">
+                <CardHeader>
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                    {lang === "de" ? "Optionale Zusatzleistungen" : "Optional add-ons"}
+                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-800">
+                      {lang === "de" ? "Optional — nach Wunsch hinzufügen" : "Optional — add if you'd like"}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {optionalEntries.map((o) => {
+                    const on = !!optSel[o.id];
+                    const line = totals?.lines.find((l) => l.sourceId === o.id);
+                    return (
+                      <label
+                        key={o.id}
+                        className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
+                      >
+                        <Checkbox
+                          checked={on}
+                          onCheckedChange={(v) => setOptSel((c) => ({ ...c, [o.id]: v === true }))}
+                          className="mt-1"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium">{o.name}</div>
+                          <div className="text-xs text-muted-foreground">{o.note}</div>
+                          {o.details && <div className="mt-1 text-xs text-muted-foreground">{o.details}</div>}
+                        </div>
+                        {on && line && (
+                          <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>
+                        )}
+                      </label>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
+
 
             {/* Overall message */}
             <Card>
