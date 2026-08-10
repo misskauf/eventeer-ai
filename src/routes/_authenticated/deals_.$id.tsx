@@ -1164,6 +1164,9 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
+            optionalItems={optionalItems}
+            onOptionalChange={setItemOptional}
+            onOptionalDefaultChange={setItemDefaultOn}
           />
           <PackageCard
             title="Beverage packages"
@@ -1184,6 +1187,9 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
+            optionalItems={optionalItems}
+            onOptionalChange={setItemOptional}
+            onOptionalDefaultChange={setItemDefaultOn}
           />
 
 
