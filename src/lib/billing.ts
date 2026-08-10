@@ -1,5 +1,5 @@
 /** Free trial length in days — change here only. */
-export const TRIAL_DAYS = 60;
+export const TRIAL_DAYS = 30;
 
 /** Address shown on the paywall screen. */
 export const BILLING_CONTACT_EMAIL = "billing@eventflow.app";
