@@ -1282,6 +1282,14 @@ function DealDetail() {
                       onDefaultChange={(v) => setItemDefaultOn(s.id, v)}
                     />
                   )}
+                  {selectedSpaces.includes(s.id) && (
+                    <SeatingSection
+                      size={s.size ?? null}
+                      capacities={(s.seating_capacities as Record<string, number> | null) ?? null}
+                      value={seatingStyle[s.id] ?? ""}
+                      onChange={(v) => setSeatingStyle((prev) => ({ ...prev, [s.id]: v }))}
+                    />
+                  )}
                 </div>
               ))}
             </CardContent>
