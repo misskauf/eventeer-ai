@@ -21,6 +21,7 @@ const SECTIONS: Array<{ to: string; label: string; module: PermissionModule }> =
   { to: "/settings/fees", label: "Fees & tax", module: "settings" },
   { to: "/settings/goals", label: "Revenue goals", module: "settings" },
   { to: "/settings/contract-templates", label: "Contract templates", module: "contracts" },
+  { to: "/settings/event-brief", label: "Event brief / BEO", module: "event_briefs" },
   { to: "/settings/invoicing", label: "Invoicing", module: "invoices" },
   { to: "/settings/lead-forms", label: "Lead forms", module: "lead_forms" },
   { to: "/settings/language", label: "Language", module: "settings" },
