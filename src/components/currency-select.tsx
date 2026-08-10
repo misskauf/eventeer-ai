@@ -20,17 +20,20 @@ import { CURRENCIES, DEFAULT_CURRENCY, currencyLabel } from "@/lib/currencies";
 export function CurrencySelect({
   name = "currency",
   value,
+  defaultCode,
   onChange,
   id,
 }: {
   name?: string;
   value?: string;
+  defaultCode?: string;
   onChange?: (code: string) => void;
   id?: string;
 }) {
-  const [internal, setInternal] = useState((value || DEFAULT_CURRENCY).toUpperCase());
+  const [internal, setInternal] = useState((value || defaultCode || DEFAULT_CURRENCY).toUpperCase());
   const code = (value ?? internal).toUpperCase();
   const [open, setOpen] = useState(false);
+
 
   function select(next: string) {
     setInternal(next);
