@@ -2361,3 +2361,73 @@ function EmptyHint({ to, label }: { to: string; label: string }) {
     </Link>
   );
 }
+
+/** Internal-only reference: space size + seating capacities, collapsed by default. */
+function SeatingSection({
+  size,
+  capacities,
+  value,
+  onChange,
+}: {
+  size: string | null;
+  capacities: Record<string, number> | null;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const entries = SEATING_STYLES.filter((s) => Number(capacities?.[s] ?? 0) > 0).map(
+    (s) => [s, Number(capacities![s])] as const,
+  );
+  if (!size && entries.length === 0) return null;
+
+  return (
+    <div className="ml-6 rounded-md border">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
+      >
+        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+        <span className="font-medium">Seating arrangements</span>
+        <span className="ml-auto text-muted-foreground">{value || "Internal reference"}</span>
+      </button>
+      {open && (
+        <div className="space-y-2 border-t px-3 py-2 text-xs">
+          {size && (
+            <div className="text-muted-foreground">
+              Size: <span className="text-foreground">{size}</span>
+            </div>
+          )}
+          {entries.length > 0 && (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                {entries.map(([style, n]) => (
+                  <div key={style} className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">{style}</span>
+                    <span>{n}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-muted-foreground">Used for this event</span>
+                <select
+                  className="rounded-md border bg-background px-2 py-1 text-xs"
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                >
+                  <option value="">Not set</option>
+                  {entries.map(([style]) => (
+                    <option key={style} value={style}>
+                      {style}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
