@@ -268,6 +268,8 @@ function DealDetail() {
       setSelectedStaff(cfg.staff_ids ?? []);
       setStaffConfig(cfg.staff_config ?? {});
       setPackageGuests(cfg.package_guests ?? {});
+      setSeatingStyle((cfg.seating_style as Record<string, string>) ?? {});
+
       setPackageHours(cfg.package_hours ?? {});
       setSeasonId(cfg.season_id ?? "none");
       const savedDiscount = Number(cfg.discount ?? 0);
