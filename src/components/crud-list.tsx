@@ -32,7 +32,7 @@ export type Column<T> = {
 export type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "select" | "textarea" | "tags" | "weekdays" | "url" | "custom" | "checkbox";
+  type?: "text" | "number" | "select" | "textarea" | "richtext" | "tags" | "weekdays" | "url" | "custom" | "checkbox";
   options?: { value: string; label: string }[];
   suggestions?: string[]; // for type "tags"
   step?: string;
