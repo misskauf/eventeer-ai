@@ -41,6 +41,16 @@ import {
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { RichText } from "@/components/markdown";
+import {
+  CATEGORY_KEYS,
+  CATEGORY_LABELS,
+  CATEGORY_MODE_LABELS,
+  DEFAULT_CATEGORY_MODES,
+  categoryModeSummary,
+  resolveCategoryModes,
+  type CategoryKey,
+  type CategoryMode,
+} from "@/lib/selection-modes";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-selection-picker";
 import { Slider } from "@/components/ui/slider";
@@ -66,9 +76,6 @@ export const Route = createFileRoute("/_authenticated/deals_/$id")({
   ),
 });
 
-/** Client-side pick rules per catalog category on the proposal page. */
-type SelectCat = "space" | "food" | "beverage";
-type SelectMode = "single" | "multi";
 
 
 type Deal = {
@@ -250,11 +257,8 @@ function DealDetail() {
     setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
     setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
     setReminderDays(Number((co.data as any)?.proposal_reminder_days ?? 5));
-    setCompanySelectDefaults({
-      space: ((co.data as any)?.client_select_space as SelectMode) ?? "single",
-      food: ((co.data as any)?.client_select_food as SelectMode) ?? "single",
-      beverage: ((co.data as any)?.client_select_beverage as SelectMode) ?? "single",
-    });
+    setCompanyRow(co.data ?? null);
+    setCategoryModes(resolveCategoryModes((pr.data?.offer as any) ?? {}, co.data));
 
 
     setActivities(ac.data ?? []);
@@ -279,8 +283,7 @@ function DealDetail() {
       setCoverTitle(cfg.cover_title ?? "");
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
-      setOptionalItems((cfg.optional_items as Record<string, { default_on: boolean }>) ?? {});
-      setSelectModeCfg((cfg.select_mode as Partial<Record<SelectCat, SelectMode>>) ?? {});
+      setCategoryModes(resolveCategoryModes(cfg, co.data));
 
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
@@ -383,9 +386,7 @@ function DealDetail() {
       else if (g.category === "staff") extraStaff.push(target);
       else extraPkgs.push(target);
     }
-    // Optional items that don't start checked are excluded from the manager's preview total,
-    // matching what the client will see when they open the proposal.
-    const keep = (ids: string[]) => ids.filter((id) => !optionalItems[id] || optionalItems[id].default_on);
+    const keep = (ids: string[]) => ids;
     return {
       guest_count: deal?.guest_count ?? 0,
       space_ids: keep(Array.from(new Set([...selectedSpaces, ...extraSpaces]))),
@@ -397,7 +398,7 @@ function DealDetail() {
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups, optionalItems]);
+  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups]);
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
@@ -461,12 +462,6 @@ function DealDetail() {
     }));
 
   function buildOfferConfig() {
-    const selectedIds = new Set<string>([
-      ...selectedSpaces, ...selectedPackages, ...selectedExtras, ...selectedStaff,
-    ]);
-    const optional_items = Object.fromEntries(
-      Object.entries(optionalItems).filter(([id]) => selectedIds.has(id)),
-    );
     return {
       space_ids: selectedSpaces,
       package_ids: selectedPackages,
@@ -483,8 +478,7 @@ function DealDetail() {
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
-      optional_items,
-      select_mode: selectModeCfg,
+      category_modes: categoryModes,
       seating_style: Object.fromEntries(
         Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
       ),
@@ -718,16 +712,6 @@ function DealDetail() {
     setPackageGuests((cur) => ({ ...cur, [pid]: v }));
   const setHoursOverride = (pid: string, v: number) =>
     setPackageHours((cur) => ({ ...cur, [pid]: v }));
-
-  const setItemOptional = (id: string, v: boolean) =>
-    setOptionalItems((cur) => {
-      const next = { ...cur };
-      if (v) next[id] = { default_on: cur[id]?.default_on ?? true };
-      else delete next[id];
-      return next;
-    });
-  const setItemDefaultOn = (id: string, v: boolean) =>
-    setOptionalItems((cur) => (cur[id] ? { ...cur, [id]: { default_on: v } } : cur));
 
   const clientResponse = (existingProposal?.constraints as any)?.client_response as
     | {
