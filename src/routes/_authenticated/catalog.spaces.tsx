@@ -353,3 +353,56 @@ function ScheduleEditor({
     </div>
   );
 }
+
+function SeatingEditor({ name, defaultValue }: { name: string; defaultValue: SeatingCapacities }) {
+  const [open, setOpen] = useState(false);
+  const [val, setVal] = useState<SeatingCapacities>(defaultValue ?? {});
+
+  function update(style: string, raw: string) {
+    setVal((prev) => {
+      const next = { ...prev };
+      const n = Number(raw);
+      if (raw === "" || !Number.isFinite(n) || n <= 0) delete next[style];
+      else next[style] = n;
+      return next;
+    });
+  }
+
+  const count = Object.keys(val).length;
+
+  return (
+    <div className="space-y-2 rounded-md border">
+      <input type="hidden" name={name} value={JSON.stringify(val)} />
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+        aria-expanded={open}
+      >
+        <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
+        <span className="font-medium">Seating arrangements</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          {count ? `${count} style${count === 1 ? "" : "s"} set` : "Optional"}
+        </span>
+      </button>
+      <div className={`${open ? "" : "hidden"} grid grid-cols-2 gap-x-4 gap-y-2 border-t px-3 py-3`}>
+        {SEATING_STYLES.map((style) => (
+          <div key={style} className="flex items-center gap-2">
+            <Label htmlFor={`seating-${style}`} className="flex-1 text-sm font-normal">
+              {style}
+            </Label>
+            <Input
+              id={`seating-${style}`}
+              type="number"
+              min={0}
+              placeholder="—"
+              className="w-24"
+              defaultValue={val[style] ?? ""}
+              onChange={(e) => update(style, e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
