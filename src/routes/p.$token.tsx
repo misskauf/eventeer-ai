@@ -298,6 +298,10 @@ function ClientProposal() {
 
   // Filter items shown in the free-pick lists to those the manager included as "base" (not part of any alt group).
   const groupItemSet = new Set<string>(altGroups.flatMap((g) => g.item_ids));
+  const spaceMode = resolveSelectMode(selectModeCfg, state.company, "space");
+  const foodMode = resolveSelectMode(selectModeCfg, state.company, "food");
+  const beverageMode = resolveSelectMode(selectModeCfg, state.company, "beverage");
+
   const isOptional = (id: string) => !!optionalMap[id];
   const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id) && !isOptional(s.id));
   const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
