@@ -93,6 +93,62 @@ export function resolveCategoryModes(
   return out;
 }
 
+/** Single-choice modes: exactly one item is charged (or none, for optional_one). */
+export function isSingleChoice(mode: CategoryMode): boolean {
+  return mode === "required_one" || mode === "optional_one";
+}
+
+export const DEFAULT_OFFER_ALTERNATIVES: Record<CategoryKey, boolean> = {
+  space: true,
+  food: true,
+  beverage: true,
+  extra: true,
+  staff: true,
+};
+
+/** Per-category "show alternatives to the client" flags, from the offer JSON. */
+export function resolveOfferAlternatives(offer: any): Record<CategoryKey, boolean> {
+  const stored = (offer?.offer_alternatives ?? {}) as Record<string, unknown>;
+  const out = { ...DEFAULT_OFFER_ALTERNATIVES };
+  for (const cat of CATEGORY_KEYS) {
+    if (typeof stored[cat] === "boolean") out[cat] = stored[cat] as boolean;
+  }
+  return out;
+}
+
+/**
+ * The manager's proposed pick per category. Falls back to the first selected
+ * item when nothing was stored or the stored pick is no longer selected.
+ */
+export function resolvePrimaryIds(
+  offer: any,
+  modes: Record<CategoryKey, CategoryMode>,
+  idsByCategory: Record<CategoryKey, string[]>,
+): Record<CategoryKey, string> {
+  const stored = (offer?.primary_ids ?? {}) as Record<string, unknown>;
+  const out = {} as Record<CategoryKey, string>;
+  for (const cat of CATEGORY_KEYS) {
+    const ids = idsByCategory[cat] ?? [];
+    const v = stored[cat];
+    if (typeof v === "string" && ids.includes(v)) out[cat] = v;
+    else if (isSingleChoice(modes[cat])) out[cat] = ids[0] ?? "";
+    else out[cat] = "";
+  }
+  return out;
+}
+
+/** Which of a category's selected items are actually charged. */
+export function chargeableIds(
+  mode: CategoryMode,
+  primaryId: string | undefined,
+  selectedIds: string[],
+): string[] {
+  if (!isSingleChoice(mode)) return selectedIds;
+  if (primaryId && selectedIds.includes(primaryId)) return [primaryId];
+  if (mode === "required_one") return selectedIds.slice(0, 1);
+  return [];
+}
+
 /**
  * Fixed display order of the category sections on the client proposal page.
  * Reorder this array to change the order everywhere.
@@ -104,3 +160,4 @@ export const CATEGORY_SECTION_ORDER: CategoryKey[] = [
   "extra",
   "staff",
 ];
+

@@ -46,8 +46,13 @@ import {
   CATEGORY_LABELS,
   CATEGORY_MODE_LABELS,
   DEFAULT_CATEGORY_MODES,
+  DEFAULT_OFFER_ALTERNATIVES,
   categoryModeSummary,
+  chargeableIds,
+  isSingleChoice,
   resolveCategoryModes,
+  resolveOfferAlternatives,
+  resolvePrimaryIds,
   type CategoryKey,
   type CategoryMode,
 } from "@/lib/selection-modes";
@@ -197,7 +202,16 @@ function DealDetail() {
   const [categoryModes, setCategoryModes] = useState<Record<CategoryKey, CategoryMode>>(
     DEFAULT_CATEGORY_MODES,
   );
+  // The proposed / recommended pick per single-choice category (charged + pre-selected).
+  const [primaryIds, setPrimaryIds] = useState<Record<CategoryKey, string>>({
+    space: "", food: "", beverage: "", extra: "", staff: "",
+  });
+  // Whether the client sees the other selected items as switchable alternatives.
+  const [offerAlternatives, setOfferAlternatives] = useState<Record<CategoryKey, boolean>>(
+    DEFAULT_OFFER_ALTERNATIVES,
+  );
   const [companyRow, setCompanyRow] = useState<any>(null);
+
 
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
@@ -283,7 +297,22 @@ function DealDetail() {
       setCoverTitle(cfg.cover_title ?? "");
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
-      setCategoryModes(resolveCategoryModes(cfg, co.data));
+      const loadedModes = resolveCategoryModes(cfg, co.data);
+      setCategoryModes(loadedModes);
+      setOfferAlternatives(resolveOfferAlternatives(cfg));
+      {
+        const pkgList = ((pk.data as PackageSel[]) ?? []);
+        const selPkgs: string[] = cfg.package_ids ?? [];
+        const byCat: Record<CategoryKey, string[]> = {
+          space: cfg.space_ids ?? [],
+          food: selPkgs.filter((pid) => (pkgList.find((p) => p.id === pid)?.kind ?? "food") === "food"),
+          beverage: selPkgs.filter((pid) => pkgList.find((p) => p.id === pid)?.kind === "beverage"),
+          extra: cfg.extra_ids ?? [],
+          staff: cfg.staff_ids ?? [],
+        };
+        setPrimaryIds(resolvePrimaryIds(cfg, loadedModes, byCat));
+      }
+
 
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
@@ -372,7 +401,50 @@ function DealDetail() {
     return spaces.filter((s) => !s.available_days || s.available_days.length === 0 || s.available_days.includes(wd));
   }, [spaces, deal?.event_date]);
 
+  // What the manager selected, split per category (alt-group items excluded elsewhere).
+  const selectedByCategory = useMemo<Record<CategoryKey, string[]>>(() => {
+    const kindOf = (pid: string) => packages.find((p) => p.id === pid)?.kind ?? "food";
+    return {
+      space: selectedSpaces,
+      food: selectedPackages.filter((pid) => kindOf(pid) === "food"),
+      beverage: selectedPackages.filter((pid) => kindOf(pid) === "beverage"),
+      extra: selectedExtras,
+      staff: selectedStaff,
+    };
+  }, [packages, selectedSpaces, selectedPackages, selectedExtras, selectedStaff]);
+
+  // Keep the proposed pick valid: default to the first selected item in
+  // single-choice categories, clear it everywhere else.
+  useEffect(() => {
+    setPrimaryIds((cur) => {
+      let changed = false;
+      const next = { ...cur };
+      for (const cat of CATEGORY_KEYS) {
+        const ids = selectedByCategory[cat];
+        const want = isSingleChoice(categoryModes[cat])
+          ? (cur[cat] && ids.includes(cur[cat]) ? cur[cat] : (ids[0] ?? ""))
+          : "";
+        if (want !== cur[cat]) {
+          next[cat] = want;
+          changed = true;
+        }
+      }
+      return changed ? next : cur;
+    });
+  }, [selectedByCategory, categoryModes]);
+
+  // Items shown to the client but not charged.
+  const alternativesByCategory = useMemo<Record<CategoryKey, string[]>>(() => {
+    const out = {} as Record<CategoryKey, string[]>;
+    for (const cat of CATEGORY_KEYS) {
+      const charged = chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
+      out[cat] = selectedByCategory[cat].filter((id) => !charged.includes(id));
+    }
+    return out;
+  }, [selectedByCategory, categoryModes, primaryIds]);
+
   // For the manager's own totals preview, resolve each alt group to its default choice.
+
   const resolvedSelection = useMemo(() => {
     const extraSpaces: string[] = [];
     const extraPkgs: string[] = [];
@@ -386,19 +458,23 @@ function DealDetail() {
       else if (g.category === "staff") extraStaff.push(target);
       else extraPkgs.push(target);
     }
-    const keep = (ids: string[]) => ids;
+    // Only chargeable items count: the proposed pick in single-choice categories,
+    // everything selected in multiple/fixed ones. Alternatives are never summed.
+    const charged = (cat: CategoryKey) =>
+      chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
     return {
       guest_count: deal?.guest_count ?? 0,
-      space_ids: keep(Array.from(new Set([...selectedSpaces, ...extraSpaces]))),
-      package_ids: keep(Array.from(new Set([...selectedPackages, ...extraPkgs]))),
-      extra_ids: keep(Array.from(new Set([...selectedExtras, ...extraExtras]))),
-      staff_ids: keep(Array.from(new Set([...selectedStaff, ...extraStaff]))),
+      space_ids: Array.from(new Set([...charged("space"), ...extraSpaces])),
+      package_ids: Array.from(new Set([...charged("food"), ...charged("beverage"), ...extraPkgs])),
+      extra_ids: Array.from(new Set([...charged("extra"), ...extraExtras])),
+      staff_ids: Array.from(new Set([...charged("staff"), ...extraStaff])),
       staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups]);
+  }, [deal, selectedByCategory, categoryModes, primaryIds, staffConfig, packageGuests, packageHours, altGroups]);
+
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
@@ -479,6 +555,9 @@ function DealDetail() {
       cover_title: coverTitle,
       alternative_groups: altGroups,
       category_modes: categoryModes,
+      primary_ids: primaryIds,
+      offer_alternatives: offerAlternatives,
+
       seating_style: Object.fromEntries(
         Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
       ),
@@ -1194,28 +1273,51 @@ function DealDetail() {
               </p>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              {CATEGORY_KEYS.map((cat) => (
-                <div key={cat} className="space-y-1">
-                  <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
-                  <Select
-                    value={categoryModes[cat]}
-                    onValueChange={(v) =>
-                      setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
-                    }
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
-                        <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {categoryModeSummary(cat, categoryModes[cat])}
-                  </p>
-                </div>
-              ))}
+              {CATEGORY_KEYS.map((cat) => {
+                const single = isSingleChoice(categoryModes[cat]);
+                const altCount = alternativesByCategory[cat]?.length ?? 0;
+                const chargedCount =
+                  selectedByCategory[cat].length - altCount;
+                return (
+                  <div key={cat} className="space-y-1 rounded-md border p-3">
+                    <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
+                    <Select
+                      value={categoryModes[cat]}
+                      onValueChange={(v) =>
+                        setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
+                          <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryModeSummary(cat, categoryModes[cat])}
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs">Offer alternatives to client</span>
+                      <Switch
+                        checked={single ? offerAlternatives[cat] : false}
+                        disabled={!single}
+                        onCheckedChange={(v) =>
+                          setOfferAlternatives((cur) => ({ ...cur, [cat]: v }))
+                        }
+                      />
+                    </div>
+                    {single && selectedByCategory[cat].length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {chargedCount} proposed + {altCount} alternative{altCount === 1 ? "" : "s"}
+                        {altCount > 0 && !offerAlternatives[cat] ? " (hidden from client)" : ""}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
+
           </Card>
 
 
@@ -1255,6 +1357,9 @@ function DealDetail() {
                     title={s.name}
                     subtitle={`Base ${money(s.base_rental_fee, currency)} · min ${money(s.min_rental_fee, currency)}`}
                     link={s.details_url ? { href: s.details_url } : null}
+                    singleChoice={isSingleChoice(categoryModes.space)}
+                    isPrimary={primaryIds.space === s.id}
+                    onMakePrimary={() => setPrimaryIds((c) => ({ ...c, space: s.id }))}
                   />
                   {selectedSpaces.includes(s.id) && (
                     <SeatingSection
@@ -1270,6 +1375,9 @@ function DealDetail() {
           </Card>
 
           <PackageCard
+            singleChoice={isSingleChoice(categoryModes.food)}
+            primaryId={primaryIds.food}
+            onMakePrimary={(pid) => setPrimaryIds((c) => ({ ...c, food: pid }))}
             title="Food packages"
             emptyTo="/catalog/food"
             items={foodPackages}
@@ -1294,6 +1402,9 @@ function DealDetail() {
             }
           />
           <PackageCard
+            singleChoice={isSingleChoice(categoryModes.beverage)}
+            primaryId={primaryIds.beverage}
+            onMakePrimary={(pid) => setPrimaryIds((c) => ({ ...c, beverage: pid }))}
             title="Beverage packages"
             emptyTo="/catalog/beverages"
             items={beveragePackages}
@@ -1330,6 +1441,9 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedExtras, e.id, v)}
                     title={e.name}
                     subtitle={`${money(e.price, currency)} · ${e.pricing_type.replace("_", " ")}`}
+                    singleChoice={isSingleChoice(categoryModes.extra)}
+                    isPrimary={primaryIds.extra === e.id}
+                    onMakePrimary={() => setPrimaryIds((c) => ({ ...c, extra: e.id }))}
                   />
                 </div>
               ))}
@@ -1347,6 +1461,9 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedStaff, x.id, v)}
                     title={x.name}
                     subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
+                    singleChoice={isSingleChoice(categoryModes.staff)}
+                    isPrimary={primaryIds.staff === x.id}
+                    onMakePrimary={() => setPrimaryIds((c) => ({ ...c, staff: x.id }))}
                   />
                   {selectedStaff.includes(x.id) && x.pricing_type !== "per_person" && (
                     <div className="flex flex-wrap items-center gap-3 pl-9 text-xs text-muted-foreground">
@@ -1715,6 +1832,23 @@ function DealDetail() {
                 </div>
               ))}
 
+              {CATEGORY_KEYS.some((c) => (alternativesByCategory[c]?.length ?? 0) > 0) && (
+                <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">Shown, not charged</span>
+                  {CATEGORY_KEYS.map((c) => {
+                    const ids = alternativesByCategory[c] ?? [];
+                    if (!ids.length) return null;
+                    return (
+                      <div key={c}>
+                        {CATEGORY_LABELS[c]} alternatives: {ids.map((id) => itemName(id)).join(", ")}
+                        {!offerAlternatives[c] && " (hidden from client)"}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
                 {totals.discount_targeted && totals.discount_net > 0 && (
@@ -2050,7 +2184,11 @@ function PackageCard({
   packageHours, onHoursChange, defaultHours,
   menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
   hiddenCount = 0, showAll = false, onShowAllChange, fitLabel = "this deal",
+  singleChoice = false, primaryId = "", onMakePrimary,
 }: {
+  singleChoice?: boolean;
+  primaryId?: string;
+  onMakePrimary?: (id: string) => void;
   hiddenCount?: number;
   showAll?: boolean;
   onShowAllChange?: (v: boolean) => void;
@@ -2101,12 +2239,26 @@ function PackageCard({
           const hasSelection = selMode !== "fixed" && groups.length > 0;
           const pickerMode = menuModeByPkg[p.id] ?? "client";
           return (
-            <div key={p.id} className="rounded-md border p-3">
+            <div key={p.id} className={"rounded-md border p-3 " + (checked && singleChoice && primaryId === p.id ? "border-primary bg-primary/5" : "")}>
               <label className="flex cursor-pointer items-start gap-3">
                 <Checkbox checked={checked} onCheckedChange={(v) => onToggle(p.id, v)} className="mt-1" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{p.name}</span>
+                    {checked && singleChoice && (
+                      <span className={"rounded px-1.5 py-0.5 text-[10px] " + (primaryId === p.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                        {primaryId === p.id ? "Proposed" : "Alternative"}
+                      </span>
+                    )}
+                    {checked && singleChoice && primaryId !== p.id && onMakePrimary && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-primary underline"
+                        onClick={(e) => { e.preventDefault(); onMakePrimary(p.id); }}
+                      >
+                        Mark as proposed
+                      </button>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {money(p.price_per_person, currency)} per guest · {standardHours}h included
@@ -2214,35 +2366,57 @@ function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: stri
 
 
 function PickRow({
-  checked, onChange, title, subtitle, link,
+  checked, onChange, title, subtitle, link, singleChoice = false, isPrimary = false, onMakePrimary,
 }: {
   checked: boolean;
   onChange: (v: boolean | "indeterminate") => void;
   title: string;
   subtitle: string;
   link?: { href: string; label?: string } | null;
+  singleChoice?: boolean;
+  isPrimary?: boolean;
+  onMakePrimary?: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3 hover:bg-muted/40">
-      <Checkbox checked={checked} onCheckedChange={onChange} />
-      <div className="min-w-0 flex-1">
-        <div className="font-medium">{title}</div>
-        <div className="text-xs text-muted-foreground">{subtitle}</div>
-        {link?.href && (
-          <a
-            href={link.href}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
-          >
-            {link.label ?? "View space details"} ↗
-          </a>
-        )}
-      </div>
-    </label>
+    <div className={"rounded-md border p-3 hover:bg-muted/40 " + (checked && singleChoice && isPrimary ? "border-primary bg-primary/5" : "")}>
+      <label className="flex cursor-pointer items-center gap-3">
+        <Checkbox checked={checked} onCheckedChange={onChange} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">{title}</span>
+            {checked && singleChoice && (
+              <span className={"rounded px-1.5 py-0.5 text-[10px] " + (isPrimary ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                {isPrimary ? "Proposed" : "Alternative"}
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">{subtitle}</div>
+          {link?.href && (
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
+            >
+              {link.label ?? "View space details"} ↗
+            </a>
+          )}
+        </div>
+      </label>
+      {checked && singleChoice && !isPrimary && onMakePrimary && (
+        <button
+          type="button"
+          className="mt-2 ml-7 text-xs text-primary underline"
+          onClick={onMakePrimary}
+        >
+          Mark as proposed
+        </button>
+      )}
+    </div>
   );
 }
+
 
 function Row({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return (

@@ -25,6 +25,9 @@ import {
   CATEGORY_SECTION_ORDER,
   DEFAULT_CATEGORY_MODES,
   resolveCategoryModes,
+  resolvePrimaryIds,
+  resolveOfferAlternatives,
+  isSingleChoice,
   type CategoryKey,
   type CategoryMode,
 } from "@/lib/selection-modes";
@@ -67,6 +70,10 @@ function modeHint(lang: Lang, mode: CategoryMode): string {
   }
 }
 
+function recommendedLabel(lang: Lang): string {
+  return lang === "de" ? "Unsere Empfehlung" : "Our recommendation";
+}
+
 /** Items that count towards the total when a category is seeded. */
 function seedByMode(ids: string[], mode: CategoryMode): string[] {
   if (mode === "multi" || mode === "fixed") return ids;
@@ -105,6 +112,12 @@ function ClientProposal() {
   const [selStaff, setSelStaff] = useState<string[]>([]);
 
 
+  const [primaryIds, setPrimaryIds] = useState<Record<CategoryKey, string>>({
+    space: "", food: "", beverage: "", extra: "", staff: "",
+  });
+  const [offerAlternatives, setOfferAlternatives] = useState<Record<CategoryKey, boolean>>({
+    space: true, food: true, beverage: true, extra: true, staff: true,
+  });
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
   const [baseExtras, setBaseExtras] = useState<string[]>([]);
@@ -174,6 +187,7 @@ function ClientProposal() {
       const bStaff: string[] = offerCfg.staff_ids ?? [];
       const modes = resolveCategoryModes(offerCfg, res.company);
       setCategoryModes(modes);
+      setOfferAlternatives(resolveOfferAlternatives(offerCfg));
       setStaffIds(bStaff);
       setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
@@ -195,11 +209,20 @@ function ClientProposal() {
 
       // Seeding depends on the resolved mode: pick-one modes start on the first item,
       // multi and fixed start with everything the manager included.
-      setSelSpaces(seedByMode(bSpacesNonGroup, modes.space));
-      setSelFoodPkgs(seedByMode(bFood, modes.food));
-      setSelBevPkgs(seedByMode(bBev, modes.beverage));
-      setSelExtras(seedByMode(bExtras.filter((id) => !groupItemIds.has(id)), modes.extra));
-      setSelStaff(seedByMode(bStaff, modes.staff));
+      const bExtrasNonGroup = bExtras.filter((id) => !groupItemIds.has(id));
+      const primaries = resolvePrimaryIds(offerCfg, modes, {
+        space: bSpacesNonGroup, food: bFood, beverage: bBev, extra: bExtrasNonGroup, staff: bStaff,
+      });
+      setPrimaryIds(primaries);
+      const seedCat = (ids: string[], cat: CategoryKey) =>
+        isSingleChoice(modes[cat]) && primaries[cat] && ids.includes(primaries[cat])
+          ? [primaries[cat]]
+          : seedByMode(ids, modes[cat]);
+      setSelSpaces(seedCat(bSpacesNonGroup, "space"));
+      setSelFoodPkgs(seedCat(bFood, "food"));
+      setSelBevPkgs(seedCat(bBev, "beverage"));
+      setSelExtras(seedCat(bExtrasNonGroup, "extra"));
+      setSelStaff(seedCat(bStaff, "staff"));
 
       setPackageGuests(offerCfg.package_guests ?? {});
       // Seed beverage hours from each package's included hours, falling back to the company default.
@@ -303,11 +326,19 @@ function ClientProposal() {
   const foodMode = categoryModes.food;
   const beverageMode = categoryModes.beverage;
 
-  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id));
-  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
-  const staffItems = staff.filter((x) => staffIds.includes(x.id));
+  // When "offer alternatives" is off for a single-choice category, only the proposed item is shown.
+  function visibleFor<T extends { id: string }>(list: T[], cat: CategoryKey): T[] {
+    if (!isSingleChoice(categoryModes[cat]) || offerAlternatives[cat]) return list;
+    const pid = primaryIds[cat];
+    const only = list.filter((i) => i.id === pid);
+    return only.length ? only : list.slice(0, 1);
+  }
+
+  const baseSpaceItems = visibleFor(spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id)), "space");
+  const basePkgFood = visibleFor(packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id)), "food");
+  const basePkgBev = visibleFor(packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id)), "beverage");
+  const baseExtraItems = visibleFor(extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id)), "extra");
+  const staffItems = visibleFor(staff.filter((x) => staffIds.includes(x.id)), "staff");
 
 
 
@@ -502,6 +533,7 @@ function ClientProposal() {
                   if (baseSpaceItems.length === 0) return null;
                   return (
                     <SingleChoiceSpaces
+                      primaryId={primaryIds.space}
                       headless
                       items={baseSpaceItems}
                       currency={currency}
@@ -524,6 +556,7 @@ function ClientProposal() {
                   if (basePkgFood.length === 0) return null;
                   return (
                     <SingleChoicePackages
+                      primaryId={primaryIds.food}
                       headless
                       title={t(lang, "section_food")}
                       items={basePkgFood}
@@ -556,6 +589,7 @@ function ClientProposal() {
                   if (basePkgBev.length === 0) return null;
                   return (
                     <SingleChoicePackages
+                      primaryId={primaryIds.beverage}
                       headless
                       title={t(lang, "section_beverages")}
                       items={basePkgBev}
@@ -591,6 +625,7 @@ function ClientProposal() {
                   if (baseExtraItems.length === 0) return null;
                   return (
                     <OptionGroup
+                      primaryId={primaryIds.extra}
                       headless
                       title={t(lang, "section_extras")}
                       items={baseExtraItems.map((e) => ({
@@ -979,8 +1014,9 @@ function NoneRow({ lang }: { lang: Lang }) {
 
 function OptionGroup({
   title, items, selected, onToggle, mode = "multi", onSelect, onClear, headless,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang, primaryId,
 }: {
+  primaryId?: string;
   title: string;
   items: { id: string; name: string; note: string; details?: string | null }[];
   selected: string[];
@@ -1009,7 +1045,12 @@ function OptionGroup({
               <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
             )}
             <div className="flex-1">
-              <div className="font-medium">{i.name}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{i.name}</span>
+                {primaryId === i.id && items.length > 1 && (
+                  <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
+                )}
+              </div>
               <div className="text-xs text-muted-foreground">{i.note}</div>
               {i.details && <RichText source={i.details} className="mt-2" />}
               <NoteToggle
@@ -1052,8 +1093,9 @@ function OptionGroup({
 
 function SingleChoiceSpaces({
   items, currency, selectedIds, mode, onSelect, onToggle, onClear, headless,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang, primaryId,
 }: {
+  primaryId?: string;
   items: SpaceSel[];
   currency: string;
   selectedIds: string[];
@@ -1095,7 +1137,12 @@ function SingleChoiceSpaces({
           <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
         )}
         <div className="flex-1">
-          <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">{pickLocalized(s, lang, "name")}</span>
+            {primaryId === s.id && items.length > 1 && (
+              <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
+            )}
+          </div>
           <div className="text-xs text-muted-foreground">
             {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
           </div>
@@ -1145,8 +1192,9 @@ function SingleChoicePackages({
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
-  menuModeByPkg, managerMenuChoices, lang,
+  menuModeByPkg, managerMenuChoices, lang, primaryId,
 }: {
+  primaryId?: string;
   title: string;
   items: PackageSel[];
   currency: string;
@@ -1234,7 +1282,12 @@ function SingleChoicePackages({
                   )}
 
                   <div className="flex-1">
-                    <div className="font-medium">{pickLocalized(p, lang, "name")}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{pickLocalized(p, lang, "name")}</span>
+                      {primaryId === p.id && items.length > 1 && (
+                        <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {money(p.price_per_person, currency)} {perGuest}
                       {includedH != null && <> · {includedH}{lang === "de" ? " " : ""}{hIncluded}</>}
