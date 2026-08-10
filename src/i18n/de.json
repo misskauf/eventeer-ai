@@ -1,4 +1,108 @@
 {
+  "landing": {
+    "nav": { "signin": "Anmelden", "demo": "Demo buchen" },
+    "hero": {
+      "h1": "Aus Event-Anfragen werden unterschriebene, bezahlte Buchungen – ohne Papierkram.",
+      "sub": "Eventeer bündelt jede Anfrage an einem Ort: personalisierte Angebote, digitale Vertragsunterzeichnung und Zahlung – in Ihrem eigenen Branding.",
+      "cta_primary": "30 Tage kostenlos testen",
+      "cta_secondary": "Demo buchen",
+      "note": "Keine Kreditkarte nötig · Entwickelt in Berlin · DSGVO-konform gedacht"
+    },
+    "pains": {
+      "title": "Kommt Ihnen das bekannt vor?",
+      "p1": "Jedes Angebot neu in Word oder Excel gebaut.",
+      "p2": "Zehn E-Mails hin und her, bis der Kunde sich entscheidet.",
+      "p3": "Anzahlungen manuell hinterhergejagt, manchmal vergessen.",
+      "p4": "Kein Ort, der zeigt, wo jedes Event gerade steht."
+    },
+    "benefits": {
+      "title": "Alles für das Angebot – an einem Ort",
+      "b1_t": "Angebote in Minuten statt Stunden",
+      "b1_b": "Erstellen Sie ein personalisiertes Angebot aus Ihren eigenen Räumen, Paketen und Extras.",
+      "b2_t": "Ihre Preise, Ihre Regeln",
+      "b2_b": "Mindestumsätze, Saisons, Wochentage und Servicepauschalen werden automatisch berücksichtigt.",
+      "b3_t": "Kunden wählen selbst",
+      "b3_b": "Ein Link genügt – der Kunde stellt sein Event innerhalb Ihrer Vorgaben zusammen.",
+      "b4_t": "Unterschrift und Zahlung in einem Ablauf",
+      "b4_b": "Vertrag, Anzahlung und Erinnerungen folgen dem Angebot automatisch.",
+      "b5_t": "Eine Pipeline, nichts vergessen",
+      "b5_b": "Sehen Sie jeden Deal auf einen Blick und teilen Sie eine Nur-Lese-Ansicht mit Ihrem Team.",
+      "b6_t": "Ihr Branding, nicht unseres",
+      "b6_b": "Ihr Logo und Ihre Farben auf allem, was der Kunde sieht."
+    },
+    "how": {
+      "title": "So funktioniert's",
+      "s1_t": "Anfrage kommt rein",
+      "s1_b": "Anfragen landen an einem Ort – über Ihr Formular, Ihr Postfach oder manuell erfasst.",
+      "s2_t": "Angebot geht raus",
+      "s2_b": "Räume, Pakete und Extras wählen – die Preisregeln rechnen für Sie.",
+      "s3_t": "Kunde bestätigt",
+      "s3_b": "Der Kunde stellt sein Event zusammen, nimmt das Angebot an und unterschreibt digital.",
+      "s4_t": "Zahlung & Team-Briefing",
+      "s4_b": "Anzahlung und Erinnerungen laufen automatisch; Küche und Service erhalten ihr Briefing."
+    },
+    "who": {
+      "title": "Für wen",
+      "w1": "Eventlocations & Bars",
+      "w2": "Hotels",
+      "w3": "Restaurants mit Séparée",
+      "w4": "Catering-Unternehmen",
+      "w5": "Studios & Coworking-Spaces"
+    },
+    "pricing": {
+      "title": "Early Access",
+      "body": "Eventeer ist im Early Access. Starten Sie mit 30 Tagen kostenlos. Gründungskunden erhalten zum Launch Vorzugskonditionen – zum Testen ist keine Karte nötig.",
+      "cta": "Demo buchen"
+    },
+    "faq": {
+      "title": "Häufige Fragen",
+      "q1": "Muss ich mein aktuelles CRM ersetzen?",
+      "a1": "Nein. Starten Sie mit Angeboten und Verträgen und behalten Sie alles andere, was Sie nutzen.",
+      "q2": "Wie lange dauert die Einrichtung?",
+      "a2": "Sie hinterlegen Ihre Räume, Pakete und Preise einmalig. Die meisten Locations sind noch am selben Tag startklar.",
+      "q3": "Was passiert mit meinen Kundendaten?",
+      "a3": "Sie bleiben in Ihrem eigenen Firmenkonto, mit rollenbasiertem Zugriff für Ihr Team. Sie können sie jederzeit exportieren oder löschen.",
+      "q4": "Welche Sprachen werden unterstützt?",
+      "a4": "Die Anwendung und Ihre kundenseitigen Dokumente funktionieren auf Englisch und Deutsch.",
+      "q5": "Was kostet es?",
+      "a5": "Der Early Access ist 30 Tage kostenlos. Buchen Sie eine Demo – dann sprechen wir über die Konditionen für Gründungskunden."
+    },
+    "demo": {
+      "title": "Demo buchen",
+      "lead": "Erzählen Sie uns von Ihrer Location – wir melden uns innerhalb eines Werktags.",
+      "name": "Ihr Name",
+      "company": "Location / Unternehmen",
+      "email": "Geschäftliche E-Mail",
+      "phone": "Telefon (optional)",
+      "events": "Events pro Monat (optional)",
+      "events_placeholder": "Auswählen…",
+      "message": "Sollten wir etwas wissen? (optional)",
+      "consent": "Ich bin damit einverstanden, dass meine Daten gespeichert und zur Kontaktaufnahme bezüglich Eventeer genutzt werden. Siehe Datenschutzhinweis.",
+      "privacy_link": "Datenschutzhinweis",
+      "submit": "Demo anfragen",
+      "sending": "Wird gesendet…",
+      "required": "Bitte füllen Sie alle Pflichtfelder aus.",
+      "invalid_email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "consent_required": "Bitte stimmen Sie der Einwilligung zu.",
+      "success_toast": "Danke – Anfrage erhalten.",
+      "success_title": "Vielen Dank",
+      "success_body": "Wir haben Ihre Anfrage erhalten und melden uns innerhalb eines Werktags.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    },
+    "footer": {
+      "rights": "Alle Rechte vorbehalten.",
+      "impressum": "Impressum",
+      "datenschutz": "Datenschutz",
+      "contact": "Kontakt"
+    },
+    "legal": {
+      "todo": "TODO: Rechtstexte müssen vor dem Launch ergänzt werden.",
+      "impressum_title": "Impressum",
+      "impressum_body": "Platzhalter – die Anbieterkennzeichnung für diese Seite wurde noch nicht veröffentlicht.",
+      "datenschutz_title": "Datenschutzhinweis",
+      "datenschutz_body": "Platzhalter – der Datenschutzhinweis für diese Seite wurde noch nicht veröffentlicht."
+    }
+  },
   "common": {
     "loading": "Wird geladen…",
     "save": "Speichern",

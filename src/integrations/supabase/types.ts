@@ -1133,6 +1133,48 @@ export type Database = {
           },
         ]
       }
+      marketing_leads: {
+        Row: {
+          company: string
+          consent: boolean
+          created_at: string
+          email: string
+          events_per_month: string | null
+          id: string
+          locale: string | null
+          message: string | null
+          name: string
+          phone: string | null
+          source: string | null
+        }
+        Insert: {
+          company: string
+          consent?: boolean
+          created_at?: string
+          email: string
+          events_per_month?: string | null
+          id?: string
+          locale?: string | null
+          message?: string | null
+          name: string
+          phone?: string | null
+          source?: string | null
+        }
+        Update: {
+          company?: string
+          consent?: boolean
+          created_at?: string
+          email?: string
+          events_per_month?: string | null
+          id?: string
+          locale?: string | null
+          message?: string | null
+          name?: string
+          phone?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string

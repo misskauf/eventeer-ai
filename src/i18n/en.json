@@ -1,4 +1,108 @@
 {
+  "landing": {
+    "nav": { "signin": "Sign in", "demo": "Book a demo" },
+    "hero": {
+      "h1": "Turn event inquiries into signed, paid bookings — without the admin.",
+      "sub": "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand.",
+      "cta_primary": "Start 30-day free trial",
+      "cta_secondary": "Book a demo",
+      "note": "No credit card required · Built in Berlin · Built with GDPR in mind"
+    },
+    "pains": {
+      "title": "Sound familiar?",
+      "p1": "Every proposal rebuilt from scratch in Word or Excel.",
+      "p2": "Ten emails back and forth before the client decides.",
+      "p3": "Deposits chased by hand, sometimes forgotten.",
+      "p4": "No one place that shows where each event stands."
+    },
+    "benefits": {
+      "title": "Everything the offer needs, in one place",
+      "b1_t": "Proposals in minutes, not hours",
+      "b1_b": "Build a personalised offer from your own spaces, packages and extras.",
+      "b2_t": "Your prices, your rules",
+      "b2_b": "Minimum spends, seasons, weekdays and service charges are applied for you.",
+      "b3_t": "Let clients choose",
+      "b3_b": "Send one link and the client configures their event within the limits you set.",
+      "b4_t": "Signed and paid in one flow",
+      "b4_b": "Contract, deposit and reminders follow the offer automatically.",
+      "b5_t": "One pipeline, nothing forgotten",
+      "b5_b": "See every deal's stage at a glance and share a read-only view with your team.",
+      "b6_t": "Your brand, not ours",
+      "b6_b": "Your logo and colours on everything the client sees."
+    },
+    "how": {
+      "title": "How it works",
+      "s1_t": "Inquiry arrives",
+      "s1_b": "Requests land in one inbox — from your form, your inbox or added by hand.",
+      "s2_t": "Offer goes out",
+      "s2_b": "Pick spaces, packages and extras; pricing rules do the maths.",
+      "s3_t": "Client confirms",
+      "s3_b": "The client configures and accepts the offer, then signs digitally.",
+      "s4_t": "Payment & team briefing",
+      "s4_b": "Deposit and reminders run automatically; the kitchen and floor get their brief."
+    },
+    "who": {
+      "title": "Who it's for",
+      "w1": "Event venues & bars",
+      "w2": "Hotels",
+      "w3": "Restaurants with private dining",
+      "w4": "Catering companies",
+      "w5": "Studio & coworking spaces"
+    },
+    "pricing": {
+      "title": "Early access",
+      "body": "Eventeer is in early access. Start with 30 days free. Founding customers get preferential pricing when we launch — no card needed to try.",
+      "cta": "Book a demo"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "q1": "Do I have to replace my current CRM?",
+      "a1": "No. Start with proposals and contracts; keep whatever else you use.",
+      "q2": "How long does setup take?",
+      "a2": "You add your spaces, packages and prices once. Most venues are ready the same day.",
+      "q3": "What happens to my client data?",
+      "a3": "It stays in your own company account with role-based access for your team. You can export or delete it at any time.",
+      "q4": "Which languages does it support?",
+      "a4": "The app and your client-facing documents work in English and German.",
+      "q5": "What does it cost?",
+      "a5": "Early access is free for 30 days. Book a demo and we'll talk about founding-customer pricing."
+    },
+    "demo": {
+      "title": "Book a demo",
+      "lead": "Tell us about your venue and we'll get back to you within one working day.",
+      "name": "Your name",
+      "company": "Venue / company",
+      "email": "Work email",
+      "phone": "Phone (optional)",
+      "events": "Events per month (optional)",
+      "events_placeholder": "Select…",
+      "message": "Anything we should know? (optional)",
+      "consent": "I agree that my details may be stored and used to contact me about Eventeer. See the privacy notice.",
+      "privacy_link": "privacy notice",
+      "submit": "Request a demo",
+      "sending": "Sending…",
+      "required": "Please fill in all required fields.",
+      "invalid_email": "Please enter a valid email address.",
+      "consent_required": "Please accept the consent to continue.",
+      "success_toast": "Thanks — request received.",
+      "success_title": "Thank you",
+      "success_body": "We've received your request and will get back to you within one working day.",
+      "error": "Something went wrong. Please try again."
+    },
+    "footer": {
+      "rights": "All rights reserved.",
+      "impressum": "Imprint",
+      "datenschutz": "Privacy",
+      "contact": "Contact us"
+    },
+    "legal": {
+      "todo": "TODO: legal content to be completed before launch.",
+      "impressum_title": "Imprint",
+      "impressum_body": "Placeholder — the legal operator details for this site have not been published yet.",
+      "datenschutz_title": "Privacy notice",
+      "datenschutz_body": "Placeholder — the privacy notice for this site has not been published yet."
+    }
+  },
   "common": {
     "loading": "Loading…",
     "save": "Save",
