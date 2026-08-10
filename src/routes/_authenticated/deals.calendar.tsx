@@ -52,6 +52,7 @@ function DealsCalendarPage() {
         .from("deals")
         .select("id, client_name, client_company, event_date, stage")
         .not("event_date", "is", null)
+        .is("archived_at", null)
         .gte("event_date", format(rangeStart, "yyyy-MM-dd"))
         .lte("event_date", format(rangeEnd, "yyyy-MM-dd"));
       setDeals((data as CalDeal[]) ?? []);
