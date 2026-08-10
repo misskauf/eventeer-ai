@@ -401,7 +401,50 @@ function DealDetail() {
     return spaces.filter((s) => !s.available_days || s.available_days.length === 0 || s.available_days.includes(wd));
   }, [spaces, deal?.event_date]);
 
+  // What the manager selected, split per category (alt-group items excluded elsewhere).
+  const selectedByCategory = useMemo<Record<CategoryKey, string[]>>(() => {
+    const kindOf = (pid: string) => packages.find((p) => p.id === pid)?.kind ?? "food";
+    return {
+      space: selectedSpaces,
+      food: selectedPackages.filter((pid) => kindOf(pid) === "food"),
+      beverage: selectedPackages.filter((pid) => kindOf(pid) === "beverage"),
+      extra: selectedExtras,
+      staff: selectedStaff,
+    };
+  }, [packages, selectedSpaces, selectedPackages, selectedExtras, selectedStaff]);
+
+  // Keep the proposed pick valid: default to the first selected item in
+  // single-choice categories, clear it everywhere else.
+  useEffect(() => {
+    setPrimaryIds((cur) => {
+      let changed = false;
+      const next = { ...cur };
+      for (const cat of CATEGORY_KEYS) {
+        const ids = selectedByCategory[cat];
+        const want = isSingleChoice(categoryModes[cat])
+          ? (cur[cat] && ids.includes(cur[cat]) ? cur[cat] : (ids[0] ?? ""))
+          : "";
+        if (want !== cur[cat]) {
+          next[cat] = want;
+          changed = true;
+        }
+      }
+      return changed ? next : cur;
+    });
+  }, [selectedByCategory, categoryModes]);
+
+  // Items shown to the client but not charged.
+  const alternativesByCategory = useMemo<Record<CategoryKey, string[]>>(() => {
+    const out = {} as Record<CategoryKey, string[]>;
+    for (const cat of CATEGORY_KEYS) {
+      const charged = chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
+      out[cat] = selectedByCategory[cat].filter((id) => !charged.includes(id));
+    }
+    return out;
+  }, [selectedByCategory, categoryModes, primaryIds]);
+
   // For the manager's own totals preview, resolve each alt group to its default choice.
+
   const resolvedSelection = useMemo(() => {
     const extraSpaces: string[] = [];
     const extraPkgs: string[] = [];
