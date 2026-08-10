@@ -999,7 +999,8 @@ function SingleChoiceSpaces({
 
 
 function SingleChoicePackages({
-  title, items, currency, selectedId, onChange, dealGuests, packageGuests, onGuestChange,
+  title, items, currency, selectedIds, selectMode, onSelect, onToggleSelect,
+  dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
@@ -1008,8 +1009,10 @@ function SingleChoicePackages({
   title: string;
   items: PackageSel[];
   currency: string;
-  selectedId: string;
-  onChange: (id: string) => void;
+  selectedIds: string[];
+  selectMode: SelectMode;
+  onSelect: (id: string) => void;
+  onToggleSelect: (id: string, on: boolean) => void;
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
@@ -1027,7 +1030,8 @@ function SingleChoicePackages({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const multi = items.length > 1;
+  const choosable = items.length > 1;
+  const isMulti = selectMode === "multi";
   const perGuest = lang === "de" ? "/ Gast" : "/ guest";
   const hIncluded = lang === "de" ? "Std. inklusive" : "h included";
   const viewDetails = lang === "de" ? "Details ansehen ↗" : "View details ↗";
@@ -1035,22 +1039,31 @@ function SingleChoicePackages({
   const totalMenuItems = lang === "de" ? "Menüpunkte gesamt" : "Total menu items";
   const selectUpTo = lang === "de" ? "Wählen Sie bis zu" : "Select up to";
   const selectedLabel = lang === "de" ? "gewählt" : "selected";
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    isMulti ? (
+      <div className="space-y-2">{children}</div>
+    ) : (
+      <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+        {children}
+      </RadioGroup>
+    );
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
+          {!choosable
+            ? t(lang, "included_in_proposal")
+            : isMulti
+            ? chooseAnyLabel(lang)
+            : t(lang, "choose_one")}
         </p>
       </CardHeader>
       <CardContent>
-        <RadioGroup
-          value={selectedId}
-          onValueChange={(v) => onChange(v)}
-          className="space-y-2"
-        >
+        <Wrapper>
           {items.map((p) => {
-            const isSelected = p.id === selectedId;
+            const isSelected = selectedIds.includes(p.id);
+
             const guests = packageGuests[p.id] ?? dealGuests;
             const includedH = p.included_hours != null ? Number(p.included_hours) : defaultHours ?? null;
             const currentH = includedH != null ? packageHours?.[p.id] ?? includedH : 0;
