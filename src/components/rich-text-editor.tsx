@@ -186,15 +186,17 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
       >
         <LinkIcon className="h-4 w-4" />
       </ToolBtn>
-      <ToolBtn
-        title="Insert image (URL)"
-        onClick={() => {
-          const url = window.prompt("Image URL");
-          if (url) editor.chain().focus().setImage({ src: url }).run();
-        }}
-      >
-        <ImageIcon className="h-4 w-4" />
-      </ToolBtn>
+      {mode === "full" && (
+        <ToolBtn
+          title="Insert image (URL)"
+          onClick={() => {
+            const url = window.prompt("Image URL");
+            if (url) editor.chain().focus().setImage({ src: url }).run();
+          }}
+        >
+          <ImageIcon className="h-4 w-4" />
+        </ToolBtn>
+      )}
       <span className="mx-1 h-5 w-px bg-border" />
       <ToolBtn title="Undo" onClick={() => editor.chain().focus().undo().run()}>
         <Undo className="h-4 w-4" />
