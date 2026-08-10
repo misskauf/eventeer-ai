@@ -1455,6 +1455,9 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedStaff, x.id, v)}
                     title={x.name}
                     subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
+                    singleChoice={isSingleChoice(categoryModes.staff)}
+                    isPrimary={primaryIds.staff === x.id}
+                    onMakePrimary={() => setPrimaryIds((c) => ({ ...c, staff: x.id }))}
                   />
                   {selectedStaff.includes(x.id) && x.pricing_type !== "per_person" && (
                     <div className="flex flex-wrap items-center gap-3 pl-9 text-xs text-muted-foreground">
