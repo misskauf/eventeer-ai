@@ -914,13 +914,15 @@ function OptionGroup({
 }
 
 function SingleChoiceSpaces({
-  items, currency, selectedId, onChange,
+  items, currency, selectedIds, selectMode, onSelect, onToggle,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
   currency: string;
-  selectedId: string;
-  onChange: (id: string) => void;
+  selectedIds: string[];
+  selectMode: SelectMode;
+  onSelect: (id: string) => void;
+  onToggle: (id: string, on: boolean) => void;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -928,60 +930,73 @@ function SingleChoiceSpaces({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const multi = items.length > 1;
+  const choosable = items.length > 1;
+  const isMulti = selectMode === "multi";
+  const rows = items.map((s) => {
+    const isSelected = selectedIds.includes(s.id);
+    const localDesc = pickLocalized(s, lang, "long_description");
+    return (
+      <label
+        key={s.id}
+        className={
+          "flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40 " +
+          (isSelected ? "border-primary" : "")
+        }
+      >
+        {isMulti ? (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(v) => onToggle(s.id, v === true)}
+            className="mt-1"
+          />
+        ) : choosable ? (
+          <RadioGroupItem value={s.id} className="mt-1" />
+        ) : (
+          <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+        )}
+        <div className="flex-1">
+          <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
+          <div className="text-xs text-muted-foreground">
+            {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
+          </div>
+          {localDesc && <Markdown source={localDesc} className="mt-2" />}
+          <NoteToggle
+            itemId={s.id}
+            open={!!openNoteFor[s.id]}
+            value={itemNotes[s.id] ?? ""}
+            onToggle={() => onToggleNote(s.id)}
+            onChange={(v) => onNoteChange(s.id, v)}
+            lang={lang}
+          />
+        </div>
+      </label>
+    );
+  });
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
+          {!choosable
+            ? t(lang, "included_in_proposal")
+            : isMulti
+            ? chooseAnyLabel(lang)
+            : t(lang, "choose_one")}
         </p>
       </CardHeader>
       <CardContent>
-        <RadioGroup
-          value={selectedId}
-          onValueChange={(v) => onChange(v)}
-          className="space-y-2"
-        >
-          {items.map((s) => {
-            const isSelected = s.id === selectedId;
-            const localDesc = pickLocalized(s, lang, "long_description");
-            return (
-              <label
-                key={s.id}
-                className={
-                  "flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40 " +
-                  (isSelected ? "border-primary" : "")
-                }
-              >
-                {multi ? (
-                  <RadioGroupItem value={s.id} className="mt-1" />
-                ) : (
-                  <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
-                )}
-                <div className="flex-1">
-                  <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
-                  </div>
-                  {localDesc && <Markdown source={localDesc} className="mt-2" />}
-                  <NoteToggle
-                    itemId={s.id}
-                    open={!!openNoteFor[s.id]}
-                    value={itemNotes[s.id] ?? ""}
-                    onToggle={() => onToggleNote(s.id)}
-                    onChange={(v) => onNoteChange(s.id, v)}
-                    lang={lang}
-                  />
-                </div>
-              </label>
-            );
-          })}
-        </RadioGroup>
+        {isMulti ? (
+          <div className="space-y-2">{rows}</div>
+        ) : (
+          <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+            {rows}
+          </RadioGroup>
+        )}
       </CardContent>
     </Card>
   );
 }
+
 
 function SingleChoicePackages({
   title, items, currency, selectedId, onChange, dealGuests, packageGuests, onGuestChange,
