@@ -1817,6 +1817,23 @@ function DealDetail() {
                 </div>
               ))}
 
+              {CATEGORY_KEYS.some((c) => (alternativesByCategory[c]?.length ?? 0) > 0) && (
+                <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">Shown, not charged</span>
+                  {CATEGORY_KEYS.map((c) => {
+                    const ids = alternativesByCategory[c] ?? [];
+                    if (!ids.length) return null;
+                    return (
+                      <div key={c}>
+                        {CATEGORY_LABELS[c]} alternatives: {ids.map((id) => itemNameFor(c, id)).join(", ")}
+                        {!offerAlternatives[c] && " (hidden from client)"}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
                 {totals.discount_targeted && totals.discount_net > 0 && (
