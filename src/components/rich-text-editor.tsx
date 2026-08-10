@@ -296,7 +296,7 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
   );
 }
 
-export function RichTextEditor({ value, onChange, placeholder, minHeight = 320 }: Props) {
+export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, toolbar = "full" }: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
