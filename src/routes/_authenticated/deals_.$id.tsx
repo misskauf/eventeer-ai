@@ -1375,6 +1375,9 @@ function DealDetail() {
           </Card>
 
           <PackageCard
+            singleChoice={isSingleChoice(categoryModes.food)}
+            primaryId={primaryIds.food}
+            onMakePrimary={(pid) => setPrimaryIds((c) => ({ ...c, food: pid }))}
             title="Food packages"
             emptyTo="/catalog/food"
             items={foodPackages}
@@ -1399,6 +1402,9 @@ function DealDetail() {
             }
           />
           <PackageCard
+            singleChoice={isSingleChoice(categoryModes.beverage)}
+            primaryId={primaryIds.beverage}
+            onMakePrimary={(pid) => setPrimaryIds((c) => ({ ...c, beverage: pid }))}
             title="Beverage packages"
             emptyTo="/catalog/beverages"
             items={beveragePackages}
