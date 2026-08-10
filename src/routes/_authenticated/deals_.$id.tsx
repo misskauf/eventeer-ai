@@ -2212,37 +2212,6 @@ function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: stri
   setter((cur) => (v ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)));
 }
 
-function OptionalBadge() {
-  return (
-    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] font-medium text-amber-800">
-      Optional
-    </Badge>
-  );
-}
-
-function OptionalControls({
-  isOptional, defaultOn, onOptionalChange, onDefaultChange,
-}: {
-  isOptional: boolean;
-  defaultOn: boolean;
-  onOptionalChange: (v: boolean) => void;
-  onDefaultChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pl-9 text-xs">
-      <label className="flex cursor-pointer items-center gap-2">
-        <Switch checked={isOptional} onCheckedChange={onOptionalChange} />
-        <span className="text-muted-foreground">Optional for client</span>
-      </label>
-      {isOptional && (
-        <label className="flex cursor-pointer items-center gap-2">
-          <Switch checked={defaultOn} onCheckedChange={onDefaultChange} />
-          <span className="text-muted-foreground">Pre-selected by default</span>
-        </label>
-      )}
-    </div>
-  );
-}
 
 function PickRow({
   checked, onChange, title, subtitle, link,
