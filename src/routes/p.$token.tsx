@@ -25,6 +25,9 @@ import {
   CATEGORY_SECTION_ORDER,
   DEFAULT_CATEGORY_MODES,
   resolveCategoryModes,
+  resolvePrimaryIds,
+  resolveOfferAlternatives,
+  isSingleChoice,
   type CategoryKey,
   type CategoryMode,
 } from "@/lib/selection-modes";
@@ -67,6 +70,10 @@ function modeHint(lang: Lang, mode: CategoryMode): string {
   }
 }
 
+function recommendedLabel(lang: Lang): string {
+  return lang === "de" ? "Unsere Empfehlung" : "Our recommendation";
+}
+
 /** Items that count towards the total when a category is seeded. */
 function seedByMode(ids: string[], mode: CategoryMode): string[] {
   if (mode === "multi" || mode === "fixed") return ids;
@@ -105,6 +112,12 @@ function ClientProposal() {
   const [selStaff, setSelStaff] = useState<string[]>([]);
 
 
+  const [primaryIds, setPrimaryIds] = useState<Record<CategoryKey, string>>({
+    space: "", food: "", beverage: "", extra: "", staff: "",
+  });
+  const [offerAlternatives, setOfferAlternatives] = useState<Record<CategoryKey, boolean>>({
+    space: true, food: true, beverage: true, extra: true, staff: true,
+  });
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
   const [baseExtras, setBaseExtras] = useState<string[]>([]);
@@ -174,6 +187,7 @@ function ClientProposal() {
       const bStaff: string[] = offerCfg.staff_ids ?? [];
       const modes = resolveCategoryModes(offerCfg, res.company);
       setCategoryModes(modes);
+      setOfferAlternatives(resolveOfferAlternatives(offerCfg));
       setStaffIds(bStaff);
       setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
@@ -195,11 +209,20 @@ function ClientProposal() {
 
       // Seeding depends on the resolved mode: pick-one modes start on the first item,
       // multi and fixed start with everything the manager included.
-      setSelSpaces(seedByMode(bSpacesNonGroup, modes.space));
-      setSelFoodPkgs(seedByMode(bFood, modes.food));
-      setSelBevPkgs(seedByMode(bBev, modes.beverage));
-      setSelExtras(seedByMode(bExtras.filter((id) => !groupItemIds.has(id)), modes.extra));
-      setSelStaff(seedByMode(bStaff, modes.staff));
+      const bExtrasNonGroup = bExtras.filter((id) => !groupItemIds.has(id));
+      const primaries = resolvePrimaryIds(offerCfg, {
+        space: bSpacesNonGroup, food: bFood, beverage: bBev, extra: bExtrasNonGroup, staff: bStaff,
+      });
+      setPrimaryIds(primaries);
+      const seedCat = (ids: string[], cat: CategoryKey) =>
+        isSingleChoice(modes[cat]) && primaries[cat] && ids.includes(primaries[cat])
+          ? [primaries[cat]]
+          : seedByMode(ids, modes[cat]);
+      setSelSpaces(seedCat(bSpacesNonGroup, "space"));
+      setSelFoodPkgs(seedCat(bFood, "food"));
+      setSelBevPkgs(seedCat(bBev, "beverage"));
+      setSelExtras(seedCat(bExtrasNonGroup, "extra"));
+      setSelStaff(seedCat(bStaff, "staff"));
 
       setPackageGuests(offerCfg.package_guests ?? {});
       // Seed beverage hours from each package's included hours, falling back to the company default.
@@ -303,11 +326,19 @@ function ClientProposal() {
   const foodMode = categoryModes.food;
   const beverageMode = categoryModes.beverage;
 
-  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id));
-  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
-  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
-  const staffItems = staff.filter((x) => staffIds.includes(x.id));
+  // When "offer alternatives" is off for a single-choice category, only the proposed item is shown.
+  function visibleFor<T extends { id: string }>(list: T[], cat: CategoryKey): T[] {
+    if (!isSingleChoice(categoryModes[cat]) || offerAlternatives[cat]) return list;
+    const pid = primaryIds[cat];
+    const only = list.filter((i) => i.id === pid);
+    return only.length ? only : list.slice(0, 1);
+  }
+
+  const baseSpaceItems = visibleFor(spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id)), "space");
+  const basePkgFood = visibleFor(packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id)), "food");
+  const basePkgBev = visibleFor(packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id)), "beverage");
+  const baseExtraItems = visibleFor(extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id)), "extra");
+  const staffItems = visibleFor(staff.filter((x) => staffIds.includes(x.id)), "staff");
 
 
 
