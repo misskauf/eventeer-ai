@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Copy, Pencil, Plus, Trash2, ExternalLink, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -87,7 +88,14 @@ export function LeadFormsEditor({ companyId }: { companyId: string }) {
       company_id: companyId,
       name: form.name.trim() || "Untitled",
       slug: slugifySlug(form.slug) || slugifySlug(form.name) || `form-${Date.now()}`,
-      fields: form.fields as any,
+      fields: {
+        ...form.fields,
+        custom: form.fields.custom.map((c) =>
+          c.type === "select"
+            ? { ...c, options: (c.options ?? []).map((o) => o.trim()).filter(Boolean) }
+            : { ...c, options: undefined },
+        ),
+      } as any,
       intro_text: form.intro_text?.trim() || null,
       success_text: form.success_text?.trim() || null,
       redirect_url: form.redirect_url?.trim() || null,
@@ -281,16 +289,14 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
             return (
               <div key={meta.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 text-sm">
                 <div>{meta.label}</div>
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={cfg.enabled}
-                  onChange={(e) => setPreset(meta.key, { enabled: e.target.checked, required: e.target.checked && cfg.required })}
+                  onCheckedChange={(v) => setPreset(meta.key, { enabled: !!v, required: !!v && cfg.required })}
                 />
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={cfg.required}
                   disabled={!cfg.enabled}
-                  onChange={(e) => setPreset(meta.key, { required: e.target.checked })}
+                  onCheckedChange={(v) => setPreset(meta.key, { required: !!v })}
                 />
               </div>
             );
@@ -347,7 +353,13 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
                       <Label className="text-xs">Type</Label>
                       <select
                         value={c.type}
-                        onChange={(e) => updateCustom(c.id, { type: e.target.value as CustomFieldType })}
+                        onChange={(e) => {
+                          const type = e.target.value as CustomFieldType;
+                          updateCustom(c.id, {
+                            type,
+                            options: type === "select" ? (c.options && c.options.length ? c.options : [""]) : undefined,
+                          });
+                        }}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="text">Short text</option>
@@ -374,28 +386,20 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
                         onChange={(e) => updateCustom(c.id, { placeholder: e.target.value })}
                       />
                     </div>
-                    <label className="flex items-end gap-2 text-sm h-10">
-                      <input
-                        type="checkbox"
+                    <div className="flex items-end gap-2 text-sm h-10">
+                      <Checkbox
+                        id={`req-${c.id}`}
                         checked={c.required}
-                        onChange={(e) => updateCustom(c.id, { required: e.target.checked })}
+                        onCheckedChange={(v) => updateCustom(c.id, { required: !!v })}
                       />
-                      Required
-                    </label>
+                      <Label htmlFor={`req-${c.id}`} className="pb-0.5">Required</Label>
+                    </div>
                   </div>
                   {c.type === "select" && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Options (comma separated)</Label>
-                      <Input
-                        value={(c.options ?? []).join(", ")}
-                        onChange={(e) =>
-                          updateCustom(c.id, {
-                            options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                          })
-                        }
-                        placeholder="Option 1, Option 2, Option 3"
-                      />
-                    </div>
+                    <OptionsEditor
+                      options={c.options ?? [""]}
+                      onChange={(options) => updateCustom(c.id, { options })}
+                    />
                   )}
                 </div>
               ))}
@@ -421,10 +425,10 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
           <Input value={f.redirect_url ?? ""} onChange={(e) => set({ redirect_url: e.target.value })} placeholder="https://yoursite.com/thanks" />
         </div>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />
-          Active (accepts submissions)
-        </label>
+        <div className="flex items-center gap-2 text-sm">
+          <Checkbox id="form-active" checked={f.active} onCheckedChange={(v) => set({ active: !!v })} />
+          <Label htmlFor="form-active">Active (accepts submissions)</Label>
+        </div>
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
@@ -432,5 +436,41 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function OptionsEditor({ options, onChange }: { options: string[]; onChange: (v: string[]) => void }) {
+  const list = options.length ? options : [""];
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">Options</Label>
+      <div className="space-y-2">
+        {list.map((o, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input
+              value={o}
+              placeholder={`Option ${i + 1}`}
+              onChange={(e) => {
+                const next = [...list];
+                next[i] = e.target.value;
+                onChange(next);
+              }}
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => onChange(list.filter((_, j) => j !== i))}
+              disabled={list.length === 1}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+      </div>
+      <Button size="sm" variant="outline" type="button" onClick={() => onChange([...list, ""])}>
+        <Plus className="mr-1 h-3.5 w-3.5" /> Add option
+      </Button>
+    </div>
   );
 }
