@@ -485,6 +485,10 @@ function DealDetail() {
       alternative_groups: altGroups,
       optional_items,
       select_mode: selectModeCfg,
+      seating_style: Object.fromEntries(
+        Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
+      ),
+
 
       menu_selection_mode_by_pkg: menuModeByPkg,
       menu_choices_by_pkg: menuChoicesByPkg,
