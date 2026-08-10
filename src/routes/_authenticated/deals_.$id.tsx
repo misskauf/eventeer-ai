@@ -97,6 +97,8 @@ type SpaceRow = SpaceSel & {
   capacity_seated?: number | null;
   capacity_standing?: number | null;
   event_types?: string[] | null;
+  size?: string | null;
+  seating_capacities?: Record<string, number> | null;
 };
 
 /** Catalog fit helpers — same rules the auto-suggest uses (lead-suggest.server.ts). */
