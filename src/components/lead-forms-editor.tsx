@@ -372,29 +372,47 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Key (data name)</Label>
-                      <Input
-                        value={c.key}
-                        onChange={(e) => updateCustom(c.id, { key: slugKey(e.target.value) })}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
+                    <div className="md:col-span-2 space-y-1.5">
                       <Label className="text-xs">Placeholder</Label>
                       <Input
                         value={c.placeholder ?? ""}
                         onChange={(e) => updateCustom(c.id, { placeholder: e.target.value })}
+                        placeholder="e.g. 120 guests"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Example text shown in grey inside the empty box (e.g. “e.g. 120 guests”).
+                      </p>
                     </div>
-                    <div className="flex items-end gap-2 text-sm h-10">
+                    <div className="flex items-start gap-2 text-sm md:pt-7">
                       <Checkbox
                         id={`req-${c.id}`}
                         checked={c.required}
                         onCheckedChange={(v) => updateCustom(c.id, { required: !!v })}
                       />
-                      <Label htmlFor={`req-${c.id}`} className="pb-0.5">Required</Label>
+                      <Label htmlFor={`req-${c.id}`} className="font-normal">Required</Label>
                     </div>
                   </div>
+                  <div className="pt-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      type="button"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => toggleAdvanced(c.id)}
+                    >
+                      {advanced.has(c.id) ? "Hide advanced" : "Advanced"}
+                    </Button>
+                    {advanced.has(c.id) && (
+                      <div className="mt-2 space-y-1.5">
+                        <Label className="text-xs">Key (data name)</Label>
+                        <Input value={c.key} readOnly className="font-mono text-xs bg-muted/50" />
+                        <p className="text-xs text-muted-foreground">
+                          Generated automatically from the label. Used to store the answer on the deal.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   {c.type === "select" && (
                     <OptionsEditor
                       options={c.options ?? [""]}
