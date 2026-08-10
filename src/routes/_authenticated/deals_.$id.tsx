@@ -521,7 +521,11 @@ function DealDetail() {
     if (altGroups.length) lines.push(`We've included a few **choices** below so you can shape the experience yourself.`);
     lines.push("");
     lines.push("Let me know what you think, or reply directly with any tweaks.");
-    setIntroMarkdown(lines.join("\n"));
+    const html = lines
+      .filter((l) => l.trim() !== "")
+      .map((l) => `<p>${l.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`)
+      .join("");
+    setIntroMarkdown(html);
     toast.success("Suggested text inserted");
   }
 
@@ -1190,7 +1194,7 @@ function DealDetail() {
                   </TabsContent>
                   <TabsContent value="preview">
                     <div className="min-h-[8rem] rounded-md border p-3">
-                      {introMarkdown ? <Markdown source={introMarkdown} /> : (
+                      {introMarkdown ? <RichText source={introMarkdown} /> : (
                         <div className="text-sm text-muted-foreground">Nothing to preview yet.</div>
                       )}
                     </div>
