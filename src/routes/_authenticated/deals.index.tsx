@@ -47,6 +47,7 @@ import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/use-permissions";
 import { RequirePermission } from "@/components/permission-guard";
+import { normalizeFields, PRESET_FIELDS, type CustomFieldDef } from "@/lib/lead-forms";
 
 
 export const Route = createFileRoute("/_authenticated/deals/")({
@@ -450,12 +451,111 @@ function StageChip({
   );
 }
 
+/** Preset lead-form keys already covered by the core New deal inputs. */
+const CORE_PRESET_KEYS = new Set([
+  "name",
+  "email",
+  "company",
+  "event_type",
+  "event_date",
+  "guest_count",
+  "message",
+]);
+
+type ExtraField = {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+  help?: string;
+  preset: boolean;
+};
+
+/** Union of all fields enabled on the company's active lead forms (minus core inputs). */
+function mergeLeadFormFields(rawForms: unknown[]): ExtraField[] {
+  const configs = rawForms.map((f) => normalizeFields((f as any)?.fields));
+  if (!configs.length) return [];
+
+  const presets: ExtraField[] = [];
+  for (const meta of PRESET_FIELDS) {
+    if (CORE_PRESET_KEYS.has(meta.key)) continue;
+    const using = configs.filter((c) => c.preset[meta.key]?.enabled);
+    if (!using.length) continue;
+    presets.push({
+      key: meta.key,
+      label: meta.label,
+      type: meta.type,
+      required: using.every((c) => !!c.preset[meta.key]?.required),
+      preset: true,
+    });
+  }
+
+  const customMap = new Map<string, { def: CustomFieldDef; count: number; required: number }>();
+  for (const c of configs) {
+    for (const f of c.custom) {
+      const cur = customMap.get(f.key);
+      if (cur) {
+        cur.count += 1;
+        if (f.required) cur.required += 1;
+      } else {
+        customMap.set(f.key, { def: f, count: 1, required: f.required ? 1 : 0 });
+      }
+    }
+  }
+  const customs: ExtraField[] = [...customMap.values()].map(({ def, count, required }) => ({
+    key: def.key,
+    label: def.label,
+    type: def.type,
+    required: required === count,
+    options: def.options,
+    placeholder: def.placeholder,
+    help: def.help,
+    preset: false,
+  }));
+
+  return [...presets, ...customs];
+}
+
 function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [extraFields, setExtraFields] = useState<ExtraField[]>([]);
+  const [extraValues, setExtraValues] = useState<Record<string, unknown>>({});
   const { can } = usePermissions();
   const canCreate = can("deals", "edit");
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data: role } = await supabase
+        .from("user_roles")
+        .select("company_id")
+        .eq("user_id", uid)
+        .limit(1)
+        .maybeSingle();
+      if (!role?.company_id) return;
+      const { data: forms } = await supabase
+        .from("lead_forms")
+        .select("id, fields")
+        .eq("company_id", role.company_id)
+        .eq("active", true);
+      if (cancelled) return;
+      setExtraFields(mergeLeadFormFields(forms ?? []));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  function setExtra(key: string, value: unknown) {
+    setExtraValues((v) => ({ ...v, [key]: value }));
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -472,6 +572,38 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
       setBusy(false);
       return toast.error("No workspace");
     }
+
+    // Extra lead-form values: preset fields with a deal column patch the row,
+    // everything else lands in custom_fields (same shape as public submissions).
+    const dealPatch: Record<string, unknown> = {};
+    const customFields: Record<string, { label: string; value: unknown }> = {};
+    for (const f of extraFields) {
+      const raw = extraValues[f.key];
+      const empty =
+        raw === undefined ||
+        raw === null ||
+        (typeof raw === "string" && raw.trim() === "") ||
+        (f.type === "checkbox" && !raw);
+      if (empty) {
+        if (f.required) {
+          setBusy(false);
+          return toast.error(`Please complete: ${f.label}`);
+        }
+        continue;
+      }
+      const value =
+        f.type === "number"
+          ? Number(raw)
+          : f.type === "checkbox"
+            ? !!raw
+            : typeof raw === "string"
+              ? raw.trim()
+              : raw;
+      const meta = f.preset ? PRESET_FIELDS.find((p) => p.key === f.key) : undefined;
+      if (meta?.dealColumn) dealPatch[meta.dealColumn] = value;
+      else customFields[f.key] = { label: f.label, value };
+    }
+
     const { data: deal, error } = await supabase
       .from("deals")
       .insert({
@@ -485,6 +617,8 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
         guest_count: Number(fd.get("guest_count") || 0),
         notes: (fd.get("notes") as string) || null,
         stage: "new" as any,
+        ...dealPatch,
+        custom_fields: customFields as any,
       })
       .select("id")
       .single();
@@ -503,10 +637,91 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
       console.warn("notifyLeadCreated failed", err);
     }
     setOpen(false);
+    setExtraValues({});
     onCreated(deal.id);
   }
 
   if (!canCreate) return null;
+
+  const presetExtras = extraFields.filter((f) => f.preset);
+  const customExtras = extraFields.filter((f) => !f.preset);
+
+  function renderExtra(f: ExtraField) {
+    const value = extraValues[f.key];
+    if (f.type === "textarea") {
+      return (
+        <div key={f.key} className="space-y-1.5">
+          <Label htmlFor={`x_${f.key}`}>
+            {f.label}
+            {f.required && " *"}
+          </Label>
+          <Textarea
+            id={`x_${f.key}`}
+            rows={3}
+            placeholder={f.placeholder}
+            value={(value as string) ?? ""}
+            onChange={(e) => setExtra(f.key, e.target.value)}
+          />
+          {f.help && <p className="text-xs text-muted-foreground">{f.help}</p>}
+        </div>
+      );
+    }
+    if (f.type === "checkbox") {
+      return (
+        <label key={f.key} className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-input"
+            checked={!!value}
+            onChange={(e) => setExtra(f.key, e.target.checked)}
+          />
+          <span>
+            {f.label}
+            {f.required && " *"}
+          </span>
+        </label>
+      );
+    }
+    if (f.type === "select") {
+      return (
+        <div key={f.key} className="space-y-1.5">
+          <Label>
+            {f.label}
+            {f.required && " *"}
+          </Label>
+          <Select value={(value as string) ?? ""} onValueChange={(v) => setExtra(f.key, v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(f.options ?? []).map((o) => (
+                <SelectItem key={o} value={o}>
+                  {o}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {f.help && <p className="text-xs text-muted-foreground">{f.help}</p>}
+        </div>
+      );
+    }
+    return (
+      <div key={f.key} className="space-y-1.5">
+        <Label htmlFor={`x_${f.key}`}>
+          {f.label}
+          {f.required && " *"}
+        </Label>
+        <Input
+          id={`x_${f.key}`}
+          type={f.type === "number" ? "number" : f.type === "date" ? "date" : f.type}
+          placeholder={f.placeholder}
+          value={(value as string | number | undefined) ?? ""}
+          onChange={(e) => setExtra(f.key, e.target.value)}
+        />
+        {f.help && <p className="text-xs text-muted-foreground">{f.help}</p>}
+      </div>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -515,7 +730,7 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
           <Plus className="mr-1 h-4 w-4" /> New deal
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New deal</DialogTitle>
         </DialogHeader>
@@ -530,10 +745,21 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
             <Field name="event_date" label="Event date" type="date" />
             <Field name="guest_count" label="Guests" type="number" />
           </div>
+          {presetExtras.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">{presetExtras.map(renderExtra)}</div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" name="notes" rows={3} />
           </div>
+          {customExtras.length > 0 && (
+            <div className="space-y-3 border-t pt-3">
+              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Additional details
+              </div>
+              {customExtras.map(renderExtra)}
+            </div>
+          )}
           <Button className="w-full" disabled={busy}>
             {busy ? "Creating…" : "Create deal"}
           </Button>
@@ -542,6 +768,7 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
     </Dialog>
   );
 }
+
 
 function Field(props: {
   name: string;
