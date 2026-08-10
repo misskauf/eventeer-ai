@@ -180,10 +180,15 @@ function ClientProposal() {
       });
       const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id) && !isOpt(id));
 
-      // Single-choice defaults: pick the first item in each category (if any).
-      setSelSpaces(bSpacesNonGroup.length ? [bSpacesNonGroup[0]] : []);
-      setSelFoodPkgs(bFood.length ? [bFood[0]] : []);
-      setSelBevPkgs(bBev.length ? [bBev[0]] : []);
+      // Seeding depends on the resolved mode: single pre-selects the first item, multi ticks all.
+      const cfg: SelectModeCfg = (offerCfg.select_mode ?? {}) as SelectModeCfg;
+      setSelectModeCfg(cfg);
+      const seed = (ids: string[], cat: "space" | "food" | "beverage") =>
+        resolveSelectMode(cfg, res.company, cat) === "multi" ? ids : ids.length ? [ids[0]] : [];
+      setSelSpaces(seed(bSpacesNonGroup, "space"));
+      setSelFoodPkgs(seed(bFood, "food"));
+      setSelBevPkgs(seed(bBev, "beverage"));
+
       // Extras remain multi-select, pre-checked as the manager included them.
       setSelExtras(bExtras.filter((id) => !groupItemIds.has(id) && !isOpt(id)));
 
