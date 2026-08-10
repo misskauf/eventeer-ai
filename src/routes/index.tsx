@@ -47,6 +47,9 @@ const HERO_SUB =
 const CONTACT_EMAIL = "hello@eventeer.app";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    lp: typeof search.lp === "string" ? search.lp : undefined,
+  }),
   component: Index,
   head: () => ({
     meta: [
