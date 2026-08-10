@@ -555,6 +555,9 @@ function DealDetail() {
       cover_title: coverTitle,
       alternative_groups: altGroups,
       category_modes: categoryModes,
+      primary_ids: primaryIds,
+      offer_alternatives: offerAlternatives,
+
       seating_style: Object.fromEntries(
         Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
       ),
