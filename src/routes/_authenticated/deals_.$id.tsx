@@ -85,7 +85,48 @@ type Deal = {
 
 
 type Season = { id: string; name: string; multiplier: number };
-type SpaceRow = SpaceSel & { available_days?: number[] | null; details_url?: string | null };
+type SpaceRow = SpaceSel & {
+  available_days?: number[] | null;
+  details_url?: string | null;
+  capacity?: number | null;
+  capacity_seated?: number | null;
+  capacity_standing?: number | null;
+  event_types?: string[] | null;
+};
+
+/** Catalog fit helpers — same rules the auto-suggest uses (lead-suggest.server.ts). */
+function spaceCapacity(s: any): number {
+  return (
+    Number(s?.capacity ?? 0) ||
+    Number(s?.capacity_seated ?? 0) ||
+    Number(s?.capacity_standing ?? 0) ||
+    0
+  );
+}
+
+function matchesEventType(tags: unknown, eventType: string | null | undefined): boolean {
+  const list = Array.isArray(tags) ? (tags as string[]) : [];
+  if (list.length === 0) return true;
+  const needle = (eventType ?? "").trim().toLowerCase();
+  if (!needle) return true;
+  return list.some((t) => String(t).trim().toLowerCase() === needle);
+}
+
+function spaceFitsDeal(s: any, guests: number): boolean {
+  if (!guests) return true;
+  const cap = spaceCapacity(s);
+  return cap === 0 || cap >= guests;
+}
+
+function packageFitsDeal(p: any, guests: number, eventType: string | null | undefined): boolean {
+  if (!matchesEventType(p?.event_types, eventType)) return false;
+  if (!guests) return true;
+  const min = Number(p?.min_guests ?? 0) || 0;
+  const max = p?.max_guests == null ? null : Number(p.max_guests);
+  if (guests < min) return false;
+  if (max != null && max > 0 && guests > max) return false;
+  return true;
+}
 
 type AlternativeGroup = {
   id: string;
@@ -112,6 +153,9 @@ function DealDetail() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [minRevRules, setMinRevRules] = useState<MinRevRule[]>([]);
   const [currency, setCurrency] = useState("USD");
+  const [showAllSpaces, setShowAllSpaces] = useState(false);
+  const [showAllFood, setShowAllFood] = useState(false);
+  const [showAllBeverages, setShowAllBeverages] = useState(false);
 
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
@@ -163,8 +207,8 @@ function DealDetail() {
     setDeal(d as Deal);
 
     const [sp, pk, ex, stf, fc, ss, mr, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing").eq("active", true),
-      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing, capacity, capacity_seated, capacity_standing, event_types").eq("active", true),
+      supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, min_guests, max_guests, event_types, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("staff_roles").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
@@ -357,8 +401,22 @@ function DealDetail() {
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
 
-  const foodPackages = packages.filter((p) => (p.kind ?? "food") === "food");
-  const beveragePackages = packages.filter((p) => p.kind === "beverage");
+  const allFoodPackages = packages.filter((p) => (p.kind ?? "food") === "food");
+  const allBeveragePackages = packages.filter((p) => p.kind === "beverage");
+  const dealGuestCount = Number(deal?.guest_count ?? 0) || 0;
+  const dealEventType = deal?.event_type ?? null;
+  const keepFittingSpaces = (list: SpaceRow[]) =>
+    list.filter((s) => selectedSpaces.includes(s.id) || spaceFitsDeal(s, dealGuestCount));
+  const keepFittingPkgs = (list: PackageSel[]) =>
+    list.filter(
+      (p) => selectedPackages.includes(p.id) || packageFitsDeal(p, dealGuestCount, dealEventType),
+    );
+  const fittingSpaces = keepFittingSpaces(availableSpaces);
+  const shownSpaces = showAllSpaces ? availableSpaces : fittingSpaces;
+  const fittingFood = keepFittingPkgs(allFoodPackages);
+  const fittingBeverages = keepFittingPkgs(allBeveragePackages);
+  const foodPackages = showAllFood ? allFoodPackages : fittingFood;
+  const beveragePackages = showAllBeverages ? allBeveragePackages : fittingBeverages;
   const itemsForCategory = (cat: AlternativeGroup["category"]) => {
     if (cat === "space") return availableSpaces.map((s) => ({ id: s.id, name: s.name }));
     if (cat === "food") return foodPackages.map((p) => ({ id: p.id, name: p.name }));
@@ -1116,13 +1174,27 @@ function DealDetail() {
                   Showing spaces available on {formatEventDate(deal.event_date)} ({spaces.length - availableSpaces.length} hidden).
                 </p>
               )}
+              {availableSpaces.length > fittingSpaces.length && (
+                <button
+                  type="button"
+                  className="w-fit text-xs text-primary underline"
+                  onClick={() => setShowAllSpaces((v) => !v)}
+                >
+                  {showAllSpaces
+                    ? `Show only spaces that fit ${dealGuestCount} guests`
+                    : `Show all spaces (${availableSpaces.length - fittingSpaces.length} don't fit ${dealGuestCount} guests)`}
+                </button>
+              )}
             </CardHeader>
             <CardContent className="space-y-2">
               {spaces.length === 0 && <EmptyHint to="/catalog/spaces" label="Add spaces in catalog" />}
               {availableSpaces.length === 0 && spaces.length > 0 && (
                 <p className="text-sm text-muted-foreground">No spaces are configured for this weekday.</p>
               )}
-              {availableSpaces.map((s) => (
+              {shownSpaces.length === 0 && availableSpaces.length > 0 && (
+                <p className="text-sm text-muted-foreground">No spaces fit this guest count.</p>
+              )}
+              {shownSpaces.map((s) => (
                 <div key={s.id} className="space-y-2">
                   <PickRow
                     checked={selectedSpaces.includes(s.id)}
@@ -1149,6 +1221,10 @@ function DealDetail() {
             title="Food packages"
             emptyTo="/catalog/food"
             items={foodPackages}
+            hiddenCount={allFoodPackages.length - fittingFood.length}
+            showAll={showAllFood}
+            onShowAllChange={setShowAllFood}
+            fitLabel={`this deal (${dealGuestCount} guests${dealEventType ? `, ${dealEventType}` : ""})`}
             currency={currency}
             selected={selectedPackages}
             onToggle={(id, v) => toggle(setSelectedPackages, id, v)}
@@ -1172,6 +1248,10 @@ function DealDetail() {
             title="Beverage packages"
             emptyTo="/catalog/beverages"
             items={beveragePackages}
+            hiddenCount={allBeveragePackages.length - fittingBeverages.length}
+            showAll={showAllBeverages}
+            onShowAllChange={setShowAllBeverages}
+            fitLabel={`this deal (${dealGuestCount} guests${dealEventType ? `, ${dealEventType}` : ""})`}
             currency={currency}
             selected={selectedPackages}
             onToggle={(id, v) => toggle(setSelectedPackages, id, v)}
@@ -1942,7 +2022,12 @@ function PackageCard({
   packageHours, onHoursChange, defaultHours,
   menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
   optionalItems, onOptionalChange, onOptionalDefaultChange,
+  hiddenCount = 0, showAll = false, onShowAllChange, fitLabel = "this deal",
 }: {
+  hiddenCount?: number;
+  showAll?: boolean;
+  onShowAllChange?: (v: boolean) => void;
+  fitLabel?: string;
   title: string;
   emptyTo: string;
   items: PackageSel[];
@@ -1965,7 +2050,20 @@ function PackageCard({
 }) {
   return (
     <Card>
-      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {hiddenCount > 0 && onShowAllChange && (
+          <button
+            type="button"
+            className="w-fit text-xs text-primary underline"
+            onClick={() => onShowAllChange(!showAll)}
+          >
+            {showAll
+              ? `Show only options that fit ${fitLabel}`
+              : `Show all (${hiddenCount} don't fit ${fitLabel})`}
+          </button>
+        )}
+      </CardHeader>
       <CardContent className="space-y-2">
         {items.length === 0 && <EmptyHint to={emptyTo} label={`Add ${title.toLowerCase()} in catalog`} />}
         {items.map((p) => {
