@@ -214,7 +214,16 @@ function SnippetRow({ label, value, onCopy, multiline, extra }: { label: string;
 
 function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCancel: () => void; onSave: (v: LeadForm) => void }) {
   const [f, setF] = useState<LeadForm>(value);
+  const [advanced, setAdvanced] = useState<Set<string>>(new Set());
+  const toggleAdvanced = (id: string) =>
+    setAdvanced((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const set = (patch: Partial<LeadForm>) => setF((prev) => ({ ...prev, ...patch }));
+
   const setPreset = (key: PresetFieldKey, patch: Partial<{ enabled: boolean; required: boolean }>) =>
     setF((prev) => ({
       ...prev,
@@ -280,28 +289,51 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
         </div>
 
         <div className="space-y-2 rounded-md border p-3">
-          <div className="text-sm font-medium">Standard fields</div>
-          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-xs uppercase text-muted-foreground">
-            <div>Field</div><div>Show</div><div>Required</div>
+          <div>
+            <div className="text-sm font-medium">Standard fields</div>
+            <div className="text-xs text-muted-foreground">
+              “Show” puts the field on the form. “Required” means visitors must fill it in.
+            </div>
           </div>
-          {PRESET_FIELDS.map((meta) => {
-            const cfg = f.fields.preset[meta.key];
-            return (
-              <div key={meta.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 text-sm">
-                <div>{meta.label}</div>
-                <Checkbox
-                  checked={cfg.enabled}
-                  onCheckedChange={(v) => setPreset(meta.key, { enabled: !!v, required: !!v && cfg.required })}
-                />
-                <Checkbox
-                  checked={cfg.required}
-                  disabled={!cfg.enabled}
-                  onCheckedChange={(v) => setPreset(meta.key, { required: !!v })}
-                />
-              </div>
-            );
-          })}
+          <div className="overflow-hidden rounded-md border">
+            <div className="grid grid-cols-[1fr_5rem_5rem] items-center gap-2 bg-muted px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div>Field</div>
+              <div className="text-center">Show</div>
+              <div className="text-center">Required</div>
+            </div>
+            {PRESET_FIELDS.map((meta, i) => {
+              const cfg = f.fields.preset[meta.key];
+              return (
+                <div
+                  key={meta.key}
+                  className={`grid grid-cols-[1fr_5rem_5rem] items-center gap-2 border-t px-3 py-2 text-sm ${
+                    i % 2 === 1 ? "bg-muted/30" : ""
+                  }`}
+                >
+                  <Label htmlFor={`show-${meta.key}`} className="font-normal cursor-pointer">
+                    {meta.label}
+                  </Label>
+                  <div className="flex justify-center">
+                    <Checkbox
+                      id={`show-${meta.key}`}
+                      checked={cfg.enabled}
+                      onCheckedChange={(v) => setPreset(meta.key, { enabled: !!v, required: !!v && cfg.required })}
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    <Checkbox
+                      id={`req-preset-${meta.key}`}
+                      checked={cfg.required}
+                      disabled={!cfg.enabled}
+                      onCheckedChange={(v) => setPreset(meta.key, { required: !!v })}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+
 
         <div className="space-y-3 rounded-md border p-3">
           <div className="flex items-center justify-between">
@@ -372,29 +404,47 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Key (data name)</Label>
-                      <Input
-                        value={c.key}
-                        onChange={(e) => updateCustom(c.id, { key: slugKey(e.target.value) })}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
+                    <div className="md:col-span-2 space-y-1.5">
                       <Label className="text-xs">Placeholder</Label>
                       <Input
                         value={c.placeholder ?? ""}
                         onChange={(e) => updateCustom(c.id, { placeholder: e.target.value })}
+                        placeholder="e.g. 120 guests"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Example text shown in grey inside the empty box (e.g. “e.g. 120 guests”).
+                      </p>
                     </div>
-                    <div className="flex items-end gap-2 text-sm h-10">
+                    <div className="flex items-start gap-2 text-sm md:pt-7">
                       <Checkbox
                         id={`req-${c.id}`}
                         checked={c.required}
                         onCheckedChange={(v) => updateCustom(c.id, { required: !!v })}
                       />
-                      <Label htmlFor={`req-${c.id}`} className="pb-0.5">Required</Label>
+                      <Label htmlFor={`req-${c.id}`} className="font-normal">Required</Label>
                     </div>
                   </div>
+                  <div className="pt-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      type="button"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => toggleAdvanced(c.id)}
+                    >
+                      {advanced.has(c.id) ? "Hide advanced" : "Advanced"}
+                    </Button>
+                    {advanced.has(c.id) && (
+                      <div className="mt-2 space-y-1.5">
+                        <Label className="text-xs">Key (data name)</Label>
+                        <Input value={c.key} readOnly className="font-mono text-xs bg-muted/50" />
+                        <p className="text-xs text-muted-foreground">
+                          Generated automatically from the label. Used to store the answer on the deal.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   {c.type === "select" && (
                     <OptionsEditor
                       options={c.options ?? [""]}
