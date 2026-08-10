@@ -458,19 +458,23 @@ function DealDetail() {
       else if (g.category === "staff") extraStaff.push(target);
       else extraPkgs.push(target);
     }
-    const keep = (ids: string[]) => ids;
+    // Only chargeable items count: the proposed pick in single-choice categories,
+    // everything selected in multiple/fixed ones. Alternatives are never summed.
+    const charged = (cat: CategoryKey) =>
+      chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
     return {
       guest_count: deal?.guest_count ?? 0,
-      space_ids: keep(Array.from(new Set([...selectedSpaces, ...extraSpaces]))),
-      package_ids: keep(Array.from(new Set([...selectedPackages, ...extraPkgs]))),
-      extra_ids: keep(Array.from(new Set([...selectedExtras, ...extraExtras]))),
-      staff_ids: keep(Array.from(new Set([...selectedStaff, ...extraStaff]))),
+      space_ids: Array.from(new Set([...charged("space"), ...extraSpaces])),
+      package_ids: Array.from(new Set([...charged("food"), ...charged("beverage"), ...extraPkgs])),
+      extra_ids: Array.from(new Set([...charged("extra"), ...extraExtras])),
+      staff_ids: Array.from(new Set([...charged("staff"), ...extraStaff])),
       staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups]);
+  }, [deal, selectedByCategory, categoryModes, primaryIds, staffConfig, packageGuests, packageHours, altGroups]);
+
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
