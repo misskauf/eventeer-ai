@@ -297,7 +297,22 @@ function DealDetail() {
       setCoverTitle(cfg.cover_title ?? "");
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
-      setCategoryModes(resolveCategoryModes(cfg, co.data));
+      const loadedModes = resolveCategoryModes(cfg, co.data);
+      setCategoryModes(loadedModes);
+      setOfferAlternatives(resolveOfferAlternatives(cfg));
+      {
+        const pkgList = ((pk.data as PackageSel[]) ?? []);
+        const selPkgs: string[] = cfg.package_ids ?? [];
+        const byCat: Record<CategoryKey, string[]> = {
+          space: cfg.space_ids ?? [],
+          food: selPkgs.filter((pid) => (pkgList.find((p) => p.id === pid)?.kind ?? "food") === "food"),
+          beverage: selPkgs.filter((pid) => pkgList.find((p) => p.id === pid)?.kind === "beverage"),
+          extra: cfg.extra_ids ?? [],
+          staff: cfg.staff_ids ?? [],
+        };
+        setPrimaryIds(resolvePrimaryIds(cfg, loadedModes, byCat));
+      }
+
 
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
