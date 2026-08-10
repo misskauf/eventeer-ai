@@ -2000,6 +2000,16 @@ function PackageCard({
                 </div>
               </label>
               {checked && (
+                <div className="mt-2">
+                  <OptionalControls
+                    isOptional={isOptional}
+                    defaultOn={optionalItems[p.id]?.default_on ?? true}
+                    onOptionalChange={(v) => onOptionalChange(p.id, v)}
+                    onDefaultChange={(v) => onOptionalDefaultChange(p.id, v)}
+                  />
+                </div>
+              )}
+              {checked && (
                 <div className="mt-2 space-y-2 border-t pt-2 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-32 text-muted-foreground">Guests</span>
