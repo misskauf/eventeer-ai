@@ -41,6 +41,16 @@ import {
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
 import { RichText } from "@/components/markdown";
+import {
+  CATEGORY_KEYS,
+  CATEGORY_LABELS,
+  CATEGORY_MODE_LABELS,
+  DEFAULT_CATEGORY_MODES,
+  categoryModeSummary,
+  resolveCategoryModes,
+  type CategoryKey,
+  type CategoryMode,
+} from "@/lib/selection-modes";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-selection-picker";
 import { Slider } from "@/components/ui/slider";
@@ -66,9 +76,6 @@ export const Route = createFileRoute("/_authenticated/deals_/$id")({
   ),
 });
 
-/** Client-side pick rules per catalog category on the proposal page. */
-type SelectCat = "space" | "food" | "beverage";
-type SelectMode = "single" | "multi";
 
 
 type Deal = {
@@ -186,13 +193,11 @@ function DealDetail() {
   const [coverTouched, setCoverTouched] = useState(false);
   const [introMarkdown, setIntroMarkdown] = useState("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
-  // Optional line items: presence in the map = optional for the client.
-  const [optionalItems, setOptionalItems] = useState<Record<string, { default_on: boolean }>>({});
-  // How many items the client may pick per category: company defaults + optional per-deal override.
-  const [companySelectDefaults, setCompanySelectDefaults] = useState<Record<SelectCat, SelectMode>>({
-    space: "single", food: "single", beverage: "single",
-  });
-  const [selectModeCfg, setSelectModeCfg] = useState<Partial<Record<SelectCat, SelectMode>>>({});
+  // How the client interacts with each category on the proposal.
+  const [categoryModes, setCategoryModes] = useState<Record<CategoryKey, CategoryMode>>(
+    DEFAULT_CATEGORY_MODES,
+  );
+  const [companyRow, setCompanyRow] = useState<any>(null);
 
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
@@ -252,11 +257,8 @@ function DealDetail() {
     setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
     setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
     setReminderDays(Number((co.data as any)?.proposal_reminder_days ?? 5));
-    setCompanySelectDefaults({
-      space: ((co.data as any)?.client_select_space as SelectMode) ?? "single",
-      food: ((co.data as any)?.client_select_food as SelectMode) ?? "single",
-      beverage: ((co.data as any)?.client_select_beverage as SelectMode) ?? "single",
-    });
+    setCompanyRow(co.data ?? null);
+    setCategoryModes(resolveCategoryModes((pr.data?.offer as any) ?? {}, co.data));
 
 
     setActivities(ac.data ?? []);
@@ -281,8 +283,7 @@ function DealDetail() {
       setCoverTitle(cfg.cover_title ?? "");
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
-      setOptionalItems((cfg.optional_items as Record<string, { default_on: boolean }>) ?? {});
-      setSelectModeCfg((cfg.select_mode as Partial<Record<SelectCat, SelectMode>>) ?? {});
+      setCategoryModes(resolveCategoryModes(cfg, co.data));
 
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
@@ -385,9 +386,7 @@ function DealDetail() {
       else if (g.category === "staff") extraStaff.push(target);
       else extraPkgs.push(target);
     }
-    // Optional items that don't start checked are excluded from the manager's preview total,
-    // matching what the client will see when they open the proposal.
-    const keep = (ids: string[]) => ids.filter((id) => !optionalItems[id] || optionalItems[id].default_on);
+    const keep = (ids: string[]) => ids;
     return {
       guest_count: deal?.guest_count ?? 0,
       space_ids: keep(Array.from(new Set([...selectedSpaces, ...extraSpaces]))),
@@ -399,7 +398,7 @@ function DealDetail() {
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups, optionalItems]);
+  }, [deal, selectedSpaces, selectedPackages, selectedExtras, selectedStaff, staffConfig, packageGuests, packageHours, altGroups]);
 
   const effectiveDiscount = showDiscount ? discount : 0;
 
@@ -463,12 +462,6 @@ function DealDetail() {
     }));
 
   function buildOfferConfig() {
-    const selectedIds = new Set<string>([
-      ...selectedSpaces, ...selectedPackages, ...selectedExtras, ...selectedStaff,
-    ]);
-    const optional_items = Object.fromEntries(
-      Object.entries(optionalItems).filter(([id]) => selectedIds.has(id)),
-    );
     return {
       space_ids: selectedSpaces,
       package_ids: selectedPackages,
@@ -485,8 +478,7 @@ function DealDetail() {
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
-      optional_items,
-      select_mode: selectModeCfg,
+      category_modes: categoryModes,
       seating_style: Object.fromEntries(
         Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
       ),
@@ -720,16 +712,6 @@ function DealDetail() {
     setPackageGuests((cur) => ({ ...cur, [pid]: v }));
   const setHoursOverride = (pid: string, v: number) =>
     setPackageHours((cur) => ({ ...cur, [pid]: v }));
-
-  const setItemOptional = (id: string, v: boolean) =>
-    setOptionalItems((cur) => {
-      const next = { ...cur };
-      if (v) next[id] = { default_on: cur[id]?.default_on ?? true };
-      else delete next[id];
-      return next;
-    });
-  const setItemDefaultOn = (id: string, v: boolean) =>
-    setOptionalItems((cur) => (cur[id] ? { ...cur, [id]: { default_on: v } } : cur));
 
   const clientResponse = (existingProposal?.constraints as any)?.client_response as
     | {
@@ -1206,37 +1188,31 @@ function DealDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Client selection</CardTitle>
+              <CardTitle>Selection rules</CardTitle>
               <p className="text-xs text-muted-foreground">
-                How many items the client can pick per category on the proposal. Defaults come from Settings.
+                How the client interacts with each category on the proposal. Defaults come from Settings.
               </p>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              {(["space", "food", "beverage"] as SelectCat[]).map((cat) => (
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {CATEGORY_KEYS.map((cat) => (
                 <div key={cat} className="space-y-1">
-                  <p className="text-sm font-medium">
-                    {cat === "space" ? "Spaces" : cat === "food" ? "Food" : "Drinks"}
-                  </p>
+                  <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
                   <Select
-                    value={selectModeCfg[cat] ?? "default"}
+                    value={categoryModes[cat]}
                     onValueChange={(v) =>
-                      setSelectModeCfg((cur) => {
-                        const next = { ...cur };
-                        if (v === "default") delete next[cat];
-                        else next[cat] = v as SelectMode;
-                        return next;
-                      })
+                      setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
                     }
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">
-                        Use default ({companySelectDefaults[cat] === "multi" ? "multiple" : "one"})
-                      </SelectItem>
-                      <SelectItem value="single">One</SelectItem>
-                      <SelectItem value="multi">Multiple</SelectItem>
+                      {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
+                        <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {categoryModeSummary(cat, categoryModes[cat])}
+                  </p>
                 </div>
               ))}
             </CardContent>
@@ -1279,16 +1255,7 @@ function DealDetail() {
                     title={s.name}
                     subtitle={`Base ${money(s.base_rental_fee, currency)} · min ${money(s.min_rental_fee, currency)}`}
                     link={s.details_url ? { href: s.details_url } : null}
-                    optional={!!optionalItems[s.id]}
                   />
-                  {selectedSpaces.includes(s.id) && (
-                    <OptionalControls
-                      isOptional={!!optionalItems[s.id]}
-                      defaultOn={optionalItems[s.id]?.default_on ?? true}
-                      onOptionalChange={(v) => setItemOptional(s.id, v)}
-                      onDefaultChange={(v) => setItemDefaultOn(s.id, v)}
-                    />
-                  )}
                   {selectedSpaces.includes(s.id) && (
                     <SeatingSection
                       size={s.size ?? null}
@@ -1325,9 +1292,6 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
-            optionalItems={optionalItems}
-            onOptionalChange={setItemOptional}
-            onOptionalDefaultChange={setItemDefaultOn}
           />
           <PackageCard
             title="Beverage packages"
@@ -1352,9 +1316,6 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
-            optionalItems={optionalItems}
-            onOptionalChange={setItemOptional}
-            onOptionalDefaultChange={setItemDefaultOn}
           />
 
 
@@ -1369,16 +1330,7 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedExtras, e.id, v)}
                     title={e.name}
                     subtitle={`${money(e.price, currency)} · ${e.pricing_type.replace("_", " ")}`}
-                    optional={!!optionalItems[e.id]}
                   />
-                  {selectedExtras.includes(e.id) && (
-                    <OptionalControls
-                      isOptional={!!optionalItems[e.id]}
-                      defaultOn={optionalItems[e.id]?.default_on ?? true}
-                      onOptionalChange={(v) => setItemOptional(e.id, v)}
-                      onDefaultChange={(v) => setItemDefaultOn(e.id, v)}
-                    />
-                  )}
                 </div>
               ))}
             </CardContent>
@@ -1395,16 +1347,7 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedStaff, x.id, v)}
                     title={x.name}
                     subtitle={`${money(x.price, currency)} · ${x.pricing_type.replace("_", " ")}`}
-                    optional={!!optionalItems[x.id]}
                   />
-                  {selectedStaff.includes(x.id) && (
-                    <OptionalControls
-                      isOptional={!!optionalItems[x.id]}
-                      defaultOn={optionalItems[x.id]?.default_on ?? true}
-                      onOptionalChange={(v) => setItemOptional(x.id, v)}
-                      onDefaultChange={(v) => setItemDefaultOn(x.id, v)}
-                    />
-                  )}
                   {selectedStaff.includes(x.id) && x.pricing_type !== "per_person" && (
                     <div className="flex flex-wrap items-center gap-3 pl-9 text-xs text-muted-foreground">
                       <label className="flex items-center gap-2">
@@ -2106,7 +2049,6 @@ function PackageCard({
   title, emptyTo, items, currency, selected, onToggle, dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
-  optionalItems, onOptionalChange, onOptionalDefaultChange,
   hiddenCount = 0, showAll = false, onShowAllChange, fitLabel = "this deal",
 }: {
   hiddenCount?: number;
@@ -2129,9 +2071,6 @@ function PackageCard({
   onMenuModeChange: (pid: string, mode: "manager" | "client") => void;
   menuChoicesByPkg: Record<string, Record<string, string[]>>;
   onMenuChoiceChange: (pid: string, groupLabel: string, next: string[]) => void;
-  optionalItems: Record<string, { default_on: boolean }>;
-  onOptionalChange: (id: string, v: boolean) => void;
-  onOptionalDefaultChange: (id: string, v: boolean) => void;
 }) {
   return (
     <Card>
@@ -2161,7 +2100,6 @@ function PackageCard({
           const groups = (Array.isArray(p.selection_groups) ? p.selection_groups : []) as MenuGroupDef[];
           const hasSelection = selMode !== "fixed" && groups.length > 0;
           const pickerMode = menuModeByPkg[p.id] ?? "client";
-          const isOptional = !!optionalItems[p.id];
           return (
             <div key={p.id} className="rounded-md border p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -2169,7 +2107,6 @@ function PackageCard({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{p.name}</span>
-                    {isOptional && <OptionalBadge />}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {money(p.price_per_person, currency)} per guest · {standardHours}h included
@@ -2188,16 +2125,6 @@ function PackageCard({
                   )}
                 </div>
               </label>
-              {checked && (
-                <div className="mt-2">
-                  <OptionalControls
-                    isOptional={isOptional}
-                    defaultOn={optionalItems[p.id]?.default_on ?? true}
-                    onOptionalChange={(v) => onOptionalChange(p.id, v)}
-                    onDefaultChange={(v) => onOptionalDefaultChange(p.id, v)}
-                  />
-                </div>
-              )}
               {checked && (
                 <div className="mt-2 space-y-2 border-t pt-2 text-xs">
                   <div className="flex items-center gap-2">
@@ -2285,56 +2212,21 @@ function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: stri
   setter((cur) => (v ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)));
 }
 
-function OptionalBadge() {
-  return (
-    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] font-medium text-amber-800">
-      Optional
-    </Badge>
-  );
-}
-
-function OptionalControls({
-  isOptional, defaultOn, onOptionalChange, onDefaultChange,
-}: {
-  isOptional: boolean;
-  defaultOn: boolean;
-  onOptionalChange: (v: boolean) => void;
-  onDefaultChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pl-9 text-xs">
-      <label className="flex cursor-pointer items-center gap-2">
-        <Switch checked={isOptional} onCheckedChange={onOptionalChange} />
-        <span className="text-muted-foreground">Optional for client</span>
-      </label>
-      {isOptional && (
-        <label className="flex cursor-pointer items-center gap-2">
-          <Switch checked={defaultOn} onCheckedChange={onDefaultChange} />
-          <span className="text-muted-foreground">Pre-selected by default</span>
-        </label>
-      )}
-    </div>
-  );
-}
 
 function PickRow({
-  checked, onChange, title, subtitle, link, optional,
+  checked, onChange, title, subtitle, link,
 }: {
   checked: boolean;
   onChange: (v: boolean | "indeterminate") => void;
   title: string;
   subtitle: string;
   link?: { href: string; label?: string } | null;
-  optional?: boolean;
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3 hover:bg-muted/40">
       <Checkbox checked={checked} onCheckedChange={onChange} />
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{title}</span>
-          {optional && <OptionalBadge />}
-        </div>
+        <div className="font-medium">{title}</div>
         <div className="text-xs text-muted-foreground">{subtitle}</div>
         {link?.href && (
           <a

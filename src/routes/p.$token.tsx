@@ -21,6 +21,12 @@ import { RichText } from "@/components/markdown";
 import { toast } from "sonner";
 import { MessageSquare, Download } from "lucide-react";
 import { t, pickLocalized, normalizeLang, type Lang } from "@/lib/i18n";
+import {
+  DEFAULT_CATEGORY_MODES,
+  resolveCategoryModes,
+  type CategoryKey,
+  type CategoryMode,
+} from "@/lib/selection-modes";
 
 export const Route = createFileRoute("/p/$token")({
   ssr: false,
@@ -35,24 +41,35 @@ type AlternativeGroup = {
   default_id: string;
 };
 
-/** How many items the client may pick in a category. */
-type SelectMode = "single" | "multi";
-type SelectModeCfg = Partial<Record<"space" | "food" | "beverage", SelectMode>>;
 
 function chooseAnyLabel(lang: Lang): string {
   return lang === "de" ? "Wählen Sie beliebig viele" : "Choose any you'd like";
 }
 
-/** Deal-level override wins, then the company default, then single. */
-function resolveSelectMode(
-  cfg: SelectModeCfg,
-  company: any,
-  cat: "space" | "food" | "beverage",
-): SelectMode {
-  const perDeal = cfg[cat];
-  if (perDeal === "single" || perDeal === "multi") return perDeal;
-  const col = company?.[`client_select_${cat}`];
-  return col === "multi" ? "multi" : "single";
+const NONE_VALUE = "__none__";
+
+function noneLabel(lang: Lang): string {
+  return lang === "de" ? "Keine Auswahl" : "None";
+}
+
+/** Short client-facing instruction for a category. */
+function modeHint(lang: Lang, mode: CategoryMode): string {
+  switch (mode) {
+    case "multi":
+      return chooseAnyLabel(lang);
+    case "optional_one":
+      return lang === "de" ? "Wählen Sie eine Option oder keine" : "Choose one, or none";
+    case "fixed":
+      return t(lang, "included_in_proposal");
+    default:
+      return t(lang, "choose_one");
+  }
+}
+
+/** Items that count towards the total when a category is seeded. */
+function seedByMode(ids: string[], mode: CategoryMode): string[] {
+  if (mode === "multi" || mode === "fixed") return ids;
+  return ids.length ? [ids[0]] : [];
 }
 
 
@@ -80,11 +97,11 @@ function ClientProposal() {
   const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
-  // Optional line items the client can add/remove. Presence in the map = optional.
-  const [optionalMap, setOptionalMap] = useState<Record<string, { default_on: boolean }>>({});
-  const [optSel, setOptSel] = useState<Record<string, boolean>>({});
-  // Per-deal override of how many items the client can pick per category.
-  const [selectModeCfg, setSelectModeCfg] = useState<SelectModeCfg>({});
+  // How the client may interact with each category, resolved from the offer + company defaults.
+  const [categoryModes, setCategoryModes] = useState<Record<CategoryKey, CategoryMode>>(
+    DEFAULT_CATEGORY_MODES,
+  );
+  const [selStaff, setSelStaff] = useState<string[]>([]);
 
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
@@ -154,16 +171,8 @@ function ClientProposal() {
       const bPkgs: string[] = offerCfg.package_ids ?? [];
       const bExtras: string[] = offerCfg.extra_ids ?? [];
       const bStaff: string[] = offerCfg.staff_ids ?? [];
-      const optMap: Record<string, { default_on: boolean }> = offerCfg.optional_items ?? {};
-      const isOpt = (id: string) => !!optMap[id];
-      setOptionalMap(optMap);
-      setOptSel(
-        Object.fromEntries(
-          [...bSpaces, ...bPkgs, ...bExtras, ...bStaff]
-            .filter((id) => isOpt(id))
-            .map((id) => [id, optMap[id]?.default_on !== false]),
-        ),
-      );
+      const modes = resolveCategoryModes(offerCfg, res.company);
+      setCategoryModes(modes);
       setStaffIds(bStaff);
       setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
@@ -175,25 +184,21 @@ function ClientProposal() {
       const groupItemIds = new Set<string>(groups.flatMap((g) => g.item_ids));
       const bFood = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id) && !isOpt(id);
+        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id);
       });
       const bBev = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && p.kind === "beverage" && !groupItemIds.has(id) && !isOpt(id);
+        return p && p.kind === "beverage" && !groupItemIds.has(id);
       });
-      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id) && !isOpt(id));
+      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id));
 
-      // Seeding depends on the resolved mode: single pre-selects the first item, multi ticks all.
-      const cfg: SelectModeCfg = (offerCfg.select_mode ?? {}) as SelectModeCfg;
-      setSelectModeCfg(cfg);
-      const seed = (ids: string[], cat: "space" | "food" | "beverage") =>
-        resolveSelectMode(cfg, res.company, cat) === "multi" ? ids : ids.length ? [ids[0]] : [];
-      setSelSpaces(seed(bSpacesNonGroup, "space"));
-      setSelFoodPkgs(seed(bFood, "food"));
-      setSelBevPkgs(seed(bBev, "beverage"));
-
-      // Extras remain multi-select, pre-checked as the manager included them.
-      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id) && !isOpt(id)));
+      // Seeding depends on the resolved mode: pick-one modes start on the first item,
+      // multi and fixed start with everything the manager included.
+      setSelSpaces(seedByMode(bSpacesNonGroup, modes.space));
+      setSelFoodPkgs(seedByMode(bFood, modes.food));
+      setSelBevPkgs(seedByMode(bBev, modes.beverage));
+      setSelExtras(seedByMode(bExtras.filter((id) => !groupItemIds.has(id)), modes.extra));
+      setSelStaff(seedByMode(bStaff, modes.staff));
 
       setPackageGuests(offerCfg.package_guests ?? {});
       // Seed beverage hours from each package's included hours, falling back to the company default.
@@ -235,23 +240,18 @@ function ClientProposal() {
       else if (g.category === "extra") extExtra.push(chosen);
       else pkgExtra.push(chosen);
     }
-    // Optional items are included only while the client keeps them checked.
-    const optOn = (ids: string[]) => ids.filter((id) => optionalMap[id] && optSel[id]);
-    const dropOpt = (ids: string[]) => ids.filter((id) => !optionalMap[id]);
     return {
       guest_count: state.deal.guest_count,
-      space_ids: Array.from(new Set([...dropOpt(selSpaces), ...spaceExtra, ...optOn(baseSpaces)])),
-      package_ids: Array.from(
-        new Set([...dropOpt([...selFoodPkgs, ...selBevPkgs]), ...pkgExtra, ...optOn(basePkgs)]),
-      ),
-      extra_ids: Array.from(new Set([...dropOpt(selExtras), ...extExtra, ...optOn(baseExtras)])),
-      staff_ids: Array.from(new Set([...dropOpt(staffIds), ...optOn(staffIds)])),
+      space_ids: Array.from(new Set([...selSpaces, ...spaceExtra])),
+      package_ids: Array.from(new Set([...selFoodPkgs, ...selBevPkgs, ...pkgExtra])),
+      extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
+      staff_ids: Array.from(new Set(selStaff)),
       staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: state.deal.event_date ?? null,
     };
-  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices, optionalMap, optSel, baseSpaces, basePkgs, baseExtras]);
+  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, selStaff, staffConfig, packageGuests, packageHours, altGroups, altChoices]);
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
@@ -298,52 +298,18 @@ function ClientProposal() {
 
   // Filter items shown in the free-pick lists to those the manager included as "base" (not part of any alt group).
   const groupItemSet = new Set<string>(altGroups.flatMap((g) => g.item_ids));
-  const spaceMode = resolveSelectMode(selectModeCfg, state.company, "space");
-  const foodMode = resolveSelectMode(selectModeCfg, state.company, "food");
-  const beverageMode = resolveSelectMode(selectModeCfg, state.company, "beverage");
+  const spaceMode = categoryModes.space;
+  const foodMode = categoryModes.food;
+  const beverageMode = categoryModes.beverage;
 
-  const isOptional = (id: string) => !!optionalMap[id];
-  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id) && !isOptional(s.id));
-  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
-  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
-  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id) && !isOptional(e.id));
-  const staffItems = staff.filter((x) => staffIds.includes(x.id) && !isOptional(x.id));
+  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id));
+  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
+  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
+  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
+  const staffItems = staff.filter((x) => staffIds.includes(x.id));
 
-  // Optional add-ons the client can toggle on/off.
-  const optionalEntries: Array<{ id: string; name: string; note: string; details: string | null }> = [
-    ...spaces
-      .filter((s) => baseSpaces.includes(s.id) && isOptional(s.id))
-      .map((s) => ({
-        id: s.id,
-        name: pickLocalized(s, lang, "name"),
-        note: money(Number(s.base_rental_fee ?? 0), currency),
-        details: pickLocalized(s, lang, "long_description") || null,
-      })),
-    ...packages
-      .filter((p) => basePkgs.includes(p.id) && isOptional(p.id))
-      .map((p) => ({
-        id: p.id,
-        name: pickLocalized(p, lang, "name"),
-        note: `${money(Number(p.price_per_person ?? 0), currency)} ${lang === "de" ? "pro Gast" : "per guest"}`,
-        details: pickLocalized(p, lang, "long_description") || null,
-      })),
-    ...extras
-      .filter((e) => baseExtras.includes(e.id) && isOptional(e.id))
-      .map((e) => ({
-        id: e.id,
-        name: pickLocalized(e, lang, "name"),
-        note: money(Number(e.price ?? 0), currency),
-        details: pickLocalized(e, lang, "long_description") || null,
-      })),
-    ...staff
-      .filter((x) => staffIds.includes(x.id) && isOptional(x.id))
-      .map((x) => ({
-        id: x.id,
-        name: pickLocalized(x, lang, "name"),
-        note: money(Number(x.price ?? 0), currency),
-        details: pickLocalized(x, lang, "long_description") || null,
-      })),
-  ];
+
+
 
   async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
     if (action === "changes_requested" && !actionNote.trim()) {
@@ -535,8 +501,9 @@ function ClientProposal() {
                 items={baseSpaceItems}
                 currency={currency}
                 selectedIds={selSpaces}
-                selectMode={spaceMode}
+                mode={spaceMode}
                 onSelect={(id: string) => setSelSpaces([id])}
+                onClear={() => setSelSpaces([])}
                 onToggle={(id: string, on: boolean) =>
                   setSelSpaces((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
                 }
@@ -553,8 +520,9 @@ function ClientProposal() {
                 items={basePkgFood}
                 currency={currency}
                 selectedIds={selFoodPkgs}
-                selectMode={foodMode}
+                mode={foodMode}
                 onSelect={(id: string) => setSelFoodPkgs([id])}
+                onClear={() => setSelFoodPkgs([])}
                 onToggleSelect={(id: string, on: boolean) =>
                   setSelFoodPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
                 }
@@ -581,8 +549,9 @@ function ClientProposal() {
                 items={basePkgBev}
                 currency={currency}
                 selectedIds={selBevPkgs}
-                selectMode={beverageMode}
+                mode={beverageMode}
                 onSelect={(id: string) => setSelBevPkgs([id])}
+                onClear={() => setSelBevPkgs([])}
                 onToggleSelect={(id: string, on: boolean) =>
                   setSelBevPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
                 }
@@ -615,7 +584,10 @@ function ClientProposal() {
                   details: pickLocalized(e, lang, "long_description") || null,
                 }))}
                 selected={selExtras}
+                mode={categoryModes.extra}
                 onToggle={(id, v) => toggle(setSelExtras, id, v)}
+                onSelect={(id) => setSelExtras([id])}
+                onClear={() => setSelExtras([])}
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
@@ -628,8 +600,10 @@ function ClientProposal() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">{t(lang, "section_staffing")}</CardTitle>
+                  <p className="text-xs text-muted-foreground">{modeHint(lang, categoryModes.staff)}</p>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent>
+                  <StaffWrapper mode={categoryModes.staff} selected={selStaff} onSelect={(id) => setSelStaff([id])} onClear={() => setSelStaff([])} lang={lang}>
                   {staffItems.map((x) => {
                     const cfg = staffConfig[x.id] ?? {};
                     const count = Math.max(1, Number(cfg.count ?? 1));
@@ -642,60 +616,40 @@ function ClientProposal() {
                         : x.pricing_type === "per_hour"
                         ? `${count} × ${hours}h × ${money(x.price, currency)}`
                         : `${count} × ${money(x.price, currency)}`;
+                    const staffMode = categoryModes.staff;
+                    const isSelected = selStaff.includes(x.id);
                     return (
-                      <div key={x.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
-                        <div className="min-w-0">
-                          <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
-                          <div className="text-xs text-muted-foreground">{meta}</div>
-                          {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+                      <label key={x.id} className={"flex items-start justify-between gap-3 rounded-md border p-3 " + (staffMode === "fixed" ? "" : "cursor-pointer hover:bg-muted/40 ") + (isSelected ? "border-primary" : "")}>
+                        <div className="flex min-w-0 items-start gap-3">
+                          {staffMode === "multi" ? (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(v) => toggle(setSelStaff, x.id, v)}
+                              className="mt-1"
+                            />
+                          ) : staffMode === "fixed" ? (
+                            <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+                          ) : (
+                            <RadioGroupItem value={x.id} className="mt-1" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
+                            <div className="text-xs text-muted-foreground">{meta}</div>
+                            {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+                          </div>
                         </div>
                         {line && <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>}
-                      </div>
+                      </label>
                     );
                   })}
-                  <div className="text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
+                  </StaffWrapper>
+                  {categoryModes.staff === "fixed" && (
+                    <div className="mt-2 text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            {optionalEntries.length > 0 && (
-              <Card className="border-amber-300/70">
-                <CardHeader>
-                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                    {lang === "de" ? "Optionale Zusatzleistungen" : "Optional add-ons"}
-                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-800">
-                      {lang === "de" ? "Optional — nach Wunsch hinzufügen" : "Optional — add if you'd like"}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {optionalEntries.map((o) => {
-                    const on = !!optSel[o.id];
-                    const line = totals?.lines.find((l) => l.sourceId === o.id);
-                    return (
-                      <label
-                        key={o.id}
-                        className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
-                      >
-                        <Checkbox
-                          checked={on}
-                          onCheckedChange={(v) => setOptSel((c) => ({ ...c, [o.id]: v === true }))}
-                          className="mt-1"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium">{o.name}</div>
-                          <div className="text-xs text-muted-foreground">{o.note}</div>
-                          {o.details && <div className="mt-1 text-xs text-muted-foreground">{o.details}</div>}
-                        </div>
-                        {on && line && (
-                          <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>
-                        )}
-                      </label>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
 
 
 
@@ -918,14 +872,51 @@ function itemsForGroup(
     .filter(Boolean) as { id: string; name: string; note: string; details?: string | null }[];
 }
 
+function StaffWrapper({
+  mode, selected, onSelect, onClear, lang, children,
+}: {
+  mode: CategoryMode;
+  selected: string[];
+  onSelect: (id: string) => void;
+  onClear: () => void;
+  lang: Lang;
+  children: React.ReactNode;
+}) {
+  if (mode === "required_one" || mode === "optional_one") {
+    return (
+      <RadioGroup
+        value={selected[0] ?? NONE_VALUE}
+        onValueChange={(v) => (v === NONE_VALUE ? onClear() : onSelect(v))}
+        className="space-y-2"
+      >
+        {children}
+        {mode === "optional_one" && <NoneRow lang={lang} />}
+      </RadioGroup>
+    );
+  }
+  return <div className="space-y-2">{children}</div>;
+}
+
+function NoneRow({ lang }: { lang: Lang }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/40">
+      <RadioGroupItem value={NONE_VALUE} />
+      {noneLabel(lang)}
+    </label>
+  );
+}
+
 function OptionGroup({
-  title, items, selected, onToggle,
+  title, items, selected, onToggle, mode = "multi", onSelect, onClear,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   title: string;
   items: { id: string; name: string; note: string; details?: string | null }[];
   selected: string[];
   onToggle: (id: string, v: boolean | "indeterminate") => void;
+  mode?: CategoryMode;
+  onSelect?: (id: string) => void;
+  onClear?: () => void;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -933,13 +924,18 @@ function OptionGroup({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent className="space-y-2">
-        {items.map((i) => (
+  const isMulti = mode === "multi";
+  const isFixed = mode === "fixed";
+  const showRadio = !isMulti && !isFixed;
+  const rows = items.map((i) => (
           <label key={i.id} className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40">
-            <Checkbox checked={selected.includes(i.id)} onCheckedChange={(v) => onToggle(i.id, v)} className="mt-1" />
+            {isMulti ? (
+              <Checkbox checked={selected.includes(i.id)} onCheckedChange={(v) => onToggle(i.id, v)} className="mt-1" />
+            ) : showRadio ? (
+              <RadioGroupItem value={i.id} className="mt-1" />
+            ) : (
+              <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+            )}
             <div className="flex-1">
               <div className="font-medium">{i.name}</div>
               <div className="text-xs text-muted-foreground">{i.note}</div>
@@ -954,22 +950,43 @@ function OptionGroup({
               />
             </div>
           </label>
-        ))}
+  ));
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
+      </CardHeader>
+      <CardContent>
+        {showRadio ? (
+          <RadioGroup
+            value={selected[0] ?? NONE_VALUE}
+            onValueChange={(v) => (v === NONE_VALUE ? onClear?.() : onSelect?.(v))}
+            className="space-y-2"
+          >
+            {rows}
+            {mode === "optional_one" && <NoneRow lang={lang} />}
+          </RadioGroup>
+        ) : (
+          <div className="space-y-2">{rows}</div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+
 function SingleChoiceSpaces({
-  items, currency, selectedIds, selectMode, onSelect, onToggle,
+  items, currency, selectedIds, mode, onSelect, onToggle, onClear,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
   currency: string;
   selectedIds: string[];
-  selectMode: SelectMode;
+  mode: CategoryMode;
   onSelect: (id: string) => void;
   onToggle: (id: string, on: boolean) => void;
+  onClear: () => void;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -977,8 +994,9 @@ function SingleChoiceSpaces({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const choosable = items.length > 1;
-  const isMulti = selectMode === "multi";
+  const isMulti = mode === "multi";
+  const isFixed = mode === "fixed";
+  const showRadio = !isMulti && !isFixed && (items.length > 1 || mode === "optional_one");
   const rows = items.map((s) => {
     const isSelected = selectedIds.includes(s.id);
     const localDesc = pickLocalized(s, lang, "long_description");
@@ -996,7 +1014,7 @@ function SingleChoiceSpaces({
             onCheckedChange={(v) => onToggle(s.id, v === true)}
             className="mt-1"
           />
-        ) : choosable ? (
+        ) : showRadio ? (
           <RadioGroupItem value={s.id} className="mt-1" />
         ) : (
           <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
@@ -1023,21 +1041,20 @@ function SingleChoiceSpaces({
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          {!choosable
-            ? t(lang, "included_in_proposal")
-            : isMulti
-            ? chooseAnyLabel(lang)
-            : t(lang, "choose_one")}
-        </p>
+        <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
       </CardHeader>
       <CardContent>
-        {isMulti ? (
-          <div className="space-y-2">{rows}</div>
-        ) : (
-          <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+        {showRadio ? (
+          <RadioGroup
+            value={selectedIds[0] ?? NONE_VALUE}
+            onValueChange={(v) => (v === NONE_VALUE ? onClear() : onSelect(v))}
+            className="space-y-2"
+          >
             {rows}
+            {mode === "optional_one" && <NoneRow lang={lang} />}
           </RadioGroup>
+        ) : (
+          <div className="space-y-2">{rows}</div>
         )}
       </CardContent>
     </Card>
@@ -1046,7 +1063,7 @@ function SingleChoiceSpaces({
 
 
 function SingleChoicePackages({
-  title, items, currency, selectedIds, selectMode, onSelect, onToggleSelect,
+  title, items, currency, selectedIds, mode: categoryMode, onSelect, onToggleSelect, onClear,
   dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
@@ -1057,9 +1074,10 @@ function SingleChoicePackages({
   items: PackageSel[];
   currency: string;
   selectedIds: string[];
-  selectMode: SelectMode;
+  mode: CategoryMode;
   onSelect: (id: string) => void;
   onToggleSelect: (id: string, on: boolean) => void;
+  onClear: () => void;
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
@@ -1077,8 +1095,9 @@ function SingleChoicePackages({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const choosable = items.length > 1;
-  const isMulti = selectMode === "multi";
+  const isMulti = categoryMode === "multi";
+  const isFixed = categoryMode === "fixed";
+  const showRadio = !isMulti && !isFixed && (items.length > 1 || categoryMode === "optional_one");
   const perGuest = lang === "de" ? "/ Gast" : "/ guest";
   const hIncluded = lang === "de" ? "Std. inklusive" : "h included";
   const viewDetails = lang === "de" ? "Details ansehen ↗" : "View details ↗";
@@ -1087,24 +1106,23 @@ function SingleChoicePackages({
   const selectUpTo = lang === "de" ? "Wählen Sie bis zu" : "Select up to";
   const selectedLabel = lang === "de" ? "gewählt" : "selected";
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    isMulti ? (
-      <div className="space-y-2">{children}</div>
-    ) : (
-      <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+    showRadio ? (
+      <RadioGroup
+        value={selectedIds[0] ?? NONE_VALUE}
+        onValueChange={(v) => (v === NONE_VALUE ? onClear() : onSelect(v))}
+        className="space-y-2"
+      >
         {children}
+        {categoryMode === "optional_one" && <NoneRow lang={lang} />}
       </RadioGroup>
+    ) : (
+      <div className="space-y-2">{children}</div>
     );
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          {!choosable
-            ? t(lang, "included_in_proposal")
-            : isMulti
-            ? chooseAnyLabel(lang)
-            : t(lang, "choose_one")}
-        </p>
+        <p className="text-xs text-muted-foreground">{modeHint(lang, categoryMode)}</p>
       </CardHeader>
       <CardContent>
         <Wrapper>
@@ -1129,7 +1147,7 @@ function SingleChoicePackages({
                       onCheckedChange={(v) => onToggleSelect(p.id, v === true)}
                       className="mt-1"
                     />
-                  ) : choosable ? (
+                  ) : showRadio ? (
                     <RadioGroupItem value={p.id} className="mt-1" />
                   ) : (
                     <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
