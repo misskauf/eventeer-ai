@@ -64,6 +64,11 @@ export const Route = createFileRoute("/_authenticated/deals_/$id")({
   ),
 });
 
+/** Client-side pick rules per catalog category on the proposal page. */
+type SelectCat = "space" | "food" | "beverage";
+type SelectMode = "single" | "multi";
+
+
 type Deal = {
   id: string;
   company_id: string;
