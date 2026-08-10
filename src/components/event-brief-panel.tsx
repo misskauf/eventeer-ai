@@ -90,8 +90,29 @@ export function EventBriefPanel({
         .filter((p: any) => p.allergen_notes)
         .map((p: any) => `${p.name}: ${p.allergen_notes}`);
     }
-    return buildBriefHtml(ctx, { ...(briefExtras ?? {}), allergenNotes });
-  }, [ctx, briefExtras, packageIds]);
+    const extra = { ...(briefExtras ?? {}), allergenNotes };
+
+    // Custom BEO template mode — render the company's default template with
+    // the same deal data. Falls back to the platform brief when unavailable.
+    const { data: companyRow } = await supabase
+      .from("companies")
+      .select("brief_mode")
+      .eq("id", companyId)
+      .maybeSingle();
+    if ((companyRow as any)?.brief_mode === "template") {
+      const { data: tpl } = await supabase
+        .from("event_brief_templates" as any)
+        .select("body")
+        .eq("company_id", companyId)
+        .order("is_default", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const tplBody = ensureHtml((tpl as any)?.body);
+      if (tplBody) return renderBrief(tplBody, ctx, extra);
+    }
+
+    return buildBriefHtml(ctx, extra);
+  }, [ctx, briefExtras, packageIds, companyId]);
 
   useEffect(() => {
     let cancelled = false;
