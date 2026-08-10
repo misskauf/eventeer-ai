@@ -35,24 +35,35 @@ type AlternativeGroup = {
   default_id: string;
 };
 
-/** How many items the client may pick in a category. */
-type SelectMode = "single" | "multi";
-type SelectModeCfg = Partial<Record<"space" | "food" | "beverage", SelectMode>>;
 
 function chooseAnyLabel(lang: Lang): string {
   return lang === "de" ? "Wählen Sie beliebig viele" : "Choose any you'd like";
 }
 
-/** Deal-level override wins, then the company default, then single. */
-function resolveSelectMode(
-  cfg: SelectModeCfg,
-  company: any,
-  cat: "space" | "food" | "beverage",
-): SelectMode {
-  const perDeal = cfg[cat];
-  if (perDeal === "single" || perDeal === "multi") return perDeal;
-  const col = company?.[`client_select_${cat}`];
-  return col === "multi" ? "multi" : "single";
+const NONE_VALUE = "__none__";
+
+function noneLabel(lang: Lang): string {
+  return lang === "de" ? "Keine Auswahl" : "None";
+}
+
+/** Short client-facing instruction for a category. */
+function modeHint(lang: Lang, mode: CategoryMode): string {
+  switch (mode) {
+    case "multi":
+      return chooseAnyLabel(lang);
+    case "optional_one":
+      return lang === "de" ? "Wählen Sie eine Option oder keine" : "Choose one, or none";
+    case "fixed":
+      return t(lang, "included_in_proposal");
+    default:
+      return t(lang, "choose_one");
+  }
+}
+
+/** Items that count towards the total when a category is seeded. */
+function seedByMode(ids: string[], mode: CategoryMode): string[] {
+  if (mode === "multi" || mode === "fixed") return ids;
+  return ids.length ? [ids[0]] : [];
 }
 
 
@@ -80,11 +91,11 @@ function ClientProposal() {
   const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
-  // Optional line items the client can add/remove. Presence in the map = optional.
-  const [optionalMap, setOptionalMap] = useState<Record<string, { default_on: boolean }>>({});
-  const [optSel, setOptSel] = useState<Record<string, boolean>>({});
-  // Per-deal override of how many items the client can pick per category.
-  const [selectModeCfg, setSelectModeCfg] = useState<SelectModeCfg>({});
+  // How the client may interact with each category, resolved from the offer + company defaults.
+  const [categoryModes, setCategoryModes] = useState<Record<CategoryKey, CategoryMode>>(
+    DEFAULT_CATEGORY_MODES,
+  );
+  const [selStaff, setSelStaff] = useState<string[]>([]);
 
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
@@ -154,16 +165,8 @@ function ClientProposal() {
       const bPkgs: string[] = offerCfg.package_ids ?? [];
       const bExtras: string[] = offerCfg.extra_ids ?? [];
       const bStaff: string[] = offerCfg.staff_ids ?? [];
-      const optMap: Record<string, { default_on: boolean }> = offerCfg.optional_items ?? {};
-      const isOpt = (id: string) => !!optMap[id];
-      setOptionalMap(optMap);
-      setOptSel(
-        Object.fromEntries(
-          [...bSpaces, ...bPkgs, ...bExtras, ...bStaff]
-            .filter((id) => isOpt(id))
-            .map((id) => [id, optMap[id]?.default_on !== false]),
-        ),
-      );
+      const modes = resolveCategoryModes(offerCfg, res.company);
+      setCategoryModes(modes);
       setStaffIds(bStaff);
       setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
@@ -175,25 +178,21 @@ function ClientProposal() {
       const groupItemIds = new Set<string>(groups.flatMap((g) => g.item_ids));
       const bFood = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id) && !isOpt(id);
+        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id);
       });
       const bBev = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && p.kind === "beverage" && !groupItemIds.has(id) && !isOpt(id);
+        return p && p.kind === "beverage" && !groupItemIds.has(id);
       });
-      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id) && !isOpt(id));
+      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id));
 
-      // Seeding depends on the resolved mode: single pre-selects the first item, multi ticks all.
-      const cfg: SelectModeCfg = (offerCfg.select_mode ?? {}) as SelectModeCfg;
-      setSelectModeCfg(cfg);
-      const seed = (ids: string[], cat: "space" | "food" | "beverage") =>
-        resolveSelectMode(cfg, res.company, cat) === "multi" ? ids : ids.length ? [ids[0]] : [];
-      setSelSpaces(seed(bSpacesNonGroup, "space"));
-      setSelFoodPkgs(seed(bFood, "food"));
-      setSelBevPkgs(seed(bBev, "beverage"));
-
-      // Extras remain multi-select, pre-checked as the manager included them.
-      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id) && !isOpt(id)));
+      // Seeding depends on the resolved mode: pick-one modes start on the first item,
+      // multi and fixed start with everything the manager included.
+      setSelSpaces(seedByMode(bSpacesNonGroup, modes.space));
+      setSelFoodPkgs(seedByMode(bFood, modes.food));
+      setSelBevPkgs(seedByMode(bBev, modes.beverage));
+      setSelExtras(seedByMode(bExtras.filter((id) => !groupItemIds.has(id)), modes.extra));
+      setSelStaff(seedByMode(bStaff, modes.staff));
 
       setPackageGuests(offerCfg.package_guests ?? {});
       // Seed beverage hours from each package's included hours, falling back to the company default.
@@ -235,23 +234,18 @@ function ClientProposal() {
       else if (g.category === "extra") extExtra.push(chosen);
       else pkgExtra.push(chosen);
     }
-    // Optional items are included only while the client keeps them checked.
-    const optOn = (ids: string[]) => ids.filter((id) => optionalMap[id] && optSel[id]);
-    const dropOpt = (ids: string[]) => ids.filter((id) => !optionalMap[id]);
     return {
       guest_count: state.deal.guest_count,
-      space_ids: Array.from(new Set([...dropOpt(selSpaces), ...spaceExtra, ...optOn(baseSpaces)])),
-      package_ids: Array.from(
-        new Set([...dropOpt([...selFoodPkgs, ...selBevPkgs]), ...pkgExtra, ...optOn(basePkgs)]),
-      ),
-      extra_ids: Array.from(new Set([...dropOpt(selExtras), ...extExtra, ...optOn(baseExtras)])),
-      staff_ids: Array.from(new Set([...dropOpt(staffIds), ...optOn(staffIds)])),
+      space_ids: Array.from(new Set([...selSpaces, ...spaceExtra])),
+      package_ids: Array.from(new Set([...selFoodPkgs, ...selBevPkgs, ...pkgExtra])),
+      extra_ids: Array.from(new Set([...selExtras, ...extExtra])),
+      staff_ids: Array.from(new Set(selStaff)),
       staff_config: staffConfig,
       package_guests: packageGuests,
       package_hours: packageHours,
       event_date: state.deal.event_date ?? null,
     };
-  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, staffIds, staffConfig, packageGuests, packageHours, altGroups, altChoices, optionalMap, optSel, baseSpaces, basePkgs, baseExtras]);
+  }, [state, selSpaces, selFoodPkgs, selBevPkgs, selExtras, selStaff, staffConfig, packageGuests, packageHours, altGroups, altChoices]);
 
   const offer: Offer | null = useMemo(() => {
     if (!feesCfg) return null;
@@ -298,16 +292,15 @@ function ClientProposal() {
 
   // Filter items shown in the free-pick lists to those the manager included as "base" (not part of any alt group).
   const groupItemSet = new Set<string>(altGroups.flatMap((g) => g.item_ids));
-  const spaceMode = resolveSelectMode(selectModeCfg, state.company, "space");
-  const foodMode = resolveSelectMode(selectModeCfg, state.company, "food");
-  const beverageMode = resolveSelectMode(selectModeCfg, state.company, "beverage");
+  const spaceMode = categoryModes.space;
+  const foodMode = categoryModes.food;
+  const beverageMode = categoryModes.beverage;
 
-  const isOptional = (id: string) => !!optionalMap[id];
-  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id) && !isOptional(s.id));
-  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
-  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
-  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id) && !isOptional(e.id));
-  const staffItems = staff.filter((x) => staffIds.includes(x.id) && !isOptional(x.id));
+  const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id));
+  const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
+  const basePkgBev = packages.filter((p) => p.kind === "beverage" && basePkgs.includes(p.id) && !groupItemSet.has(p.id));
+  const baseExtraItems = extras.filter((e) => baseExtras.includes(e.id) && !groupItemSet.has(e.id));
+  const staffItems = staff.filter((x) => staffIds.includes(x.id));
 
   // Optional add-ons the client can toggle on/off.
   const optionalEntries: Array<{ id: string; name: string; note: string; details: string | null }> = [
