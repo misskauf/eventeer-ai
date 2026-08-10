@@ -501,8 +501,12 @@ function ClientProposal() {
               <SingleChoiceSpaces
                 items={baseSpaceItems}
                 currency={currency}
-                selectedId={selSpaces[0] ?? ""}
-                onChange={(id) => setSelSpaces([id])}
+                selectedIds={selSpaces}
+                selectMode={spaceMode}
+                onSelect={(id: string) => setSelSpaces([id])}
+                onToggle={(id: string, on: boolean) =>
+                  setSelSpaces((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                }
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
@@ -515,8 +519,13 @@ function ClientProposal() {
                 title={t(lang, "section_food")}
                 items={basePkgFood}
                 currency={currency}
-                selectedId={selFoodPkgs[0] ?? ""}
-                onChange={(id) => setSelFoodPkgs([id])}
+                selectedIds={selFoodPkgs}
+                selectMode={foodMode}
+                onSelect={(id: string) => setSelFoodPkgs([id])}
+                onToggleSelect={(id: string, on: boolean) =>
+                  setSelFoodPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                }
+
                 dealGuests={state.deal.guest_count}
                 packageGuests={packageGuests}
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
