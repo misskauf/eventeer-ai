@@ -47,6 +47,7 @@ import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/use-permissions";
 import { RequirePermission } from "@/components/permission-guard";
+import { normalizeFields, PRESET_FIELDS, type CustomFieldDef } from "@/lib/lead-forms";
 
 
 export const Route = createFileRoute("/_authenticated/deals/")({
