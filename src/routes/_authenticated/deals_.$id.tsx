@@ -170,6 +170,8 @@ function DealDetail() {
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [staffConfig, setStaffConfig] = useState<Record<string, { count?: number; hours?: number }>>({});
   const [packageGuests, setPackageGuests] = useState<Record<string, number>>({});
+  const [seatingStyle, setSeatingStyle] = useState<Record<string, string>>({});
+
   const [packageHours, setPackageHours] = useState<Record<string, number>>({});
 
   const [seasonId, setSeasonId] = useState<string>("none");
