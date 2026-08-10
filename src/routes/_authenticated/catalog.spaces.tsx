@@ -10,6 +10,10 @@ import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
 import { costField, useCanViewCosts } from "@/lib/cost-visibility";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ChevronRight } from "lucide-react";
+import { SEATING_STYLES, type SeatingCapacities } from "@/lib/seating";
+
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
   component: SpacesPage,
