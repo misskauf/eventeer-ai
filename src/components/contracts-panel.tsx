@@ -49,6 +49,7 @@ import { formatRelative } from "@/lib/deal-stages";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import DOMPurify from "isomorphic-dompurify";
 import { ContractDocument } from "@/components/contract-document";
+import { TemplateManager } from "@/components/template-manager";
 
 type Template = {
   id: string;
