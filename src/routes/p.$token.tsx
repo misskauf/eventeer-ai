@@ -899,11 +899,31 @@ function OptionGroup({
               />
             </div>
           </label>
-        ))}
+  ));
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <p className="text-xs text-muted-foreground">{modeHint(lang, mode)}</p>
+      </CardHeader>
+      <CardContent>
+        {showRadio ? (
+          <RadioGroup
+            value={selected[0] ?? NONE_VALUE}
+            onValueChange={(v) => (v === NONE_VALUE ? onClear?.() : onSelect?.(v))}
+            className="space-y-2"
+          >
+            {rows}
+            {mode === "optional_one" && <NoneRow lang={lang} />}
+          </RadioGroup>
+        ) : (
+          <div className="space-y-2">{rows}</div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
 
 function SingleChoiceSpaces({
   items, currency, selectedIds, mode, onSelect, onToggle, onClear,
