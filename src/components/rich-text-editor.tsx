@@ -48,6 +48,8 @@ type Props = {
   minHeight?: number;
   /** "basic" hides contract-only tools (logo, signature, placeholders, image). */
   toolbar?: ToolbarMode;
+  /** Placeholder list for the insert dropdown (defaults to contract placeholders). */
+  placeholders?: Array<{ key: string; label: string }>;
 };
 
 function ToolBtn({
@@ -92,7 +94,15 @@ const LOGO_RIGHT_BLOCK = `<div style="display:flex;justify-content:flex-end;marg
 
 const SIGNATURE_BLOCK = `<hr/><h3>Signatures</h3><table style="width:100%;border-collapse:collapse;margin-top:12px"><tbody><tr><td style="width:50%;vertical-align:top;padding:8px 12px 8px 0"><p style="margin:0 0 4px;font-size:12px;color:#555">Client</p><p style="margin:0 0 8px;min-height:60px">{{client_signature}}</p><p style="margin:0 0 4px">Name: {{client_signature_name}}</p><p style="margin:0 0 4px">Date: {{client_signature_date}}</p><p style="margin:0">Place: {{client_signature_place}}</p></td><td style="width:50%;vertical-align:top;padding:8px 0 8px 12px"><p style="margin:0 0 4px;font-size:12px;color:#555">Company representative</p><p style="margin:0 0 24px">Name: ______________________________</p><p style="margin:0 0 24px">Signature: __________________________</p><p style="margin:0 0 24px">Date: ______________________________</p><p style="margin:0">Place: _____________________________</p></td></tr></tbody></table><p></p>`;
 
-function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode }) {
+function Toolbar({
+  editor,
+  mode = "full",
+  placeholders = CONTRACT_PLACEHOLDERS,
+}: {
+  editor: Editor;
+  mode?: ToolbarMode;
+  placeholders?: Array<{ key: string; label: string }>;
+}) {
   const insert = (html: string) => editor.chain().focus().insertContent(html).run();
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/30 px-1 py-1">
@@ -272,7 +282,7 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
             <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
               Company
             </div>
-            {CONTRACT_PLACEHOLDERS.filter((p) => p.key.startsWith("company_")).map((p) => (
+            {placeholders.filter((p) => p.key.startsWith("company_")).map((p) => (
               <SelectItem key={p.key} value={p.key}>
                 <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
                 <span className="ml-2 text-muted-foreground">{p.label}</span>
@@ -281,7 +291,7 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
             <div className="px-2 py-1 text-[10px] font-medium uppercase text-muted-foreground">
               Deal
             </div>
-            {CONTRACT_PLACEHOLDERS.filter((p) => !p.key.startsWith("company_")).map((p) => (
+            {placeholders.filter((p) => !p.key.startsWith("company_")).map((p) => (
               <SelectItem key={p.key} value={p.key}>
                 <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
                 <span className="ml-2 text-muted-foreground">{p.label}</span>
@@ -296,7 +306,7 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
   );
 }
 
-export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, toolbar = "full" }: Props) {
+export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, toolbar = "full", placeholders }: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -331,7 +341,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, 
 
   return (
     <div className="rounded-md border bg-background">
-      <Toolbar editor={editor} mode={toolbar} />
+      <Toolbar editor={editor} mode={toolbar} placeholders={placeholders} />
       <EditorContent editor={editor} />
     </div>
   );
