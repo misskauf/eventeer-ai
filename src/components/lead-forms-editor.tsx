@@ -280,28 +280,51 @@ function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCanc
         </div>
 
         <div className="space-y-2 rounded-md border p-3">
-          <div className="text-sm font-medium">Standard fields</div>
-          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 text-xs uppercase text-muted-foreground">
-            <div>Field</div><div>Show</div><div>Required</div>
+          <div>
+            <div className="text-sm font-medium">Standard fields</div>
+            <div className="text-xs text-muted-foreground">
+              “Show” puts the field on the form. “Required” means visitors must fill it in.
+            </div>
           </div>
-          {PRESET_FIELDS.map((meta) => {
-            const cfg = f.fields.preset[meta.key];
-            return (
-              <div key={meta.key} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 text-sm">
-                <div>{meta.label}</div>
-                <Checkbox
-                  checked={cfg.enabled}
-                  onCheckedChange={(v) => setPreset(meta.key, { enabled: !!v, required: !!v && cfg.required })}
-                />
-                <Checkbox
-                  checked={cfg.required}
-                  disabled={!cfg.enabled}
-                  onCheckedChange={(v) => setPreset(meta.key, { required: !!v })}
-                />
-              </div>
-            );
-          })}
+          <div className="overflow-hidden rounded-md border">
+            <div className="grid grid-cols-[1fr_5rem_5rem] items-center gap-2 bg-muted px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div>Field</div>
+              <div className="text-center">Show</div>
+              <div className="text-center">Required</div>
+            </div>
+            {PRESET_FIELDS.map((meta, i) => {
+              const cfg = f.fields.preset[meta.key];
+              return (
+                <div
+                  key={meta.key}
+                  className={`grid grid-cols-[1fr_5rem_5rem] items-center gap-2 border-t px-3 py-2 text-sm ${
+                    i % 2 === 1 ? "bg-muted/30" : ""
+                  }`}
+                >
+                  <Label htmlFor={`show-${meta.key}`} className="font-normal cursor-pointer">
+                    {meta.label}
+                  </Label>
+                  <div className="flex justify-center">
+                    <Checkbox
+                      id={`show-${meta.key}`}
+                      checked={cfg.enabled}
+                      onCheckedChange={(v) => setPreset(meta.key, { enabled: !!v, required: !!v && cfg.required })}
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    <Checkbox
+                      id={`req-preset-${meta.key}`}
+                      checked={cfg.required}
+                      disabled={!cfg.enabled}
+                      onCheckedChange={(v) => setPreset(meta.key, { required: !!v })}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+
 
         <div className="space-y-3 rounded-md border p-3">
           <div className="flex items-center justify-between">
