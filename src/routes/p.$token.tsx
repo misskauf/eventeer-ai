@@ -501,8 +501,9 @@ function ClientProposal() {
                 items={baseSpaceItems}
                 currency={currency}
                 selectedIds={selSpaces}
-                selectMode={spaceMode}
+                mode={spaceMode}
                 onSelect={(id: string) => setSelSpaces([id])}
+                onClear={() => setSelSpaces([])}
                 onToggle={(id: string, on: boolean) =>
                   setSelSpaces((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
                 }
@@ -519,8 +520,9 @@ function ClientProposal() {
                 items={basePkgFood}
                 currency={currency}
                 selectedIds={selFoodPkgs}
-                selectMode={foodMode}
+                mode={foodMode}
                 onSelect={(id: string) => setSelFoodPkgs([id])}
+                onClear={() => setSelFoodPkgs([])}
                 onToggleSelect={(id: string, on: boolean) =>
                   setSelFoodPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
                 }
@@ -547,8 +549,9 @@ function ClientProposal() {
                 items={basePkgBev}
                 currency={currency}
                 selectedIds={selBevPkgs}
-                selectMode={beverageMode}
+                mode={beverageMode}
                 onSelect={(id: string) => setSelBevPkgs([id])}
+                onClear={() => setSelBevPkgs([])}
                 onToggleSelect={(id: string, on: boolean) =>
                   setSelBevPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
                 }
@@ -581,7 +584,10 @@ function ClientProposal() {
                   details: pickLocalized(e, lang, "long_description") || null,
                 }))}
                 selected={selExtras}
+                mode={categoryModes.extra}
                 onToggle={(id, v) => toggle(setSelExtras, id, v)}
+                onSelect={(id) => setSelExtras([id])}
+                onClear={() => setSelExtras([])}
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
