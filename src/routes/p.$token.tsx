@@ -210,7 +210,7 @@ function ClientProposal() {
       // Seeding depends on the resolved mode: pick-one modes start on the first item,
       // multi and fixed start with everything the manager included.
       const bExtrasNonGroup = bExtras.filter((id) => !groupItemIds.has(id));
-      const primaries = resolvePrimaryIds(offerCfg, {
+      const primaries = resolvePrimaryIds(offerCfg, modes, {
         space: bSpacesNonGroup, food: bFood, beverage: bBev, extra: bExtrasNonGroup, staff: bStaff,
       });
       setPrimaryIds(primaries);
@@ -1010,8 +1010,9 @@ function NoneRow({ lang }: { lang: Lang }) {
 
 function OptionGroup({
   title, items, selected, onToggle, mode = "multi", onSelect, onClear, headless,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang, primaryId,
 }: {
+  primaryId?: string;
   title: string;
   items: { id: string; name: string; note: string; details?: string | null }[];
   selected: string[];
@@ -1040,7 +1041,12 @@ function OptionGroup({
               <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
             )}
             <div className="flex-1">
-              <div className="font-medium">{i.name}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{i.name}</span>
+                {primaryId === i.id && items.length > 1 && (
+                  <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
+                )}
+              </div>
               <div className="text-xs text-muted-foreground">{i.note}</div>
               {i.details && <RichText source={i.details} className="mt-2" />}
               <NoteToggle
@@ -1083,8 +1089,9 @@ function OptionGroup({
 
 function SingleChoiceSpaces({
   items, currency, selectedIds, mode, onSelect, onToggle, onClear, headless,
-  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
+  itemNotes, openNoteFor, onToggleNote, onNoteChange, lang, primaryId,
 }: {
+  primaryId?: string;
   items: SpaceSel[];
   currency: string;
   selectedIds: string[];
@@ -1126,7 +1133,12 @@ function SingleChoiceSpaces({
           <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
         )}
         <div className="flex-1">
-          <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">{pickLocalized(s, lang, "name")}</span>
+            {primaryId === s.id && items.length > 1 && (
+              <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
+            )}
+          </div>
           <div className="text-xs text-muted-foreground">
             {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
           </div>
@@ -1176,8 +1188,9 @@ function SingleChoicePackages({
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
-  menuModeByPkg, managerMenuChoices, lang,
+  menuModeByPkg, managerMenuChoices, lang, primaryId,
 }: {
+  primaryId?: string;
   title: string;
   items: PackageSel[];
   currency: string;
@@ -1265,7 +1278,12 @@ function SingleChoicePackages({
                   )}
 
                   <div className="flex-1">
-                    <div className="font-medium">{pickLocalized(p, lang, "name")}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{pickLocalized(p, lang, "name")}</span>
+                      {primaryId === p.id && items.length > 1 && (
+                        <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {money(p.price_per_person, currency)} {perGuest}
                       {includedH != null && <> · {includedH}{lang === "de" ? " " : ""}{hIncluded}</>}
