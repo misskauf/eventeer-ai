@@ -51,7 +51,11 @@ function CompanySettings() {
             <Field name="contact_phone" label="Contact phone" defaultValue={company.contact_phone ?? ""} />
           </div>
           <Field name="website" label="Website" defaultValue={company.website ?? ""} />
-          <Field name="currency" label="Currency" defaultValue={company.currency} />
+          <div className="space-y-1.5">
+            <Label htmlFor="currency">Currency</Label>
+            <CurrencySelect id="currency" name="currency" defaultCode={company.currency} />
+          </div>
+
           <Button className="w-full">Save company</Button>
         </form>
       </CardContent>
