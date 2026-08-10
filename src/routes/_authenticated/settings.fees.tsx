@@ -18,6 +18,7 @@ function FeesSettings() {
     const fd = new FormData(e.currentTarget);
     const num = (k: string) => Number(fd.get(k) ?? 0);
     const str = (k: string) => (fd.get(k) as string) || "net";
+    const sel = (k: string) => ((fd.get(k) as string) === "multi" ? "multi" : "single");
     const { error } = await supabase
       .from("fee_config")
       .update({
@@ -40,9 +41,21 @@ function FeesSettings() {
       })
       .eq("company_id", company.id);
     if (error) return toast.error(error.message);
+
+    const { error: cErr } = await supabase
+      .from("companies")
+      .update({
+        client_select_space: sel("client_select_space"),
+        client_select_food: sel("client_select_food"),
+        client_select_beverage: sel("client_select_beverage"),
+      })
+      .eq("id", company.id);
+    if (cErr) return toast.error(cErr.message);
+
     toast.success("Fees saved");
     reload();
   }
+
 
   if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (!fees) return <div className="text-sm text-muted-foreground">No fee configuration found.</div>;
