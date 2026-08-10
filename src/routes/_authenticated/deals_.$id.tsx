@@ -186,13 +186,11 @@ function DealDetail() {
   const [coverTouched, setCoverTouched] = useState(false);
   const [introMarkdown, setIntroMarkdown] = useState("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
-  // Optional line items: presence in the map = optional for the client.
-  const [optionalItems, setOptionalItems] = useState<Record<string, { default_on: boolean }>>({});
-  // How many items the client may pick per category: company defaults + optional per-deal override.
-  const [companySelectDefaults, setCompanySelectDefaults] = useState<Record<SelectCat, SelectMode>>({
-    space: "single", food: "single", beverage: "single",
-  });
-  const [selectModeCfg, setSelectModeCfg] = useState<Partial<Record<SelectCat, SelectMode>>>({});
+  // How the client interacts with each category on the proposal.
+  const [categoryModes, setCategoryModes] = useState<Record<CategoryKey, CategoryMode>>(
+    DEFAULT_CATEGORY_MODES,
+  );
+  const [companyRow, setCompanyRow] = useState<any>(null);
 
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
