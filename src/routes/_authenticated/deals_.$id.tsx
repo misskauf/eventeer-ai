@@ -46,8 +46,13 @@ import {
   CATEGORY_LABELS,
   CATEGORY_MODE_LABELS,
   DEFAULT_CATEGORY_MODES,
+  DEFAULT_OFFER_ALTERNATIVES,
   categoryModeSummary,
+  chargeableIds,
+  isSingleChoice,
   resolveCategoryModes,
+  resolveOfferAlternatives,
+  resolvePrimaryIds,
   type CategoryKey,
   type CategoryMode,
 } from "@/lib/selection-modes";
