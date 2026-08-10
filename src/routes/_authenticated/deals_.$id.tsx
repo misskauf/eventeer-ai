@@ -2233,12 +2233,26 @@ function PackageCard({
           const hasSelection = selMode !== "fixed" && groups.length > 0;
           const pickerMode = menuModeByPkg[p.id] ?? "client";
           return (
-            <div key={p.id} className="rounded-md border p-3">
+            <div key={p.id} className={"rounded-md border p-3 " + (checked && singleChoice && primaryId === p.id ? "border-primary bg-primary/5" : "")}>
               <label className="flex cursor-pointer items-start gap-3">
                 <Checkbox checked={checked} onCheckedChange={(v) => onToggle(p.id, v)} className="mt-1" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{p.name}</span>
+                    {checked && singleChoice && (
+                      <span className={"rounded px-1.5 py-0.5 text-[10px] " + (primaryId === p.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                        {primaryId === p.id ? "Proposed" : "Alternative"}
+                      </span>
+                    )}
+                    {checked && singleChoice && primaryId !== p.id && onMakePrimary && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-primary underline"
+                        onClick={(e) => { e.preventDefault(); onMakePrimary(p.id); }}
+                      >
+                        Mark as proposed
+                      </button>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {money(p.price_per_person, currency)} per guest · {standardHours}h included
