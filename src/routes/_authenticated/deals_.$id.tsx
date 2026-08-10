@@ -40,7 +40,8 @@ import {
   type DiscountTarget,
 } from "@/lib/pricing";
 import { categoryDefaultHours, type CategoryDefaults } from "@/lib/tax";
-import { Markdown } from "@/components/markdown";
+import { RichText } from "@/components/markdown";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-selection-picker";
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
