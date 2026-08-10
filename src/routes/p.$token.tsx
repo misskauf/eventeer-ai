@@ -83,6 +83,9 @@ function ClientProposal() {
   // Optional line items the client can add/remove. Presence in the map = optional.
   const [optionalMap, setOptionalMap] = useState<Record<string, { default_on: boolean }>>({});
   const [optSel, setOptSel] = useState<Record<string, boolean>>({});
+  // Per-deal override of how many items the client can pick per category.
+  const [selectModeCfg, setSelectModeCfg] = useState<SelectModeCfg>({});
+
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
