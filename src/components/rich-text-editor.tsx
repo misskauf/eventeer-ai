@@ -331,7 +331,7 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, 
 
   return (
     <div className="rounded-md border bg-background">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} mode={toolbar} />
       <EditorContent editor={editor} />
     </div>
   );
