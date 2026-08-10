@@ -2333,35 +2333,57 @@ function toggle(setter: React.Dispatch<React.SetStateAction<string[]>>, id: stri
 
 
 function PickRow({
-  checked, onChange, title, subtitle, link,
+  checked, onChange, title, subtitle, link, singleChoice = false, isPrimary = false, onMakePrimary,
 }: {
   checked: boolean;
   onChange: (v: boolean | "indeterminate") => void;
   title: string;
   subtitle: string;
   link?: { href: string; label?: string } | null;
+  singleChoice?: boolean;
+  isPrimary?: boolean;
+  onMakePrimary?: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3 hover:bg-muted/40">
-      <Checkbox checked={checked} onCheckedChange={onChange} />
-      <div className="min-w-0 flex-1">
-        <div className="font-medium">{title}</div>
-        <div className="text-xs text-muted-foreground">{subtitle}</div>
-        {link?.href && (
-          <a
-            href={link.href}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
-          >
-            {link.label ?? "View space details"} ↗
-          </a>
-        )}
-      </div>
-    </label>
+    <div className={"rounded-md border p-3 hover:bg-muted/40 " + (checked && singleChoice && isPrimary ? "border-primary bg-primary/5" : "")}>
+      <label className="flex cursor-pointer items-center gap-3">
+        <Checkbox checked={checked} onCheckedChange={onChange} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium">{title}</span>
+            {checked && singleChoice && (
+              <span className={"rounded px-1.5 py-0.5 text-[10px] " + (isPrimary ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                {isPrimary ? "Proposed" : "Alternative"}
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">{subtitle}</div>
+          {link?.href && (
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
+            >
+              {link.label ?? "View space details"} ↗
+            </a>
+          )}
+        </div>
+      </label>
+      {checked && singleChoice && !isPrimary && onMakePrimary && (
+        <button
+          type="button"
+          className="mt-2 ml-7 text-xs text-primary underline"
+          onClick={onMakePrimary}
+        >
+          Mark as proposed
+        </button>
+      )}
+    </div>
   );
 }
+
 
 function Row({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return (
