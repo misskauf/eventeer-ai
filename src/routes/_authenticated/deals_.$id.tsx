@@ -220,7 +220,7 @@ function DealDetail() {
     setDeal(d as Deal);
 
     const [sp, pk, ex, stf, fc, ss, mr, co, ac, pr] = await Promise.all([
-      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing, capacity, capacity_seated, capacity_standing, event_types").eq("active", true),
+      supabase.from("spaces").select("id, name, base_rental_fee, min_rental_fee, basis, tax_rate_pct, long_description, available_days, details_url, weekday_pricing, capacity, capacity_seated, capacity_standing, event_types, size, seating_capacities").eq("active", true),
       supabase.from("fb_packages").select("id, name, price_per_person, kind, basis, tax_rate_pct, long_description, min_guests, max_guests, event_types, included_hours, overage_price_per_person_per_hour, details_url, selection_mode, selection_groups, selection_total_max").eq("active", true),
       supabase.from("extras").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
       supabase.from("staff_roles").select("id, name, pricing_type, price, basis, tax_rate_pct, long_description").eq("active", true),
