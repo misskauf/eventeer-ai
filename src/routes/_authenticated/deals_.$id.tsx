@@ -1206,37 +1206,31 @@ function DealDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Client selection</CardTitle>
+              <CardTitle>Selection rules</CardTitle>
               <p className="text-xs text-muted-foreground">
-                How many items the client can pick per category on the proposal. Defaults come from Settings.
+                How the client interacts with each category on the proposal. Defaults come from Settings.
               </p>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              {(["space", "food", "beverage"] as SelectCat[]).map((cat) => (
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {CATEGORY_KEYS.map((cat) => (
                 <div key={cat} className="space-y-1">
-                  <p className="text-sm font-medium">
-                    {cat === "space" ? "Spaces" : cat === "food" ? "Food" : "Drinks"}
-                  </p>
+                  <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
                   <Select
-                    value={selectModeCfg[cat] ?? "default"}
+                    value={categoryModes[cat]}
                     onValueChange={(v) =>
-                      setSelectModeCfg((cur) => {
-                        const next = { ...cur };
-                        if (v === "default") delete next[cat];
-                        else next[cat] = v as SelectMode;
-                        return next;
-                      })
+                      setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
                     }
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">
-                        Use default ({companySelectDefaults[cat] === "multi" ? "multiple" : "one"})
-                      </SelectItem>
-                      <SelectItem value="single">One</SelectItem>
-                      <SelectItem value="multi">Multiple</SelectItem>
+                      {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
+                        <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {categoryModeSummary(cat, categoryModes[cat])}
+                  </p>
                 </div>
               ))}
             </CardContent>
