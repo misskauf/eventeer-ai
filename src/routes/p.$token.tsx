@@ -128,7 +128,18 @@ function ClientProposal() {
       const bSpaces: string[] = offerCfg.space_ids ?? [];
       const bPkgs: string[] = offerCfg.package_ids ?? [];
       const bExtras: string[] = offerCfg.extra_ids ?? [];
-      setStaffIds(offerCfg.staff_ids ?? []);
+      const bStaff: string[] = offerCfg.staff_ids ?? [];
+      const optMap: Record<string, { default_on: boolean }> = offerCfg.optional_items ?? {};
+      const isOpt = (id: string) => !!optMap[id];
+      setOptionalMap(optMap);
+      setOptSel(
+        Object.fromEntries(
+          [...bSpaces, ...bPkgs, ...bExtras, ...bStaff]
+            .filter((id) => isOpt(id))
+            .map((id) => [id, optMap[id]?.default_on !== false]),
+        ),
+      );
+      setStaffIds(bStaff);
       setStaffConfig(offerCfg.staff_config ?? {});
       setBaseSpaces(bSpaces);
       setBasePkgs(bPkgs);
@@ -139,20 +150,20 @@ function ClientProposal() {
       const groupItemIds = new Set<string>(groups.flatMap((g) => g.item_ids));
       const bFood = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id);
+        return p && (p.kind ?? "food") === "food" && !groupItemIds.has(id) && !isOpt(id);
       });
       const bBev = bPkgs.filter((id) => {
         const p = pkgList.find((x) => x.id === id);
-        return p && p.kind === "beverage" && !groupItemIds.has(id);
+        return p && p.kind === "beverage" && !groupItemIds.has(id) && !isOpt(id);
       });
-      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id));
+      const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id) && !isOpt(id));
 
       // Single-choice defaults: pick the first item in each category (if any).
       setSelSpaces(bSpacesNonGroup.length ? [bSpacesNonGroup[0]] : []);
       setSelFoodPkgs(bFood.length ? [bFood[0]] : []);
       setSelBevPkgs(bBev.length ? [bBev[0]] : []);
       // Extras remain multi-select, pre-checked as the manager included them.
-      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id)));
+      setSelExtras(bExtras.filter((id) => !groupItemIds.has(id) && !isOpt(id)));
 
       setPackageGuests(offerCfg.package_guests ?? {});
       // Seed beverage hours from each package's included hours, falling back to the company default.
