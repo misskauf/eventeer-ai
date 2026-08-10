@@ -88,8 +88,9 @@ function Onboarding() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="currency">Currency</Label>
-                <Input id="currency" name="currency" defaultValue="USD" maxLength={3} />
+                <CurrencySelect id="currency" name="currency" />
               </div>
+
             </div>
             <Button className="w-full" disabled={busy}>
               Create workspace
