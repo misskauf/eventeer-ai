@@ -478,6 +478,8 @@ function DealDetail() {
       cover_title: coverTitle,
       alternative_groups: altGroups,
       optional_items,
+      select_mode: selectModeCfg,
+
       menu_selection_mode_by_pkg: menuModeByPkg,
       menu_choices_by_pkg: menuChoicesByPkg,
     };
