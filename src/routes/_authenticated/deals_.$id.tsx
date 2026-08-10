@@ -274,6 +274,8 @@ function DealDetail() {
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
       setOptionalItems((cfg.optional_items as Record<string, { default_on: boolean }>) ?? {});
+      setSelectModeCfg((cfg.select_mode as Partial<Record<SelectCat, SelectMode>>) ?? {});
+
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
