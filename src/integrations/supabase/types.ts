@@ -19,6 +19,7 @@ export type Database = {
           activated_at: string | null
           address: string | null
           billing_note: string | null
+          brief_mode: string
           client_select_beverage: string
           client_select_food: string
           client_select_space: string
@@ -52,6 +53,7 @@ export type Database = {
           activated_at?: string | null
           address?: string | null
           billing_note?: string | null
+          brief_mode?: string
           client_select_beverage?: string
           client_select_food?: string
           client_select_space?: string
@@ -85,6 +87,7 @@ export type Database = {
           activated_at?: string | null
           address?: string | null
           billing_note?: string | null
+          brief_mode?: string
           client_select_beverage?: string
           client_select_food?: string
           client_select_space?: string
@@ -561,6 +564,50 @@ export type Database = {
             columns: ["lead_form_id"]
             isOneToOne: false
             referencedRelation: "lead_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_brief_templates: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          file_url: string | null
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          file_url?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_url?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_brief_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
