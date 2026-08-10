@@ -56,7 +56,7 @@ function Onboarding() {
     const { error } = await supabase.rpc("create_company_workspace", {
       _name: fd.get("name") as string,
       _primary_color: (fd.get("primary_color") as string) || "#0f172a",
-      _currency: (fd.get("currency") as string) || "USD",
+      _currency: (fd.get("currency") as string) || DEFAULT_CURRENCY,
     });
     if (error) {
       setBusy(false);
