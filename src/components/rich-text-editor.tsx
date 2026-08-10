@@ -290,6 +290,8 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
           </SelectContent>
         </Select>
       </div>
+        </>
+      )}
     </div>
   );
 }
