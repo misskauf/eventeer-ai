@@ -214,7 +214,16 @@ function SnippetRow({ label, value, onCopy, multiline, extra }: { label: string;
 
 function LeadFormEditForm({ value, onCancel, onSave }: { value: LeadForm; onCancel: () => void; onSave: (v: LeadForm) => void }) {
   const [f, setF] = useState<LeadForm>(value);
+  const [advanced, setAdvanced] = useState<Set<string>>(new Set());
+  const toggleAdvanced = (id: string) =>
+    setAdvanced((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const set = (patch: Partial<LeadForm>) => setF((prev) => ({ ...prev, ...patch }));
+
   const setPreset = (key: PresetFieldKey, patch: Partial<{ enabled: boolean; required: boolean }>) =>
     setF((prev) => ({
       ...prev,
