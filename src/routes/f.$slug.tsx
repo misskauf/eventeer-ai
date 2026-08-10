@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   getEnabledPresetFields,
   type LeadFieldsConfig,
@@ -73,6 +74,10 @@ function PublicLeadForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!consent) return toast.error(t("leadForm.consent_required"));
+    const missingChecks = fields.custom.filter((c) => c.type === "checkbox" && c.required && !values[c.key]);
+    if (missingChecks.length) {
+      return toast.error(`Please complete: ${missingChecks.map((c) => c.label).join(", ")}`);
+    }
     setBusy(true);
     try {
       const payload: Record<string, unknown> = {};
@@ -168,16 +173,12 @@ function PublicLeadForm() {
                 />
               ))}
 
-              <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  required
-                  className="mt-0.5"
-                />
-                <span className="text-muted-foreground">{form.consent_text}</span>
-              </label>
+              <div className="flex items-start gap-2 rounded-md border p-3 text-sm">
+                <Checkbox id="consent" checked={consent} onCheckedChange={(v) => setConsent(!!v)} className="mt-0.5" />
+                <Label htmlFor="consent" className="font-normal leading-snug text-muted-foreground">
+                  {form.consent_text}
+                </Label>
+              </div>
 
               <Button type="submit" disabled={busy} className="w-full" style={{ backgroundColor: brand }}>
                 {busy ? t("leadForm.sending") : t("leadForm.send_inquiry")}
@@ -219,10 +220,13 @@ function CustomFieldInput({
   }
   if (def.type === "checkbox") {
     return (
-      <label className="flex items-start gap-2 text-sm">
-        <input id={id} type="checkbox" required={req} checked={!!value} onChange={(e) => onChange(e.target.checked)} className="mt-0.5" />
-        <span>{def.label}{req && <span className="text-destructive"> *</span>}{def.help && <span className="block text-xs text-muted-foreground">{def.help}</span>}</span>
-      </label>
+      <div className="flex items-start gap-2 text-sm">
+        <Checkbox id={id} checked={!!value} onCheckedChange={(v) => onChange(!!v)} className="mt-0.5" />
+        <Label htmlFor={id} className="font-normal leading-snug">
+          {def.label}{req && <span className="text-destructive"> *</span>}
+          {def.help && <span className="block text-xs text-muted-foreground">{def.help}</span>}
+        </Label>
+      </div>
     );
   }
   if (def.type === "select") {
