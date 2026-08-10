@@ -35,6 +35,27 @@ type AlternativeGroup = {
   default_id: string;
 };
 
+/** How many items the client may pick in a category. */
+type SelectMode = "single" | "multi";
+type SelectModeCfg = Partial<Record<"space" | "food" | "beverage", SelectMode>>;
+
+function chooseAnyLabel(lang: Lang): string {
+  return lang === "de" ? "Wählen Sie beliebig viele" : "Choose any you'd like";
+}
+
+/** Deal-level override wins, then the company default, then single. */
+function resolveSelectMode(
+  cfg: SelectModeCfg,
+  company: any,
+  cat: "space" | "food" | "beverage",
+): SelectMode {
+  const perDeal = cfg[cat];
+  if (perDeal === "single" || perDeal === "multi") return perDeal;
+  const col = company?.[`client_select_${cat}`];
+  return col === "multi" ? "multi" : "single";
+}
+
+
 function ClientProposal() {
   const { token } = Route.useParams();
   const resolve = useServerFn(resolveProposalToken);
