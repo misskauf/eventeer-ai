@@ -235,6 +235,12 @@ function DealDetail() {
     setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
     setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
     setReminderDays(Number((co.data as any)?.proposal_reminder_days ?? 5));
+    setCompanySelectDefaults({
+      space: ((co.data as any)?.client_select_space as SelectMode) ?? "single",
+      food: ((co.data as any)?.client_select_food as SelectMode) ?? "single",
+      beverage: ((co.data as any)?.client_select_beverage as SelectMode) ?? "single",
+    });
+
 
     setActivities(ac.data ?? []);
     if (pr.data) {
