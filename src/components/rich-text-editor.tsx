@@ -161,12 +161,14 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
       >
         <ListOrdered className="h-4 w-4" />
       </ToolBtn>
-      <ToolBtn
-        title="Section divider"
-        onClick={() => editor.chain().focus().setHorizontalRule().run()}
-      >
-        <Minus className="h-4 w-4" />
-      </ToolBtn>
+      {mode === "full" && (
+        <ToolBtn
+          title="Section divider"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        >
+          <Minus className="h-4 w-4" />
+        </ToolBtn>
+      )}
       <span className="mx-1 h-5 w-px bg-border" />
       <ToolBtn
         title="Add link"
