@@ -35,6 +35,27 @@ type AlternativeGroup = {
   default_id: string;
 };
 
+/** How many items the client may pick in a category. */
+type SelectMode = "single" | "multi";
+type SelectModeCfg = Partial<Record<"space" | "food" | "beverage", SelectMode>>;
+
+function chooseAnyLabel(lang: Lang): string {
+  return lang === "de" ? "Wählen Sie beliebig viele" : "Choose any you'd like";
+}
+
+/** Deal-level override wins, then the company default, then single. */
+function resolveSelectMode(
+  cfg: SelectModeCfg,
+  company: any,
+  cat: "space" | "food" | "beverage",
+): SelectMode {
+  const perDeal = cfg[cat];
+  if (perDeal === "single" || perDeal === "multi") return perDeal;
+  const col = company?.[`client_select_${cat}`];
+  return col === "multi" ? "multi" : "single";
+}
+
+
 function ClientProposal() {
   const { token } = Route.useParams();
   const resolve = useServerFn(resolveProposalToken);
@@ -62,6 +83,9 @@ function ClientProposal() {
   // Optional line items the client can add/remove. Presence in the map = optional.
   const [optionalMap, setOptionalMap] = useState<Record<string, { default_on: boolean }>>({});
   const [optSel, setOptSel] = useState<Record<string, boolean>>({});
+  // Per-deal override of how many items the client can pick per category.
+  const [selectModeCfg, setSelectModeCfg] = useState<SelectModeCfg>({});
+
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
@@ -159,10 +183,15 @@ function ClientProposal() {
       });
       const bSpacesNonGroup = bSpaces.filter((id) => !groupItemIds.has(id) && !isOpt(id));
 
-      // Single-choice defaults: pick the first item in each category (if any).
-      setSelSpaces(bSpacesNonGroup.length ? [bSpacesNonGroup[0]] : []);
-      setSelFoodPkgs(bFood.length ? [bFood[0]] : []);
-      setSelBevPkgs(bBev.length ? [bBev[0]] : []);
+      // Seeding depends on the resolved mode: single pre-selects the first item, multi ticks all.
+      const cfg: SelectModeCfg = (offerCfg.select_mode ?? {}) as SelectModeCfg;
+      setSelectModeCfg(cfg);
+      const seed = (ids: string[], cat: "space" | "food" | "beverage") =>
+        resolveSelectMode(cfg, res.company, cat) === "multi" ? ids : ids.length ? [ids[0]] : [];
+      setSelSpaces(seed(bSpacesNonGroup, "space"));
+      setSelFoodPkgs(seed(bFood, "food"));
+      setSelBevPkgs(seed(bBev, "beverage"));
+
       // Extras remain multi-select, pre-checked as the manager included them.
       setSelExtras(bExtras.filter((id) => !groupItemIds.has(id) && !isOpt(id)));
 
@@ -269,6 +298,10 @@ function ClientProposal() {
 
   // Filter items shown in the free-pick lists to those the manager included as "base" (not part of any alt group).
   const groupItemSet = new Set<string>(altGroups.flatMap((g) => g.item_ids));
+  const spaceMode = resolveSelectMode(selectModeCfg, state.company, "space");
+  const foodMode = resolveSelectMode(selectModeCfg, state.company, "food");
+  const beverageMode = resolveSelectMode(selectModeCfg, state.company, "beverage");
+
   const isOptional = (id: string) => !!optionalMap[id];
   const baseSpaceItems = spaces.filter((s) => baseSpaces.includes(s.id) && !groupItemSet.has(s.id) && !isOptional(s.id));
   const basePkgFood = packages.filter((p) => (p.kind ?? "food") === "food" && basePkgs.includes(p.id) && !groupItemSet.has(p.id) && !isOptional(p.id));
@@ -501,8 +534,12 @@ function ClientProposal() {
               <SingleChoiceSpaces
                 items={baseSpaceItems}
                 currency={currency}
-                selectedId={selSpaces[0] ?? ""}
-                onChange={(id) => setSelSpaces([id])}
+                selectedIds={selSpaces}
+                selectMode={spaceMode}
+                onSelect={(id: string) => setSelSpaces([id])}
+                onToggle={(id: string, on: boolean) =>
+                  setSelSpaces((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                }
                 itemNotes={itemNotes}
                 openNoteFor={openNoteFor}
                 onToggleNote={noteToggle}
@@ -515,8 +552,13 @@ function ClientProposal() {
                 title={t(lang, "section_food")}
                 items={basePkgFood}
                 currency={currency}
-                selectedId={selFoodPkgs[0] ?? ""}
-                onChange={(id) => setSelFoodPkgs([id])}
+                selectedIds={selFoodPkgs}
+                selectMode={foodMode}
+                onSelect={(id: string) => setSelFoodPkgs([id])}
+                onToggleSelect={(id: string, on: boolean) =>
+                  setSelFoodPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                }
+
                 dealGuests={state.deal.guest_count}
                 packageGuests={packageGuests}
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
@@ -538,8 +580,13 @@ function ClientProposal() {
                 title={t(lang, "section_beverages")}
                 items={basePkgBev}
                 currency={currency}
-                selectedId={selBevPkgs[0] ?? ""}
-                onChange={(id) => setSelBevPkgs([id])}
+                selectedIds={selBevPkgs}
+                selectMode={beverageMode}
+                onSelect={(id: string) => setSelBevPkgs([id])}
+                onToggleSelect={(id: string, on: boolean) =>
+                  setSelBevPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                }
+
                 dealGuests={state.deal.guest_count}
                 packageGuests={packageGuests}
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
@@ -914,13 +961,15 @@ function OptionGroup({
 }
 
 function SingleChoiceSpaces({
-  items, currency, selectedId, onChange,
+  items, currency, selectedIds, selectMode, onSelect, onToggle,
   itemNotes, openNoteFor, onToggleNote, onNoteChange, lang,
 }: {
   items: SpaceSel[];
   currency: string;
-  selectedId: string;
-  onChange: (id: string) => void;
+  selectedIds: string[];
+  selectMode: SelectMode;
+  onSelect: (id: string) => void;
+  onToggle: (id: string, on: boolean) => void;
   itemNotes: Record<string, string>;
   openNoteFor: Record<string, boolean>;
   onToggleNote: (id: string) => void;
@@ -928,63 +977,77 @@ function SingleChoiceSpaces({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const multi = items.length > 1;
+  const choosable = items.length > 1;
+  const isMulti = selectMode === "multi";
+  const rows = items.map((s) => {
+    const isSelected = selectedIds.includes(s.id);
+    const localDesc = pickLocalized(s, lang, "long_description");
+    return (
+      <label
+        key={s.id}
+        className={
+          "flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40 " +
+          (isSelected ? "border-primary" : "")
+        }
+      >
+        {isMulti ? (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(v) => onToggle(s.id, v === true)}
+            className="mt-1"
+          />
+        ) : choosable ? (
+          <RadioGroupItem value={s.id} className="mt-1" />
+        ) : (
+          <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+        )}
+        <div className="flex-1">
+          <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
+          <div className="text-xs text-muted-foreground">
+            {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
+          </div>
+          {localDesc && <Markdown source={localDesc} className="mt-2" />}
+          <NoteToggle
+            itemId={s.id}
+            open={!!openNoteFor[s.id]}
+            value={itemNotes[s.id] ?? ""}
+            onToggle={() => onToggleNote(s.id)}
+            onChange={(v) => onNoteChange(s.id, v)}
+            lang={lang}
+          />
+        </div>
+      </label>
+    );
+  });
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t(lang, "section_space")}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
+          {!choosable
+            ? t(lang, "included_in_proposal")
+            : isMulti
+            ? chooseAnyLabel(lang)
+            : t(lang, "choose_one")}
         </p>
       </CardHeader>
       <CardContent>
-        <RadioGroup
-          value={selectedId}
-          onValueChange={(v) => onChange(v)}
-          className="space-y-2"
-        >
-          {items.map((s) => {
-            const isSelected = s.id === selectedId;
-            const localDesc = pickLocalized(s, lang, "long_description");
-            return (
-              <label
-                key={s.id}
-                className={
-                  "flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40 " +
-                  (isSelected ? "border-primary" : "")
-                }
-              >
-                {multi ? (
-                  <RadioGroupItem value={s.id} className="mt-1" />
-                ) : (
-                  <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
-                )}
-                <div className="flex-1">
-                  <div className="font-medium">{pickLocalized(s, lang, "name")}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
-                  </div>
-                  {localDesc && <Markdown source={localDesc} className="mt-2" />}
-                  <NoteToggle
-                    itemId={s.id}
-                    open={!!openNoteFor[s.id]}
-                    value={itemNotes[s.id] ?? ""}
-                    onToggle={() => onToggleNote(s.id)}
-                    onChange={(v) => onNoteChange(s.id, v)}
-                    lang={lang}
-                  />
-                </div>
-              </label>
-            );
-          })}
-        </RadioGroup>
+        {isMulti ? (
+          <div className="space-y-2">{rows}</div>
+        ) : (
+          <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+            {rows}
+          </RadioGroup>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+
 function SingleChoicePackages({
-  title, items, currency, selectedId, onChange, dealGuests, packageGuests, onGuestChange,
+  title, items, currency, selectedIds, selectMode, onSelect, onToggleSelect,
+  dealGuests, packageGuests, onGuestChange,
   packageHours, onHoursChange, defaultHours,
   itemNotes, openNoteFor, onToggleNote, onNoteChange,
   menuChoices, onMenuChoiceChange,
@@ -993,8 +1056,10 @@ function SingleChoicePackages({
   title: string;
   items: PackageSel[];
   currency: string;
-  selectedId: string;
-  onChange: (id: string) => void;
+  selectedIds: string[];
+  selectMode: SelectMode;
+  onSelect: (id: string) => void;
+  onToggleSelect: (id: string, on: boolean) => void;
   dealGuests: number;
   packageGuests: Record<string, number>;
   onGuestChange: (id: string, v: number) => void;
@@ -1012,7 +1077,8 @@ function SingleChoicePackages({
   lang: Lang;
 }) {
   if (items.length === 0) return null;
-  const multi = items.length > 1;
+  const choosable = items.length > 1;
+  const isMulti = selectMode === "multi";
   const perGuest = lang === "de" ? "/ Gast" : "/ guest";
   const hIncluded = lang === "de" ? "Std. inklusive" : "h included";
   const viewDetails = lang === "de" ? "Details ansehen ↗" : "View details ↗";
@@ -1020,22 +1086,31 @@ function SingleChoicePackages({
   const totalMenuItems = lang === "de" ? "Menüpunkte gesamt" : "Total menu items";
   const selectUpTo = lang === "de" ? "Wählen Sie bis zu" : "Select up to";
   const selectedLabel = lang === "de" ? "gewählt" : "selected";
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    isMulti ? (
+      <div className="space-y-2">{children}</div>
+    ) : (
+      <RadioGroup value={selectedIds[0] ?? ""} onValueChange={(v) => onSelect(v)} className="space-y-2">
+        {children}
+      </RadioGroup>
+    );
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">
-          {multi ? t(lang, "choose_one") : t(lang, "included_in_proposal")}
+          {!choosable
+            ? t(lang, "included_in_proposal")
+            : isMulti
+            ? chooseAnyLabel(lang)
+            : t(lang, "choose_one")}
         </p>
       </CardHeader>
       <CardContent>
-        <RadioGroup
-          value={selectedId}
-          onValueChange={(v) => onChange(v)}
-          className="space-y-2"
-        >
+        <Wrapper>
           {items.map((p) => {
-            const isSelected = p.id === selectedId;
+            const isSelected = selectedIds.includes(p.id);
+
             const guests = packageGuests[p.id] ?? dealGuests;
             const includedH = p.included_hours != null ? Number(p.included_hours) : defaultHours ?? null;
             const currentH = includedH != null ? packageHours?.[p.id] ?? includedH : 0;
@@ -1048,11 +1123,18 @@ function SingleChoicePackages({
                 className={"rounded-md border p-3 " + (isSelected ? "border-primary" : "")}
               >
                 <label className="flex cursor-pointer items-start gap-3">
-                  {multi ? (
+                  {isMulti ? (
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(v) => onToggleSelect(p.id, v === true)}
+                      className="mt-1"
+                    />
+                  ) : choosable ? (
                     <RadioGroupItem value={p.id} className="mt-1" />
                   ) : (
                     <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
                   )}
+
                   <div className="flex-1">
                     <div className="font-medium">{pickLocalized(p, lang, "name")}</div>
                     <div className="text-xs text-muted-foreground">
@@ -1197,7 +1279,8 @@ function SingleChoicePackages({
               </div>
             );
           })}
-        </RadioGroup>
+        </Wrapper>
+
       </CardContent>
     </Card>
   );

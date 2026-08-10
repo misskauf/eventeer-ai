@@ -19,6 +19,9 @@ export type Database = {
           activated_at: string | null
           address: string | null
           billing_note: string | null
+          client_select_beverage: string
+          client_select_food: string
+          client_select_space: string
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -49,6 +52,9 @@ export type Database = {
           activated_at?: string | null
           address?: string | null
           billing_note?: string | null
+          client_select_beverage?: string
+          client_select_food?: string
+          client_select_space?: string
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -79,6 +85,9 @@ export type Database = {
           activated_at?: string | null
           address?: string | null
           billing_note?: string | null
+          client_select_beverage?: string
+          client_select_food?: string
+          client_select_space?: string
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string

@@ -64,6 +64,11 @@ export const Route = createFileRoute("/_authenticated/deals_/$id")({
   ),
 });
 
+/** Client-side pick rules per catalog category on the proposal page. */
+type SelectCat = "space" | "food" | "beverage";
+type SelectMode = "single" | "multi";
+
+
 type Deal = {
   id: string;
   company_id: string;
@@ -177,6 +182,12 @@ function DealDetail() {
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   // Optional line items: presence in the map = optional for the client.
   const [optionalItems, setOptionalItems] = useState<Record<string, { default_on: boolean }>>({});
+  // How many items the client may pick per category: company defaults + optional per-deal override.
+  const [companySelectDefaults, setCompanySelectDefaults] = useState<Record<SelectCat, SelectMode>>({
+    space: "single", food: "single", beverage: "single",
+  });
+  const [selectModeCfg, setSelectModeCfg] = useState<Partial<Record<SelectCat, SelectMode>>>({});
+
   const [editorTab, setEditorTab] = useState<"write" | "preview">("write");
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [menuChoicesByPkg, setMenuChoicesByPkg] = useState<Record<string, Record<string, string[]>>>({});
@@ -214,7 +225,7 @@ function DealDetail() {
       supabase.from("fee_config").select("*").eq("company_id", d.company_id).maybeSingle(),
       supabase.from("pricing_seasons").select("id, name, multiplier"),
       supabase.from("pricing_rules").select("id, notes, days_of_week, months, space_ids, min_revenue, basis").eq("company_id", d.company_id),
-      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes, proposal_reminder_days").eq("id", d.company_id).maybeSingle(),
+      supabase.from("companies").select("currency, require_deal_approval, invoice_mode, invoice_notes, proposal_reminder_days, client_select_space, client_select_food, client_select_beverage").eq("id", d.company_id).maybeSingle(),
       supabase.from("deal_activities").select("*").eq("deal_id", id).order("created_at", { ascending: false }),
 
       supabase.from("proposals").select("*").eq("deal_id", id).order("version", { ascending: false }).limit(1).maybeSingle(),
@@ -235,6 +246,12 @@ function DealDetail() {
     setInvoiceMode(((co.data as any)?.invoice_mode as "external" | "template") ?? "external");
     setInvoiceNotes(((co.data as any)?.invoice_notes as string) ?? null);
     setReminderDays(Number((co.data as any)?.proposal_reminder_days ?? 5));
+    setCompanySelectDefaults({
+      space: ((co.data as any)?.client_select_space as SelectMode) ?? "single",
+      food: ((co.data as any)?.client_select_food as SelectMode) ?? "single",
+      beverage: ((co.data as any)?.client_select_beverage as SelectMode) ?? "single",
+    });
+
 
     setActivities(ac.data ?? []);
     if (pr.data) {
@@ -257,6 +274,8 @@ function DealDetail() {
       setCoverTouched(!!cfg.cover_title);
       setAltGroups(cfg.alternative_groups ?? []);
       setOptionalItems((cfg.optional_items as Record<string, { default_on: boolean }>) ?? {});
+      setSelectModeCfg((cfg.select_mode as Partial<Record<SelectCat, SelectMode>>) ?? {});
+
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
@@ -459,6 +478,8 @@ function DealDetail() {
       cover_title: coverTitle,
       alternative_groups: altGroups,
       optional_items,
+      select_mode: selectModeCfg,
+
       menu_selection_mode_by_pkg: menuModeByPkg,
       menu_choices_by_pkg: menuChoicesByPkg,
     };
@@ -1165,6 +1186,45 @@ function DealDetail() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Client selection</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                How many items the client can pick per category on the proposal. Defaults come from Settings.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {(["space", "food", "beverage"] as SelectCat[]).map((cat) => (
+                <div key={cat} className="space-y-1">
+                  <p className="text-sm font-medium">
+                    {cat === "space" ? "Spaces" : cat === "food" ? "Food" : "Drinks"}
+                  </p>
+                  <Select
+                    value={selectModeCfg[cat] ?? "default"}
+                    onValueChange={(v) =>
+                      setSelectModeCfg((cur) => {
+                        const next = { ...cur };
+                        if (v === "default") delete next[cat];
+                        else next[cat] = v as SelectMode;
+                        return next;
+                      })
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">
+                        Use default ({companySelectDefaults[cat] === "multi" ? "multiple" : "one"})
+                      </SelectItem>
+                      <SelectItem value="single">One</SelectItem>
+                      <SelectItem value="multi">Multiple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
 
           <Card>
             <CardHeader>
