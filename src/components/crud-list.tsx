@@ -185,6 +185,8 @@ export function CrudList<T extends { id: string }>({
                           <option key={o.value} value={o.value}>{o.label}</option>
                         ))}
                       </select>
+                    ) : f.type === "richtext" ? (
+                      <RichTextField name={f.name} defaultValue={typeof cur === "string" ? cur : ""} placeholder={f.placeholder} />
                     ) : f.type === "textarea" ? (
                       <Textarea
                         id={f.name}
