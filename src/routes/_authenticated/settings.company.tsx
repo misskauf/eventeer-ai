@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Field, useCompanySettings } from "@/components/settings-shared";
+import { Label } from "@/components/ui/label";
+import { CurrencySelect } from "@/components/currency-select";
+
 
 export const Route = createFileRoute("/_authenticated/settings/company")({
   component: CompanySettings,
