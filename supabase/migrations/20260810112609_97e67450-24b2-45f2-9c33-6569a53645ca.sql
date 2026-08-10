@@ -1,0 +1,22 @@
+REVOKE EXECUTE ON FUNCTION public.is_platform_admin() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.next_quote_number(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.record_scope(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.is_member_of(uuid, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.has_permission(uuid, text, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.permission_level(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.can_view_costs(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.create_company_workspace(text, text, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.user_company_id(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.seed_role_permissions(uuid) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.next_quote_number(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.record_scope(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_member_of(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_permission(uuid, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.permission_level(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_view_costs(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_company_workspace(text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO service_role;
+GRANT EXECUTE ON FUNCTION public.seed_role_permissions(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.user_company_id(uuid) TO service_role;
