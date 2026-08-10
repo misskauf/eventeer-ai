@@ -75,6 +75,26 @@ function SpacesPage() {
           { name: "capacity_standing", label: "Capacity (standing)", type: "number", nullable: true, group: "basics" },
           { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true, group: "basics" },
           {
+            name: "size",
+            label: "Size",
+            nullable: true,
+            group: "basics",
+            placeholder: "e.g. 120 m²",
+          },
+          {
+            name: "seating_capacities",
+            label: "",
+            type: "custom",
+            group: "basics",
+            render: (cur, row) => (
+              <SeatingEditor
+                name="seating_capacities"
+                defaultValue={(cur ?? row?.seating_capacities ?? {}) as SeatingCapacities}
+              />
+            ),
+          },
+
+          {
             name: "event_types",
             label: "Suits event types",
             type: "tags" as const,
