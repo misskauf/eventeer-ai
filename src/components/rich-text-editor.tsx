@@ -204,6 +204,8 @@ function Toolbar({ editor, mode = "full" }: { editor: Editor; mode?: ToolbarMode
       <ToolBtn title="Redo" onClick={() => editor.chain().focus().redo().run()}>
         <Redo className="h-4 w-4" />
       </ToolBtn>
+      {mode === "full" && (
+        <>
       <span className="mx-1 h-5 w-px bg-border" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
