@@ -1435,6 +1435,9 @@ function DealDetail() {
                     onChange={(v) => toggle(setSelectedExtras, e.id, v)}
                     title={e.name}
                     subtitle={`${money(e.price, currency)} · ${e.pricing_type.replace("_", " ")}`}
+                    singleChoice={isSingleChoice(categoryModes.extra)}
+                    isPrimary={primaryIds.extra === e.id}
+                    onMakePrimary={() => setPrimaryIds((c) => ({ ...c, extra: e.id }))}
                   />
                 </div>
               ))}
