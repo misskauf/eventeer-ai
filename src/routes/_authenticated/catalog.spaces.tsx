@@ -10,6 +10,10 @@ import { CategoryDefaultsBar } from "@/components/category-defaults-bar";
 import { costField, useCanViewCosts } from "@/lib/cost-visibility";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ChevronRight } from "lucide-react";
+import { SEATING_STYLES, type SeatingCapacities } from "@/lib/seating";
+
 
 export const Route = createFileRoute("/_authenticated/catalog/spaces")({
   component: SpacesPage,
@@ -74,6 +78,26 @@ function SpacesPage() {
           { name: "description", label: "Short description", type: "textarea", rows: 2, group: "basics" },
           { name: "capacity_standing", label: "Capacity (standing)", type: "number", nullable: true, group: "basics" },
           { name: "capacity_seated", label: "Capacity (seated)", type: "number", nullable: true, group: "basics" },
+          {
+            name: "size",
+            label: "Size",
+            nullable: true,
+            group: "basics",
+            placeholder: "e.g. 120 m²",
+          },
+          {
+            name: "seating_capacities",
+            label: "",
+            type: "custom",
+            group: "basics",
+            render: (cur, row) => (
+              <SeatingEditor
+                name="seating_capacities"
+                defaultValue={(cur ?? row?.seating_capacities ?? {}) as SeatingCapacities}
+              />
+            ),
+          },
+
           {
             name: "event_types",
             label: "Suits event types",
@@ -194,10 +218,9 @@ function SpacesPage() {
               if (r.capacity_standing != null) parts.push(`${r.capacity_standing} standing`);
               if (r.capacity_seated != null) parts.push(`${r.capacity_seated} seated`);
               const legacy = r.capacity ?? null;
+              const base = parts.length ? parts.join(" / ") : legacy != null ? String(legacy) : "—";
               return (
-                <span className="text-muted-foreground">
-                  {parts.length ? parts.join(" / ") : legacy != null ? String(legacy) : "—"}
-                </span>
+                <span className="text-muted-foreground">{r.size ? `${base} · ${r.size}` : base}</span>
               );
             },
           },
@@ -325,6 +348,59 @@ function ScheduleEditor({
             </React.Fragment>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function SeatingEditor({ name, defaultValue }: { name: string; defaultValue: SeatingCapacities }) {
+  const [open, setOpen] = useState(false);
+  const [val, setVal] = useState<SeatingCapacities>(defaultValue ?? {});
+
+  function update(style: string, raw: string) {
+    setVal((prev) => {
+      const next = { ...prev };
+      const n = Number(raw);
+      if (raw === "" || !Number.isFinite(n) || n <= 0) delete next[style];
+      else next[style] = n;
+      return next;
+    });
+  }
+
+  const count = Object.keys(val).length;
+
+  return (
+    <div className="space-y-2 rounded-md border">
+      <input type="hidden" name={name} value={JSON.stringify(val)} />
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+        aria-expanded={open}
+      >
+        <ChevronRight className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`} />
+        <span className="font-medium">Seating arrangements</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          {count ? `${count} style${count === 1 ? "" : "s"} set` : "Optional"}
+        </span>
+      </button>
+      <div className={`${open ? "" : "hidden"} grid grid-cols-2 gap-x-4 gap-y-2 border-t px-3 py-3`}>
+        {SEATING_STYLES.map((style) => (
+          <div key={style} className="flex items-center gap-2">
+            <Label htmlFor={`seating-${style}`} className="flex-1 text-sm font-normal">
+              {style}
+            </Label>
+            <Input
+              id={`seating-${style}`}
+              type="number"
+              min={0}
+              placeholder="—"
+              className="w-24"
+              defaultValue={val[style] ?? ""}
+              onChange={(e) => update(style, e.target.value)}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

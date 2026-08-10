@@ -1553,6 +1553,8 @@ export type Database = {
           name: string
           name_de: string | null
           photo_url: string | null
+          seating_capacities: Json
+          size: string | null
           tax_rate_pct: number | null
           updated_at: string
           weekday_pricing: Json
@@ -1579,6 +1581,8 @@ export type Database = {
           name: string
           name_de?: string | null
           photo_url?: string | null
+          seating_capacities?: Json
+          size?: string | null
           tax_rate_pct?: number | null
           updated_at?: string
           weekday_pricing?: Json
@@ -1605,6 +1609,8 @@ export type Database = {
           name?: string
           name_de?: string | null
           photo_url?: string | null
+          seating_capacities?: Json
+          size?: string | null
           tax_rate_pct?: number | null
           updated_at?: string
           weekday_pricing?: Json
