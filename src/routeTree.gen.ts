@@ -35,6 +35,7 @@ import { Route as AuthenticatedSettingsLanguageRouteImport } from './routes/_aut
 import { Route as AuthenticatedSettingsInvoicingRouteImport } from './routes/_authenticated/settings.invoicing'
 import { Route as AuthenticatedSettingsGoalsRouteImport } from './routes/_authenticated/settings.goals'
 import { Route as AuthenticatedSettingsFeesRouteImport } from './routes/_authenticated/settings.fees'
+import { Route as AuthenticatedSettingsEventBriefRouteImport } from './routes/_authenticated/settings.event-brief'
 import { Route as AuthenticatedSettingsContractTemplatesRouteImport } from './routes/_authenticated/settings.contract-templates'
 import { Route as AuthenticatedSettingsCompanyRouteImport } from './routes/_authenticated/settings.company'
 import { Route as AuthenticatedSettingsBrandRouteImport } from './routes/_authenticated/settings.brand'
@@ -188,6 +189,12 @@ const AuthenticatedSettingsFeesRoute =
     path: '/fees',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsEventBriefRoute =
+  AuthenticatedSettingsEventBriefRouteImport.update({
+    id: '/event-brief',
+    path: '/event-brief',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedSettingsContractTemplatesRoute =
   AuthenticatedSettingsContractTemplatesRouteImport.update({
     id: '/contract-templates',
@@ -295,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/settings/brand': typeof AuthenticatedSettingsBrandRoute
   '/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
+  '/settings/event-brief': typeof AuthenticatedSettingsEventBriefRoute
   '/settings/fees': typeof AuthenticatedSettingsFeesRoute
   '/settings/goals': typeof AuthenticatedSettingsGoalsRoute
   '/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
@@ -333,6 +341,7 @@ export interface FileRoutesByTo {
   '/settings/brand': typeof AuthenticatedSettingsBrandRoute
   '/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
+  '/settings/event-brief': typeof AuthenticatedSettingsEventBriefRoute
   '/settings/fees': typeof AuthenticatedSettingsFeesRoute
   '/settings/goals': typeof AuthenticatedSettingsGoalsRoute
   '/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
@@ -375,6 +384,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/brand': typeof AuthenticatedSettingsBrandRoute
   '/_authenticated/settings/company': typeof AuthenticatedSettingsCompanyRoute
   '/_authenticated/settings/contract-templates': typeof AuthenticatedSettingsContractTemplatesRoute
+  '/_authenticated/settings/event-brief': typeof AuthenticatedSettingsEventBriefRoute
   '/_authenticated/settings/fees': typeof AuthenticatedSettingsFeesRoute
   '/_authenticated/settings/goals': typeof AuthenticatedSettingsGoalsRoute
   '/_authenticated/settings/invoicing': typeof AuthenticatedSettingsInvoicingRoute
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/settings/brand'
     | '/settings/company'
     | '/settings/contract-templates'
+    | '/settings/event-brief'
     | '/settings/fees'
     | '/settings/goals'
     | '/settings/invoicing'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/settings/brand'
     | '/settings/company'
     | '/settings/contract-templates'
+    | '/settings/event-brief'
     | '/settings/fees'
     | '/settings/goals'
     | '/settings/invoicing'
@@ -496,6 +508,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/brand'
     | '/_authenticated/settings/company'
     | '/_authenticated/settings/contract-templates'
+    | '/_authenticated/settings/event-brief'
     | '/_authenticated/settings/fees'
     | '/_authenticated/settings/goals'
     | '/_authenticated/settings/invoicing'
@@ -708,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsFeesRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/event-brief': {
+      id: '/_authenticated/settings/event-brief'
+      path: '/event-brief'
+      fullPath: '/settings/event-brief'
+      preLoaderRoute: typeof AuthenticatedSettingsEventBriefRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/contract-templates': {
       id: '/_authenticated/settings/contract-templates'
       path: '/contract-templates'
@@ -840,6 +860,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsBrandRoute: typeof AuthenticatedSettingsBrandRoute
   AuthenticatedSettingsCompanyRoute: typeof AuthenticatedSettingsCompanyRoute
   AuthenticatedSettingsContractTemplatesRoute: typeof AuthenticatedSettingsContractTemplatesRoute
+  AuthenticatedSettingsEventBriefRoute: typeof AuthenticatedSettingsEventBriefRoute
   AuthenticatedSettingsFeesRoute: typeof AuthenticatedSettingsFeesRoute
   AuthenticatedSettingsGoalsRoute: typeof AuthenticatedSettingsGoalsRoute
   AuthenticatedSettingsInvoicingRoute: typeof AuthenticatedSettingsInvoicingRoute
@@ -855,6 +876,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsCompanyRoute: AuthenticatedSettingsCompanyRoute,
   AuthenticatedSettingsContractTemplatesRoute:
     AuthenticatedSettingsContractTemplatesRoute,
+  AuthenticatedSettingsEventBriefRoute: AuthenticatedSettingsEventBriefRoute,
   AuthenticatedSettingsFeesRoute: AuthenticatedSettingsFeesRoute,
   AuthenticatedSettingsGoalsRoute: AuthenticatedSettingsGoalsRoute,
   AuthenticatedSettingsInvoicingRoute: AuthenticatedSettingsInvoicingRoute,
