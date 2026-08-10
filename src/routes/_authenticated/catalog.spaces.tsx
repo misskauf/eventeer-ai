@@ -218,10 +218,9 @@ function SpacesPage() {
               if (r.capacity_standing != null) parts.push(`${r.capacity_standing} standing`);
               if (r.capacity_seated != null) parts.push(`${r.capacity_seated} seated`);
               const legacy = r.capacity ?? null;
+              const base = parts.length ? parts.join(" / ") : legacy != null ? String(legacy) : "—";
               return (
-                <span className="text-muted-foreground">
-                  {parts.length ? parts.join(" / ") : legacy != null ? String(legacy) : "—"}
-                </span>
+                <span className="text-muted-foreground">{r.size ? `${base} · ${r.size}` : base}</span>
               );
             },
           },
