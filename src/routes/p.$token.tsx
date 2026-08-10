@@ -547,8 +547,13 @@ function ClientProposal() {
                 title={t(lang, "section_beverages")}
                 items={basePkgBev}
                 currency={currency}
-                selectedId={selBevPkgs[0] ?? ""}
-                onChange={(id) => setSelBevPkgs([id])}
+                selectedIds={selBevPkgs}
+                selectMode={beverageMode}
+                onSelect={(id: string) => setSelBevPkgs([id])}
+                onToggleSelect={(id: string, on: boolean) =>
+                  setSelBevPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                }
+
                 dealGuests={state.deal.guest_count}
                 packageGuests={packageGuests}
                 onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
