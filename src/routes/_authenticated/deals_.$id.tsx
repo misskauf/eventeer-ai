@@ -1825,7 +1825,7 @@ function DealDetail() {
                     if (!ids.length) return null;
                     return (
                       <div key={c}>
-                        {CATEGORY_LABELS[c]} alternatives: {ids.map((id) => itemNameFor(c, id)).join(", ")}
+                        {CATEGORY_LABELS[c]} alternatives: {ids.map((id) => itemName(id)).join(", ")}
                         {!offerAlternatives[c] && " (hidden from client)"}
                       </div>
                     );
