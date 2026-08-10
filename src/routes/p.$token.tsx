@@ -434,225 +434,248 @@ function ClientProposal() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
-            {/* Alternative groups — client picks exactly one */}
-            {altGroups.map((g) => {
-              const items = itemsForGroup(g, spaces, packages, extras, lang);
-              if (items.length === 0) return null;
-              return (
-                <Card key={g.id} style={{ borderLeftColor: brand, borderLeftWidth: 3 }}>
-                  <CardHeader>
-                    <CardTitle className="text-base">{g.name}</CardTitle>
-                    <p className="text-xs text-muted-foreground">{t(lang, "choose_one")}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <RadioGroup
-                      value={altChoices[g.id] ?? ""}
-                      onValueChange={(v) => setAltChoices((cur) => ({ ...cur, [g.id]: v }))}
-                      className="space-y-2"
-                    >
-                      {items.map((it) => {
-                        const beveragePackage = g.category === "beverage" ? packages.find((x) => x.id === it.id) : null;
-                        const beverageStandardHours = beveragePackage
-                          ? beveragePackage.included_hours != null
-                            ? Number(beveragePackage.included_hours)
-                            : categoryDefaultHours(feesCfg as CategoryDefaults, "beverage")
-                          : null;
-                        const isSelectedBeverage = g.category === "beverage" && altChoices[g.id] === it.id && beveragePackage;
-                        return (
-                          <label
-                            key={it.id}
-                            className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
-                          >
-                            <RadioGroupItem value={it.id} className="mt-1" />
-                            <div className="flex-1">
-                              <div className="font-medium">{it.name}</div>
-                              <div className="text-xs text-muted-foreground">{it.note}</div>
-                              {it.details && <RichText source={it.details} className="mt-2" />}
-                              {isSelectedBeverage && beverageStandardHours != null && (
-                                <BeverageHoursField
-                                  packageId={beveragePackage.id}
-                                  includedHours={beverageStandardHours}
-                                  currentHours={packageHours[beveragePackage.id] ?? beverageStandardHours}
-                                  overageRate={Number(beveragePackage.overage_price_per_person_per_hour ?? 0)}
-                                  currency={currency}
-                                  onHoursChange={(id, value) => setPackageHours((cur) => ({ ...cur, [id]: value }))}
+            {(() => {
+              const altCard = (g: AlternativeGroup) => {
+                const items = itemsForGroup(g, spaces, packages, extras, lang);
+                if (items.length === 0) return null;
+                return (
+                  <Card key={g.id} style={{ borderLeftColor: brand, borderLeftWidth: 3 }}>
+                    <CardHeader>
+                      <CardTitle className="text-base">{g.name}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{t(lang, "choose_one")}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <RadioGroup
+                        value={altChoices[g.id] ?? ""}
+                        onValueChange={(v) => setAltChoices((cur) => ({ ...cur, [g.id]: v }))}
+                        className="space-y-2"
+                      >
+                        {items.map((it) => {
+                          const beveragePackage = g.category === "beverage" ? packages.find((x) => x.id === it.id) : null;
+                          const beverageStandardHours = beveragePackage
+                            ? beveragePackage.included_hours != null
+                              ? Number(beveragePackage.included_hours)
+                              : categoryDefaultHours(feesCfg as CategoryDefaults, "beverage")
+                            : null;
+                          const isSelectedBeverage = g.category === "beverage" && altChoices[g.id] === it.id && beveragePackage;
+                          return (
+                            <label
+                              key={it.id}
+                              className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
+                            >
+                              <RadioGroupItem value={it.id} className="mt-1" />
+                              <div className="flex-1">
+                                <div className="font-medium">{it.name}</div>
+                                <div className="text-xs text-muted-foreground">{it.note}</div>
+                                {it.details && <RichText source={it.details} className="mt-2" />}
+                                {isSelectedBeverage && beverageStandardHours != null && (
+                                  <BeverageHoursField
+                                    packageId={beveragePackage.id}
+                                    includedHours={beverageStandardHours}
+                                    currentHours={packageHours[beveragePackage.id] ?? beverageStandardHours}
+                                    overageRate={Number(beveragePackage.overage_price_per_person_per_hour ?? 0)}
+                                    currency={currency}
+                                    onHoursChange={(id, value) => setPackageHours((cur) => ({ ...cur, [id]: value }))}
+                                    lang={lang}
+                                  />
+                                )}
+                                <NoteToggle
+                                  itemId={it.id}
+                                  open={!!openNoteFor[it.id]}
+                                  value={itemNotes[it.id] ?? ""}
+                                  onToggle={() => noteToggle(it.id)}
+                                  onChange={(v) => setItemNotes((cur) => ({ ...cur, [it.id]: v }))}
                                   lang={lang}
                                 />
-                              )}
-                              <NoteToggle
-                                itemId={it.id}
-                                open={!!openNoteFor[it.id]}
-                                value={itemNotes[it.id] ?? ""}
-                                onToggle={() => noteToggle(it.id)}
-                                onChange={(v) => setItemNotes((cur) => ({ ...cur, [it.id]: v }))}
-                                lang={lang}
-                              />
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </RadioGroup>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </RadioGroup>
+                    </CardContent>
+                  </Card>
+                );
+              };
 
-            {baseSpaceItems.length > 0 && (
-              <SingleChoiceSpaces
-                items={baseSpaceItems}
-                currency={currency}
-                selectedIds={selSpaces}
-                mode={spaceMode}
-                onSelect={(id: string) => setSelSpaces([id])}
-                onClear={() => setSelSpaces([])}
-                onToggle={(id: string, on: boolean) =>
-                  setSelSpaces((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+              const baseCard = (cat: CategoryKey) => {
+                if (cat === "space") {
+                  if (baseSpaceItems.length === 0) return null;
+                  return (
+                    <SingleChoiceSpaces
+                      headless
+                      items={baseSpaceItems}
+                      currency={currency}
+                      selectedIds={selSpaces}
+                      mode={spaceMode}
+                      onSelect={(id: string) => setSelSpaces([id])}
+                      onClear={() => setSelSpaces([])}
+                      onToggle={(id: string, on: boolean) =>
+                        setSelSpaces((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                      }
+                      itemNotes={itemNotes}
+                      openNoteFor={openNoteFor}
+                      onToggleNote={noteToggle}
+                      onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                      lang={lang}
+                    />
+                  );
                 }
-                itemNotes={itemNotes}
-                openNoteFor={openNoteFor}
-                onToggleNote={noteToggle}
-                onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
-                lang={lang}
-              />
-            )}
-            {basePkgFood.length > 0 && (
-              <SingleChoicePackages
-                title={t(lang, "section_food")}
-                items={basePkgFood}
-                currency={currency}
-                selectedIds={selFoodPkgs}
-                mode={foodMode}
-                onSelect={(id: string) => setSelFoodPkgs([id])}
-                onClear={() => setSelFoodPkgs([])}
-                onToggleSelect={(id: string, on: boolean) =>
-                  setSelFoodPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                if (cat === "food") {
+                  if (basePkgFood.length === 0) return null;
+                  return (
+                    <SingleChoicePackages
+                      headless
+                      title={t(lang, "section_food")}
+                      items={basePkgFood}
+                      currency={currency}
+                      selectedIds={selFoodPkgs}
+                      mode={foodMode}
+                      onSelect={(id: string) => setSelFoodPkgs([id])}
+                      onClear={() => setSelFoodPkgs([])}
+                      onToggleSelect={(id: string, on: boolean) =>
+                        setSelFoodPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                      }
+                      dealGuests={state.deal.guest_count}
+                      packageGuests={packageGuests}
+                      onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
+                      itemNotes={itemNotes}
+                      openNoteFor={openNoteFor}
+                      onToggleNote={noteToggle}
+                      onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                      menuChoices={menuChoices}
+                      onMenuChoiceChange={(pkgId, groupLabel, next) =>
+                        setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                      }
+                      menuModeByPkg={menuModeByPkg}
+                      managerMenuChoices={managerMenuChoices}
+                      lang={lang}
+                    />
+                  );
                 }
-
-                dealGuests={state.deal.guest_count}
-                packageGuests={packageGuests}
-                onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
-                itemNotes={itemNotes}
-                openNoteFor={openNoteFor}
-                onToggleNote={noteToggle}
-                onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
-                menuChoices={menuChoices}
-                onMenuChoiceChange={(pkgId, groupLabel, next) =>
-                  setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                if (cat === "beverage") {
+                  if (basePkgBev.length === 0) return null;
+                  return (
+                    <SingleChoicePackages
+                      headless
+                      title={t(lang, "section_beverages")}
+                      items={basePkgBev}
+                      currency={currency}
+                      selectedIds={selBevPkgs}
+                      mode={beverageMode}
+                      onSelect={(id: string) => setSelBevPkgs([id])}
+                      onClear={() => setSelBevPkgs([])}
+                      onToggleSelect={(id: string, on: boolean) =>
+                        setSelBevPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                      }
+                      dealGuests={state.deal.guest_count}
+                      packageGuests={packageGuests}
+                      onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
+                      packageHours={packageHours}
+                      onHoursChange={(id, v) => setPackageHours((c) => ({ ...c, [id]: v }))}
+                      defaultHours={categoryDefaultHours(feesCfg as CategoryDefaults, "beverage")}
+                      itemNotes={itemNotes}
+                      openNoteFor={openNoteFor}
+                      onToggleNote={noteToggle}
+                      onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                      menuChoices={menuChoices}
+                      onMenuChoiceChange={(pkgId, groupLabel, next) =>
+                        setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
+                      }
+                      menuModeByPkg={menuModeByPkg}
+                      managerMenuChoices={managerMenuChoices}
+                      lang={lang}
+                    />
+                  );
                 }
-                menuModeByPkg={menuModeByPkg}
-                managerMenuChoices={managerMenuChoices}
-                lang={lang}
-              />
-            )}
-            {basePkgBev.length > 0 && (
-              <SingleChoicePackages
-                title={t(lang, "section_beverages")}
-                items={basePkgBev}
-                currency={currency}
-                selectedIds={selBevPkgs}
-                mode={beverageMode}
-                onSelect={(id: string) => setSelBevPkgs([id])}
-                onClear={() => setSelBevPkgs([])}
-                onToggleSelect={(id: string, on: boolean) =>
-                  setSelBevPkgs((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
+                if (cat === "extra") {
+                  if (baseExtraItems.length === 0) return null;
+                  return (
+                    <OptionGroup
+                      headless
+                      title={t(lang, "section_extras")}
+                      items={baseExtraItems.map((e) => ({
+                        id: e.id, name: pickLocalized(e, lang, "name"),
+                        note: `${money(e.price, currency)} ${e.pricing_type.replace("_", " ")}`,
+                        details: pickLocalized(e, lang, "long_description") || null,
+                      }))}
+                      selected={selExtras}
+                      mode={categoryModes.extra}
+                      onToggle={(id, v) => toggle(setSelExtras, id, v)}
+                      onSelect={(id) => setSelExtras([id])}
+                      onClear={() => setSelExtras([])}
+                      itemNotes={itemNotes}
+                      openNoteFor={openNoteFor}
+                      onToggleNote={noteToggle}
+                      onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
+                      lang={lang}
+                    />
+                  );
                 }
+                if (staffItems.length === 0) return null;
+                return (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <StaffWrapper mode={categoryModes.staff} selected={selStaff} onSelect={(id) => setSelStaff([id])} onClear={() => setSelStaff([])} lang={lang}>
+                        {staffItems.map((x) => {
+                          const cfg = staffConfig[x.id] ?? {};
+                          const count = Math.max(1, Number(cfg.count ?? 1));
+                          const hours = Number(cfg.hours ?? 1);
+                          const details = pickLocalized(x, lang, "long_description");
+                          const line = totals?.lines.find((l) => l.sourceKind === "staff" && l.sourceId === x.id);
+                          const meta =
+                            x.pricing_type === "per_person"
+                              ? `${state.deal.guest_count} × ${money(x.price, currency)}`
+                              : x.pricing_type === "per_hour"
+                              ? `${count} × ${hours}h × ${money(x.price, currency)}`
+                              : `${count} × ${money(x.price, currency)}`;
+                          const staffMode = categoryModes.staff;
+                          const isSelected = selStaff.includes(x.id);
+                          return (
+                            <label key={x.id} className={"flex items-start justify-between gap-3 rounded-md border p-3 " + (staffMode === "fixed" ? "" : "cursor-pointer hover:bg-muted/40 ") + (isSelected ? "border-primary" : "")}>
+                              <div className="flex min-w-0 items-start gap-3">
+                                {staffMode === "multi" ? (
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(v) => toggle(setSelStaff, x.id, v)}
+                                    className="mt-1"
+                                  />
+                                ) : staffMode === "fixed" ? (
+                                  <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
+                                ) : (
+                                  <RadioGroupItem value={x.id} className="mt-1" />
+                                )}
+                                <div className="min-w-0">
+                                  <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
+                                  <div className="text-xs text-muted-foreground">{meta}</div>
+                                  {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
+                                </div>
+                              </div>
+                              {line && <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>}
+                            </label>
+                          );
+                        })}
+                      </StaffWrapper>
+                      {categoryModes.staff === "fixed" && (
+                        <div className="mt-2 text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              };
 
-                dealGuests={state.deal.guest_count}
-                packageGuests={packageGuests}
-                onGuestChange={(id, v) => setPackageGuests((c) => ({ ...c, [id]: v }))}
-                packageHours={packageHours}
-                onHoursChange={(id, v) => setPackageHours((c) => ({ ...c, [id]: v }))}
-                defaultHours={categoryDefaultHours(feesCfg as CategoryDefaults, "beverage")}
-                itemNotes={itemNotes}
-                openNoteFor={openNoteFor}
-                onToggleNote={noteToggle}
-                onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
-                menuChoices={menuChoices}
-                onMenuChoiceChange={(pkgId, groupLabel, next) =>
-                  setMenuChoices((cur) => ({ ...cur, [pkgId]: { ...(cur[pkgId] ?? {}), [groupLabel]: next } }))
-                }
-                menuModeByPkg={menuModeByPkg}
-                managerMenuChoices={managerMenuChoices}
-                lang={lang}
-              />
-            )}
-            {baseExtraItems.length > 0 && (
-              <OptionGroup
-                title={t(lang, "section_extras")}
-                items={baseExtraItems.map((e) => ({
-                  id: e.id, name: pickLocalized(e, lang, "name"),
-                  note: `${money(e.price, currency)} ${e.pricing_type.replace("_", " ")}`,
-                  details: pickLocalized(e, lang, "long_description") || null,
-                }))}
-                selected={selExtras}
-                mode={categoryModes.extra}
-                onToggle={(id, v) => toggle(setSelExtras, id, v)}
-                onSelect={(id) => setSelExtras([id])}
-                onClear={() => setSelExtras([])}
-                itemNotes={itemNotes}
-                openNoteFor={openNoteFor}
-                onToggleNote={noteToggle}
-                onNoteChange={(id, v) => setItemNotes((cur) => ({ ...cur, [id]: v }))}
-                lang={lang}
-              />
-            )}
-
-            {staffItems.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">{t(lang, "section_staffing")}</CardTitle>
-                  <p className="text-xs text-muted-foreground">{modeHint(lang, categoryModes.staff)}</p>
-                </CardHeader>
-                <CardContent>
-                  <StaffWrapper mode={categoryModes.staff} selected={selStaff} onSelect={(id) => setSelStaff([id])} onClear={() => setSelStaff([])} lang={lang}>
-                  {staffItems.map((x) => {
-                    const cfg = staffConfig[x.id] ?? {};
-                    const count = Math.max(1, Number(cfg.count ?? 1));
-                    const hours = Number(cfg.hours ?? 1);
-                    const details = pickLocalized(x, lang, "long_description");
-                    const line = totals?.lines.find((l) => l.sourceKind === "staff" && l.sourceId === x.id);
-                    const meta =
-                      x.pricing_type === "per_person"
-                        ? `${state.deal.guest_count} × ${money(x.price, currency)}`
-                        : x.pricing_type === "per_hour"
-                        ? `${count} × ${hours}h × ${money(x.price, currency)}`
-                        : `${count} × ${money(x.price, currency)}`;
-                    const staffMode = categoryModes.staff;
-                    const isSelected = selStaff.includes(x.id);
-                    return (
-                      <label key={x.id} className={"flex items-start justify-between gap-3 rounded-md border p-3 " + (staffMode === "fixed" ? "" : "cursor-pointer hover:bg-muted/40 ") + (isSelected ? "border-primary" : "")}>
-                        <div className="flex min-w-0 items-start gap-3">
-                          {staffMode === "multi" ? (
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={(v) => toggle(setSelStaff, x.id, v)}
-                              className="mt-1"
-                            />
-                          ) : staffMode === "fixed" ? (
-                            <div className="mt-1 h-4 w-4 rounded-full bg-primary/80" />
-                          ) : (
-                            <RadioGroupItem value={x.id} className="mt-1" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="font-medium">{pickLocalized(x, lang, "name")}</div>
-                            <div className="text-xs text-muted-foreground">{meta}</div>
-                            {details && <div className="mt-1 text-xs text-muted-foreground">{details}</div>}
-                          </div>
-                        </div>
-                        {line && <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>}
-                      </label>
-                    );
-                  })}
-                  </StaffWrapper>
-                  {categoryModes.staff === "fixed" && (
-                    <div className="mt-2 text-xs text-muted-foreground">{t(lang, "staffing_included_note")}</div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-
-
+              // Same category order every time; empty categories are skipped.
+              return CATEGORY_SECTION_ORDER.map((cat) => {
+                const groups = altGroups.filter((g) => g.category === cat).map(altCard).filter(Boolean);
+                const base = baseCard(cat);
+                if (!base && groups.length === 0) return null;
+                return (
+                  <CategorySection key={cat} cat={cat} mode={categoryModes[cat]} lang={lang}>
+                    {base}
+                    {groups}
+                  </CategorySection>
+                );
+              });
+            })()}
 
             {/* Overall message */}
             <Card>
