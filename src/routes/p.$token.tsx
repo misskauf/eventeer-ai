@@ -533,6 +533,7 @@ function ClientProposal() {
                   if (baseSpaceItems.length === 0) return null;
                   return (
                     <SingleChoiceSpaces
+                      primaryId={primaryIds.space}
                       headless
                       items={baseSpaceItems}
                       currency={currency}
@@ -555,6 +556,7 @@ function ClientProposal() {
                   if (basePkgFood.length === 0) return null;
                   return (
                     <SingleChoicePackages
+                      primaryId={primaryIds.food}
                       headless
                       title={t(lang, "section_food")}
                       items={basePkgFood}
@@ -587,6 +589,7 @@ function ClientProposal() {
                   if (basePkgBev.length === 0) return null;
                   return (
                     <SingleChoicePackages
+                      primaryId={primaryIds.beverage}
                       headless
                       title={t(lang, "section_beverages")}
                       items={basePkgBev}
@@ -622,6 +625,7 @@ function ClientProposal() {
                   if (baseExtraItems.length === 0) return null;
                   return (
                     <OptionGroup
+                      primaryId={primaryIds.extra}
                       headless
                       title={t(lang, "section_extras")}
                       items={baseExtraItems.map((e) => ({
