@@ -18,6 +18,8 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { ContractDocument } from "@/components/contract-document";
 import { buildBriefHtml, type BriefExtras } from "@/lib/event-brief";
 import type { ContractContext } from "@/lib/contracts";
+import { ensureHtml } from "@/lib/contracts";
+import { renderBrief } from "@/lib/brief-template";
 import { Download, Mail, RefreshCw, Save } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
 import {
