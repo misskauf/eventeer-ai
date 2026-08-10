@@ -2178,7 +2178,11 @@ function PackageCard({
   packageHours, onHoursChange, defaultHours,
   menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
   hiddenCount = 0, showAll = false, onShowAllChange, fitLabel = "this deal",
+  singleChoice = false, primaryId = "", onMakePrimary,
 }: {
+  singleChoice?: boolean;
+  primaryId?: string;
+  onMakePrimary?: (id: string) => void;
   hiddenCount?: number;
   showAll?: boolean;
   onShowAllChange?: (v: boolean) => void;
