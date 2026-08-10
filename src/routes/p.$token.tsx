@@ -58,6 +58,9 @@ function ClientProposal() {
   const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
+  // Optional line items the client can add/remove. Presence in the map = optional.
+  const [optionalMap, setOptionalMap] = useState<Record<string, { default_on: boolean }>>({});
+  const [optSel, setOptSel] = useState<Record<string, boolean>>({});
 
   const [baseSpaces, setBaseSpaces] = useState<string[]>([]);
   const [basePkgs, setBasePkgs] = useState<string[]>([]);
