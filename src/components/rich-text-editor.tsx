@@ -39,11 +39,15 @@ import {
 } from "@/components/ui/select";
 import { CONTRACT_PLACEHOLDERS } from "@/lib/contracts";
 
+export type ToolbarMode = "full" | "basic";
+
 type Props = {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   minHeight?: number;
+  /** "basic" hides contract-only tools (logo, signature, placeholders, image). */
+  toolbar?: ToolbarMode;
 };
 
 function ToolBtn({
