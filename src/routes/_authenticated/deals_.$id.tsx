@@ -1189,6 +1189,45 @@ function DealDetail() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Client selection</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                How many items the client can pick per category on the proposal. Defaults come from Settings.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {(["space", "food", "beverage"] as SelectCat[]).map((cat) => (
+                <div key={cat} className="space-y-1">
+                  <p className="text-sm font-medium">
+                    {cat === "space" ? "Spaces" : cat === "food" ? "Food" : "Drinks"}
+                  </p>
+                  <Select
+                    value={selectModeCfg[cat] ?? "default"}
+                    onValueChange={(v) =>
+                      setSelectModeCfg((cur) => {
+                        const next = { ...cur };
+                        if (v === "default") delete next[cat];
+                        else next[cat] = v as SelectMode;
+                        return next;
+                      })
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">
+                        Use default ({companySelectDefaults[cat] === "multi" ? "multiple" : "one"})
+                      </SelectItem>
+                      <SelectItem value="single">One</SelectItem>
+                      <SelectItem value="multi">Multiple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+
+          <Card>
+            <CardHeader>
               <CardTitle>Spaces</CardTitle>
               {deal.event_date && spaces.length > availableSpaces.length && (
                 <p className="text-xs text-muted-foreground">
