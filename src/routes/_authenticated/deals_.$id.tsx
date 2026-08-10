@@ -1,9 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { usePermissions } from "@/lib/use-permissions";
 import { useServerFn } from "@tanstack/react-start";
 import { sendProposalReminder } from "@/lib/proposal-reminders.functions";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, PageHeader } from "@/components/app-shell";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { archiveDeal, restoreDeal } from "@/lib/deal-lifecycle";
+import { DeleteDealDialog } from "@/components/delete-deal-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,7 +71,7 @@ import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-select
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock, ChevronRight } from "lucide-react";
+import { Archive, ArchiveRestore, MoreHorizontal, ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock, ChevronRight } from "lucide-react";
 import { SEATING_STYLES } from "@/lib/seating";
 import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
@@ -232,6 +242,31 @@ function DealDetail() {
   const [approvalNoteDraft, setApprovalNoteDraft] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
   const [dealTab, setDealTab] = useState<"proposal" | "brief">("proposal");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+  const canEditDeals = can("deals", "edit");
+  const canDeleteDeals = can("deals", "admin");
+
+  async function onArchive() {
+    try {
+      await archiveDeal(id, deal?.company_id ?? null);
+      toast.success("Deal archived");
+      loadAll();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not archive this deal");
+    }
+  }
+
+  async function onRestore() {
+    try {
+      await restoreDeal(id, deal?.company_id ?? null);
+      toast.success("Deal restored");
+      loadAll();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not restore this deal");
+    }
+  }
 
 
 
@@ -872,8 +907,61 @@ function DealDetail() {
                 {approvalLabel(deal.approval_status)}
               </Badge>
             )}
+            {(canEditDeals || canDeleteDeals) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label="More actions">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canEditDeals &&
+                    ((deal as any).archived_at ? (
+                      <DropdownMenuItem onSelect={() => onRestore()}>
+                        <ArchiveRestore className="mr-2 h-4 w-4" /> Restore deal
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => onArchive()}>
+                        <Archive className="mr-2 h-4 w-4" /> Archive deal
+                      </DropdownMenuItem>
+                    ))}
+                  {canDeleteDeals && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => setDeleteOpen(true)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete permanently
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         }
+      />
+
+      {(deal as any).archived_at && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">
+            This deal is archived and hidden from the pipeline.
+          </span>
+          {canEditDeals && (
+            <Button size="sm" variant="outline" onClick={onRestore}>
+              <ArchiveRestore className="mr-1 h-4 w-4" /> Restore
+            </Button>
+          )}
+        </div>
+      )}
+
+      <DeleteDealDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        dealId={id}
+        clientName={deal.client_name}
+        onDeleted={() => navigate({ to: "/deals" })}
       />
 
 

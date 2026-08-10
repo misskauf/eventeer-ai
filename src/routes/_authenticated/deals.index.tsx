@@ -30,7 +30,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Plus, Search } from "lucide-react";
+import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyCurrency } from "@/hooks/use-company-currency";
 import { money } from "@/lib/pricing";
@@ -48,6 +48,9 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/use-permissions";
 import { RequirePermission } from "@/components/permission-guard";
 import { normalizeFields, PRESET_FIELDS, type CustomFieldDef } from "@/lib/lead-forms";
+import { archiveDeal, restoreDeal } from "@/lib/deal-lifecycle";
+import { DeleteDealDialog } from "@/components/delete-deal-dialog";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 
 export const Route = createFileRoute("/_authenticated/deals/")({
@@ -70,6 +73,7 @@ type Deal = {
   updated_at: string;
   approval_status: string;
   approval_requested_by: string | null;
+  archived_at: string | null;
 };
 
 
@@ -80,12 +84,15 @@ function DealsPage() {
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [requireApproval, setRequireApproval] = useState(false);
   const [awaitingMine, setAwaitingMine] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
   const { scope, can, loading: permLoading } = usePermissions();
   const dealScope = scope("deals");
   const canEditDeals = can("deals", "edit");
+  const canDeleteDeals = can("deals", "admin");
 
   async function refresh() {
     const { data: userData } = await supabase.auth.getUser();
@@ -99,11 +106,14 @@ function DealsPage() {
     let query = supabase
       .from("deals")
       .select(
-        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by",
+        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by, archived_at",
       )
       .order("updated_at", { ascending: false });
     // Roles scoped to "own records" only see the deals they own.
     if (dealScope === "own" && userData.user?.id) query = query.eq("owner_id", userData.user.id);
+    // Archived deals are hidden from the pipeline unless the toggle is on.
+    if (showArchived) query = query.not("archived_at", "is", null);
+    else query = query.is("archived_at", null);
     const { data } = await query;
     setDeals((data as Deal[]) ?? []);
     setLoading(false);
@@ -113,7 +123,27 @@ function DealsPage() {
   useEffect(() => {
     if (!permLoading) refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [permLoading, dealScope]);
+  }, [permLoading, dealScope, showArchived]);
+
+  async function onArchive(d: Deal) {
+    try {
+      await archiveDeal(d.id);
+      toast.success("Deal archived");
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not archive this deal");
+    }
+  }
+
+  async function onRestore(d: Deal) {
+    try {
+      await restoreDeal(d.id);
+      toast.success("Deal restored");
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not restore this deal");
+    }
+  }
 
   async function updateStage(dealId: string, next: string) {
     const prev = deals.find((d) => d.id === dealId)?.stage;
@@ -204,7 +234,7 @@ function DealsPage() {
       <DealsTabs />
 
 
-      {loading ? null : deals.length === 0 ? (
+      {loading ? null : deals.length === 0 && !showArchived ? (
         <EmptyState
           title="No deals yet"
           body="Create your first deal to get started."
@@ -244,6 +274,12 @@ function DealsPage() {
                   onClick={() => setStageFilter(`group:${key}`)}
                 />
               ))}
+              <StageChip
+                label="Archived"
+                count={showArchived ? deals.length : 0}
+                active={showArchived}
+                onClick={() => setShowArchived((v) => !v)}
+              />
               {requireApproval && (
                 <StageChip
                   label="Awaiting my approval"
@@ -295,7 +331,10 @@ function DealsPage() {
                     {filtered.map((d) => (
                       <tr
                         key={d.id}
-                        className="cursor-pointer hover:bg-muted/40 focus-within:bg-muted/40"
+                        className={cn(
+                          "cursor-pointer hover:bg-muted/40 focus-within:bg-muted/40",
+                          d.archived_at && "opacity-60",
+                        )}
                         tabIndex={0}
                         role="button"
                         aria-label={`Open deal for ${d.client_name}`}
@@ -312,7 +351,14 @@ function DealsPage() {
                         }}
                       >
                         <td className="min-w-0 px-4 py-3">
-                          <div className="font-medium">{d.client_name}</div>
+                          <div className="flex items-center gap-2 font-medium">
+                            {d.client_name}
+                            {d.archived_at && (
+                              <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                Archived
+                              </span>
+                            )}
+                          </div>
                           {d.client_company && (
                             <div className="text-xs text-muted-foreground">{d.client_company}</div>
                           )}
@@ -378,6 +424,24 @@ function DealsPage() {
                                       {stageLabel(s)}
                                     </DropdownMenuItem>
                                   ))}
+                                  <DropdownMenuSeparator />
+                                  {d.archived_at ? (
+                                    <DropdownMenuItem onSelect={() => onRestore(d)}>
+                                      <ArchiveRestore className="mr-2 h-4 w-4" /> Restore
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onSelect={() => onArchive(d)}>
+                                      <Archive className="mr-2 h-4 w-4" /> Archive
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canDeleteDeals && (
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onSelect={() => setDeleteTarget(d)}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete permanently
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
@@ -409,6 +473,18 @@ function DealsPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+      {deleteTarget && (
+        <DeleteDealDialog
+          open={!!deleteTarget}
+          onOpenChange={(v) => !v && setDeleteTarget(null)}
+          dealId={deleteTarget.id}
+          clientName={deleteTarget.client_name}
+          onDeleted={() => {
+            setDeleteTarget(null);
+            refresh();
+          }}
+        />
       )}
     </AppShell>
   );

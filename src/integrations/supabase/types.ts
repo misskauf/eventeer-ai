@@ -474,6 +474,7 @@ export type Database = {
           approval_status: string
           approved_at: string | null
           approved_by: string | null
+          archived_at: string | null
           client_company: string | null
           client_email: string
           client_name: string
@@ -502,6 +503,7 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
+          archived_at?: string | null
           client_company?: string | null
           client_email: string
           client_name: string
@@ -530,6 +532,7 @@ export type Database = {
           approval_status?: string
           approved_at?: string | null
           approved_by?: string | null
+          archived_at?: string | null
           client_company?: string | null
           client_email?: string
           client_name?: string
