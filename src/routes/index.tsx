@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -47,6 +47,9 @@ const HERO_SUB =
 const CONTACT_EMAIL = "hello@eventeer.app";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    lp: typeof search.lp === "string" ? search.lp : undefined,
+  }),
   component: Index,
   head: () => ({
     meta: [
@@ -69,6 +72,7 @@ function scrollToDemo() {
 function Index() {
   const { user, loading } = useAuthUser();
   const { t } = useTranslation();
+  const { lp } = useSearch({ from: "/" });
   // Render "en" on the server and switch after hydration to avoid a mismatch.
   const [lang, setLang] = useState<AppLang>("en");
 
@@ -82,7 +86,7 @@ function Index() {
   }, [lang]);
 
   if (loading) return null;
-  if (user) return <Navigate to="/deals" />;
+  if (user && lp !== "1") return <Navigate to="/deals" />;
 
   const pickLang = (l: AppLang) => {
     setAppLanguage(l);
