@@ -610,6 +610,47 @@ function ClientProposal() {
               </Card>
             )}
 
+            {optionalEntries.length > 0 && (
+              <Card className="border-amber-300/70">
+                <CardHeader>
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                    {lang === "de" ? "Optionale Zusatzleistungen" : "Optional add-ons"}
+                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-800">
+                      {lang === "de" ? "Optional — nach Wunsch hinzufügen" : "Optional — add if you'd like"}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {optionalEntries.map((o) => {
+                    const on = !!optSel[o.id];
+                    const line = totals?.lines.find((l) => l.sourceId === o.id);
+                    return (
+                      <label
+                        key={o.id}
+                        className="flex cursor-pointer items-start gap-3 rounded-md border p-3 hover:bg-muted/40"
+                      >
+                        <Checkbox
+                          checked={on}
+                          onCheckedChange={(v) => setOptSel((c) => ({ ...c, [o.id]: v === true }))}
+                          className="mt-1"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium">{o.name}</div>
+                          <div className="text-xs text-muted-foreground">{o.note}</div>
+                          {o.details && <div className="mt-1 text-xs text-muted-foreground">{o.details}</div>}
+                        </div>
+                        {on && line && (
+                          <div className="shrink-0 text-sm font-medium">{money(line.gross, currency)}</div>
+                        )}
+                      </label>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
+
+
             {/* Overall message */}
             <Card>
               <CardHeader>
