@@ -81,6 +81,16 @@ function FeesSettings() {
             <CategoryRow cat="staff" label="Staffing" fees={fees} />
           </div>
           <div className="space-y-2 rounded-md border p-3">
+            <div className="text-sm font-medium">Client selection</div>
+            <p className="text-xs text-muted-foreground">
+              How many items the client can pick per category on the proposal. Multiple works like
+              extras — everything the client ticks is added to the total.
+            </p>
+            <SelectModeRow name="client_select_space" label="Spaces" value={company?.client_select_space} />
+            <SelectModeRow name="client_select_food" label="Food" value={company?.client_select_food} />
+            <SelectModeRow name="client_select_beverage" label="Drinks" value={company?.client_select_beverage} />
+          </div>
+          <div className="space-y-2 rounded-md border p-3">
             <div className="text-sm font-medium">Standard event hours</div>
             <p className="text-xs text-muted-foreground">Used when a package doesn't set its own included hours. Overtime is billed per package.</p>
             <div className="grid grid-cols-2 gap-3">
@@ -88,6 +98,7 @@ function FeesSettings() {
               <Field name="default_hours_beverage" label="Beverage (hours)" type="number" step="0.5" defaultValue={fees.default_hours_beverage ?? 4} />
             </div>
           </div>
+
           <Button className="w-full">Save fees</Button>
         </form>
       </CardContent>
