@@ -276,23 +276,39 @@ function ClientProposal() {
   const staffItems = staff.filter((x) => staffIds.includes(x.id) && !isOptional(x.id));
 
   // Optional add-ons the client can toggle on/off.
-  const optionalEntries: Array<{ id: string; name: string; note: string }> = [
+  const optionalEntries: Array<{ id: string; name: string; note: string; details: string | null }> = [
     ...spaces
       .filter((s) => baseSpaces.includes(s.id) && isOptional(s.id))
-      .map((s) => ({ id: s.id, name: (lang === "de" && s.name_de) || s.name, note: money(Number(s.base_rental_fee ?? 0), currency) })),
+      .map((s) => ({
+        id: s.id,
+        name: pickLocalized(s, lang, "name"),
+        note: money(Number(s.base_rental_fee ?? 0), currency),
+        details: pickLocalized(s, lang, "long_description") || null,
+      })),
     ...packages
       .filter((p) => basePkgs.includes(p.id) && isOptional(p.id))
       .map((p) => ({
         id: p.id,
-        name: (lang === "de" && p.name_de) || p.name,
+        name: pickLocalized(p, lang, "name"),
         note: `${money(Number(p.price_per_person ?? 0), currency)} ${lang === "de" ? "pro Gast" : "per guest"}`,
+        details: pickLocalized(p, lang, "long_description") || null,
       })),
     ...extras
       .filter((e) => baseExtras.includes(e.id) && isOptional(e.id))
-      .map((e) => ({ id: e.id, name: (lang === "de" && e.name_de) || e.name, note: money(Number(e.price ?? 0), currency) })),
+      .map((e) => ({
+        id: e.id,
+        name: pickLocalized(e, lang, "name"),
+        note: money(Number(e.price ?? 0), currency),
+        details: pickLocalized(e, lang, "long_description") || null,
+      })),
     ...staff
       .filter((x) => staffIds.includes(x.id) && isOptional(x.id))
-      .map((x) => ({ id: x.id, name: (lang === "de" && x.name_de) || x.name, note: money(Number(x.price ?? 0), currency) })),
+      .map((x) => ({
+        id: x.id,
+        name: pickLocalized(x, lang, "name"),
+        note: money(Number(x.price ?? 0), currency),
+        details: pickLocalized(x, lang, "long_description") || null,
+      })),
   ];
 
   async function onSubmit(action: "confirmed" | "changes_requested" | "declined") {
