@@ -130,49 +130,14 @@ export const markPaymentPaid = createServerFn({ method: "POST" })
     const { requirePermission } = await import("@/lib/permissions.server");
     await requirePermission(context.supabase, p.company_id as string, "payments", "edit");
 
-    const now = new Date().toISOString();
-    const { error } = await context.supabase
-      .from("payments" as never)
-      .update({ status: "paid", paid_at: now, method: data.method, marked_by: context.userId } as never)
-      .eq("id", data.paymentId);
-    if (error) throw new Error(error.message);
-
-    // Stage roll-forward: all paid -> paid_in_full, otherwise first paid -> downpayment_received.
-    const { data: all } = await context.supabase
-      .from("payments" as never)
-      .select("id, status")
-      .eq("deal_id", p.deal_id);
-    const rows = ((all as any[]) ?? []).map((r) => (r.id === data.paymentId ? { ...r, status: "paid" } : r));
-    const allPaid = rows.length > 0 && rows.every((r) => r.status === "paid");
-    const nextStage = allPaid ? "paid_in_full" : "downpayment_received";
-    const backwardsSafe = allPaid
-      ? ["signed", "waiting_payment", "invoice_sent", "downpayment_received", "payment_delayed", "client_approved"]
-      : ["signed", "waiting_payment", "invoice_sent", "payment_delayed", "client_approved"];
-    await context.supabase
-      .from("deals")
-      .update({ stage: nextStage } as never)
-      .eq("id", p.deal_id)
-      .in("stage", backwardsSafe as never);
-
-    await context.supabase.from("deal_activities").insert({
-      deal_id: p.deal_id,
-      company_id: p.company_id,
-      actor_id: context.userId,
-      kind: "payment_marked_paid",
-      meta: { payment_id: p.id, label: p.label, amount: p.amount, method: data.method },
-    } as never);
-
-    const { notifyDeal } = await import("@/lib/notifications.server");
-    await notifyDeal({
-      companyId: p.company_id as string,
-      dealId: p.deal_id as string,
-      kind: "payment_paid",
-      title: `Payment received: ${p.label}`,
-      body: `${p.label} of ${p.amount} was marked as paid.`,
-      meta: { payment_id: p.id, method: data.method },
+    const { applyPaymentPaid } = await import("@/lib/payments.server");
+    const res = await applyPaymentPaid({
+      paymentId: data.paymentId,
+      method: data.method,
+      markedBy: context.userId,
     });
 
-    return { ok: true as const, stage: nextStage, allPaid };
+    return { ok: true as const, stage: res.stage, allPaid: res.allPaid };
   });
 
 /** Create (or reuse) the client-facing payment page link for a deal. */
@@ -341,7 +306,7 @@ export const resolvePaymentToken = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("companies")
         .select(
-          "id, name, logo_url, primary_color, currency, bank_account_name, bank_name, bank_iban, bank_bic, payment_reference_note, invoice_notes",
+          "id, name, logo_url, primary_color, currency, bank_account_name, bank_name, bank_iban, bank_bic, payment_reference_note, invoice_notes, stripe_enabled",
         )
         .eq("id", tok.company_id)
         .maybeSingle(),
@@ -359,4 +324,92 @@ export const resolvePaymentToken = createServerFn({ method: "GET" })
       company,
       payments: ((rows as any[]) ?? []),
     };
+  });
+
+/**
+ * Public: create (or reuse) a Stripe Checkout Session for one pending payment,
+ * using the venue's own Stripe secret key. The key never leaves the server.
+ */
+export const createPaymentCheckout = createServerFn({ method: "POST" })
+  .inputValidator((data) =>
+    z
+      .object({
+        token: z.string().min(8),
+        paymentId: z.string().uuid(),
+        origin: z.string().url(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: tok } = await supabaseAdmin
+      .from("share_tokens")
+      .select("token, kind, deal_id, company_id, expires_at")
+      .eq("token", data.token)
+      .eq("kind", "payments" as never)
+      .maybeSingle();
+    if (!tok?.deal_id) throw new Error("This payment link is not valid.");
+    if (tok.expires_at && new Date(tok.expires_at) < new Date())
+      throw new Error("This payment link has expired.");
+
+    const { data: payRow } = await supabaseAdmin
+      .from("payments" as never)
+      .select("*")
+      .eq("id", data.paymentId)
+      .eq("deal_id", tok.deal_id)
+      .maybeSingle();
+    const p = payRow as any;
+    if (!p) throw new Error("Payment not found.");
+    if (p.status === "paid") throw new Error("This payment is already paid.");
+
+    const { data: company } = await supabaseAdmin
+      .from("companies")
+      .select("id, currency, stripe_enabled")
+      .eq("id", tok.company_id)
+      .maybeSingle();
+    if (!(company as any)?.stripe_enabled) throw new Error("Card payments are not enabled.");
+
+    // Reuse an unexpired session link.
+    if (p.stripe_checkout_url && p.stripe_url_expires_at && new Date(p.stripe_url_expires_at) > new Date()) {
+      return { url: p.stripe_checkout_url as string };
+    }
+
+    const { getTenantStripe, createCheckoutSession } = await import("@/lib/stripe-tenant.server");
+    const creds = await getTenantStripe(tok.company_id as string);
+    if (!creds) throw new Error("Card payments are not configured.");
+
+    const { data: deal } = await supabaseAdmin
+      .from("deals")
+      .select("id, client_email")
+      .eq("id", tok.deal_id)
+      .maybeSingle();
+
+    const base = `${data.origin.replace(/\/$/, "")}/pay/${data.token}`;
+    const session = await createCheckoutSession({
+      secretKey: creds.secretKey,
+      currency: ((company as any)?.currency as string) ?? "EUR",
+      amount: Number(p.amount),
+      label: p.label as string,
+      paymentId: p.id as string,
+      companyId: tok.company_id as string,
+      dealId: tok.deal_id as string,
+      successUrl: `${base}?paid=1`,
+      cancelUrl: `${base}?canceled=1`,
+      customerEmail: (deal as any)?.client_email ?? null,
+    });
+
+    await supabaseAdmin
+      .from("payments" as never)
+      .update({
+        stripe_session_id: session.id,
+        stripe_checkout_url: session.url,
+        stripe_url_expires_at: session.expires_at
+          ? new Date(session.expires_at * 1000).toISOString()
+          : null,
+        status: p.status === "pending" ? "sent" : p.status,
+      } as never)
+      .eq("id", p.id);
+
+    return { url: session.url };
   });
