@@ -2,6 +2,10 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
+import { TextStyle, Color, FontSize } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +26,13 @@ import {
   PenLine,
   Image as LogoIcon,
   Variable,
-
+  Table as TableIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Baseline,
+  Highlighter,
 } from "lucide-react";
 import {
   DropdownMenu,
