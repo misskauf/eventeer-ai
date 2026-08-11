@@ -177,16 +177,17 @@ export function DatenschutzDE() {
 
       <H2>3. Hosting, Datenbank und Auftragsverarbeitung</H2>
       <P>
-        Diese Website und die zugehörige Datenbank werden von externen Dienstleistern betrieben:
-        Lovable (Bereitstellung und Betrieb der Anwendung) sowie Supabase (Datenbank und
-        Authentifizierung). Diese Anbieter verarbeiten Daten ausschließlich weisungsgebunden für uns
-        auf Grundlage von Verträgen zur Auftragsverarbeitung nach Art. 28 DSGVO. Soweit dabei
-        personenbezogene Daten in ein Land außerhalb der EU bzw. des EWR übermittelt werden, erfolgt
-        dies auf Grundlage der Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c
-        DSGVO) oder eines Angemessenheitsbeschlusses (Art. 45 DSGVO). Die Übertragung erfolgt
-        durchgängig verschlüsselt (TLS); die Daten werden auch im Ruhezustand verschlüsselt
-        gespeichert. Der Zugriff auf die Datenbank ist durch Zugriffsregeln auf Datenbankebene
-        beschränkt.
+        Diese Website und die zugehörige Anwendung werden von Lovable Labs Incorporated, 1 Lincoln
+        St, Boston, MA 02111, USA, bereitgestellt und betrieben. Lovable verarbeitet
+        personenbezogene Daten in unserem Auftrag als Auftragsverarbeiter; es gelten die
+        Auftragsverarbeitungsbedingungen des Anbieters nach Art. 28 DSGVO. Für die Datenbank und die
+        Authentifizierung setzt Lovable Supabase als Unterauftragsverarbeiter ein. Da der Anbieter
+        seinen Sitz in den USA hat, findet eine Verarbeitung personenbezogener Daten außerhalb der
+        EU bzw. des EWR statt. Grundlage hierfür sind die Standardvertragsklauseln der
+        EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO) beziehungsweise ein Angemessenheitsbeschluss
+        (Art. 45 DSGVO). Die Übertragung erfolgt durchgängig verschlüsselt (TLS); die Daten werden
+        auch im Ruhezustand verschlüsselt gespeichert. Der Zugriff auf die Datenbank ist durch
+        Zugriffsregeln auf Datenbankebene beschränkt.
       </P>
 
       <H2>4. Server-Logfiles</H2>
