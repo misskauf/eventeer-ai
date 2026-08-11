@@ -1138,6 +1138,7 @@ export type Database = {
           company: string
           consent: boolean
           created_at: string
+          current_software: string | null
           email: string
           events_per_month: string | null
           id: string
@@ -1145,12 +1146,15 @@ export type Database = {
           message: string | null
           name: string
           phone: string | null
+          role: string | null
           source: string | null
+          venue_type: string | null
         }
         Insert: {
           company: string
           consent?: boolean
           created_at?: string
+          current_software?: string | null
           email: string
           events_per_month?: string | null
           id?: string
@@ -1158,12 +1162,15 @@ export type Database = {
           message?: string | null
           name: string
           phone?: string | null
+          role?: string | null
           source?: string | null
+          venue_type?: string | null
         }
         Update: {
           company?: string
           consent?: boolean
           created_at?: string
+          current_software?: string | null
           email?: string
           events_per_month?: string | null
           id?: string
@@ -1171,7 +1178,9 @@ export type Database = {
           message?: string | null
           name?: string
           phone?: string | null
+          role?: string | null
           source?: string | null
+          venue_type?: string | null
         }
         Relationships: []
       }
