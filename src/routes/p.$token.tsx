@@ -103,6 +103,8 @@ function ClientProposal() {
   const [introMarkdown, setIntroMarkdown] = useState<string>("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, { type: "pct" | "amount"; value: number }>>({});
+
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
   // How the client may interact with each category, resolved from the offer + company defaults.
