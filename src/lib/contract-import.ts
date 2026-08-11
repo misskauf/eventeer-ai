@@ -75,7 +75,7 @@ export async function parseDocx(file: File): Promise<ParsedDoc> {
   const mammoth = await import("mammoth/mammoth.browser");
   const buf = await file.arrayBuffer();
   const skippedImages: string[] = [];
-  const result = await mammoth.convertToHtml(
+  const result = await (mammoth as any).convertToHtml(
     { arrayBuffer: buf },
     {
       styleMap: DOCX_STYLE_MAP,
