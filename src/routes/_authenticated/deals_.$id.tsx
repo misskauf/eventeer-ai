@@ -357,11 +357,13 @@ function DealDetail() {
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
+      setItemDiscounts((cfg.item_discounts as any) ?? {});
       const savedService = cfg.service_charge_pct_override;
       const gratDefault =
         feeRow?.gratuity_mode === "fixed"
           ? Number(feeRow?.gratuity_fixed_pct ?? 0)
           : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServiceDefaultPct(gratDefault);
       setServicePct(typeof savedService === "number" ? savedService : gratDefault);
       // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
       const savedMin = Number(cfg.min_revenue_required ?? 0);
@@ -372,10 +374,12 @@ function DealDetail() {
         feeRow?.gratuity_mode === "fixed"
           ? Number(feeRow?.gratuity_fixed_pct ?? 0)
           : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServiceDefaultPct(gratDefault);
       setServicePct(gratDefault);
       const matched = pickMinRevRule(rules, d.event_date, []);
       setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
+
 
   }
 
