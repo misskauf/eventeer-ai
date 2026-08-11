@@ -159,6 +159,9 @@ export type Totals = {
   discount: number; // gross discount applied (from a targeted line, or legacy flat)
   discount_net: number; // net-equivalent discount, for display below net subtotal
   discount_targeted: boolean;
+  item_discount_total: number; // gross reductions from per-item discounts
+  item_discount_net: number; // net-equivalent of the per-item reductions
+
   grand_total: number;
   min_required: number;
   min_shortfall: number;
