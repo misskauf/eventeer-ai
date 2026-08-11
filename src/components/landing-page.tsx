@@ -251,7 +251,7 @@ export function LandingPage() {
             <Link to="/datenschutz" className="hover:text-foreground">
               {t("landing.footer.datenschutz")}
             </Link>
-            {/* TODO: replace with real contact address */}
+            
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground">
               {t("landing.footer.contact")}
             </a>
