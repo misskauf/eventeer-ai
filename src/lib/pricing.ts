@@ -404,6 +404,9 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
     discount: discount_targeted ? discount_applied_gross : legacyFlatDiscount,
     discount_net: discount_targeted ? discount_net : 0,
     discount_targeted,
+    item_discount_total,
+    item_discount_net,
+
     grand_total,
     min_required,
     min_shortfall,
