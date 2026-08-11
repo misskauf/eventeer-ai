@@ -61,6 +61,7 @@ import {
   isSingleChoice,
   resolveCategoryModes,
   resolveOfferAlternatives,
+  resolveNoneDefaults,
   resolvePrimaryIds,
   type CategoryKey,
   type CategoryMode,
@@ -225,6 +226,10 @@ function DealDetail() {
   const [offerAlternatives, setOfferAlternatives] = useState<Record<CategoryKey, boolean>>(
     DEFAULT_OFFER_ALTERNATIVES,
   );
+  // For "Optional — one or none": client opens with nothing selected in this category.
+  const [noneDefaults, setNoneDefaults] = useState<Record<CategoryKey, boolean>>({
+    space: false, food: false, beverage: false, extra: false, staff: false,
+  });
   const [companyRow, setCompanyRow] = useState<any>(null);
 
 
@@ -340,6 +345,7 @@ function DealDetail() {
       const loadedModes = resolveCategoryModes(cfg, co.data);
       setCategoryModes(loadedModes);
       setOfferAlternatives(resolveOfferAlternatives(cfg));
+      setNoneDefaults(resolveNoneDefaults(cfg));
       {
         const pkgList = ((pk.data as PackageSel[]) ?? []);
         const selPkgs: string[] = cfg.package_ids ?? [];
@@ -481,11 +487,11 @@ function DealDetail() {
   const alternativesByCategory = useMemo<Record<CategoryKey, string[]>>(() => {
     const out = {} as Record<CategoryKey, string[]>;
     for (const cat of CATEGORY_KEYS) {
-      const charged = chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
+      const charged = chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat], noneDefaults[cat]);
       out[cat] = selectedByCategory[cat].filter((id) => !charged.includes(id));
     }
     return out;
-  }, [selectedByCategory, categoryModes, primaryIds]);
+  }, [selectedByCategory, categoryModes, primaryIds, noneDefaults]);
 
   // For the manager's own totals preview, resolve each alt group to its default choice.
 
@@ -505,7 +511,7 @@ function DealDetail() {
     // Only chargeable items count: the proposed pick in single-choice categories,
     // everything selected in multiple/fixed ones. Alternatives are never summed.
     const charged = (cat: CategoryKey) =>
-      chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
+      chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat], noneDefaults[cat]);
     return {
       guest_count: deal?.guest_count ?? 0,
       space_ids: Array.from(new Set([...charged("space"), ...extraSpaces])),
@@ -517,7 +523,7 @@ function DealDetail() {
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedByCategory, categoryModes, primaryIds, staffConfig, packageGuests, packageHours, altGroups]);
+  }, [deal, selectedByCategory, categoryModes, primaryIds, noneDefaults, staffConfig, packageGuests, packageHours, altGroups]);
 
 
   const effectiveDiscount = showDiscount ? discount : 0;
@@ -605,6 +611,7 @@ function DealDetail() {
       category_modes: categoryModes,
       primary_ids: primaryIds,
       offer_alternatives: offerAlternatives,
+      none_defaults: noneDefaults,
 
       seating_style: Object.fromEntries(
         Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
