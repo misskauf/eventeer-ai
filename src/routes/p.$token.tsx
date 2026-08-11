@@ -30,6 +30,7 @@ import {
   isSingleChoice,
   type CategoryKey,
   type CategoryMode,
+  resolveNoneDefaults,
 } from "@/lib/selection-modes";
 
 export const Route = createFileRoute("/p/$token")({
@@ -218,8 +219,11 @@ function ClientProposal() {
         space: bSpacesNonGroup, food: bFood, beverage: bBev, extra: bExtrasNonGroup, staff: bStaff,
       });
       setPrimaryIds(primaries);
+      const noneDefaults = resolveNoneDefaults(offerCfg);
       const seedCat = (ids: string[], cat: CategoryKey) =>
-        isSingleChoice(modes[cat]) && primaries[cat] && ids.includes(primaries[cat])
+        modes[cat] === "optional_one" && noneDefaults[cat]
+          ? []
+          : isSingleChoice(modes[cat]) && primaries[cat] && ids.includes(primaries[cat])
           ? [primaries[cat]]
           : seedByMode(ids, modes[cat]);
       setSelSpaces(seedCat(bSpacesNonGroup, "space"));
