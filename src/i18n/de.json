@@ -2,11 +2,10 @@
   "landing": {
     "nav": { "signin": "Anmelden", "demo": "Demo buchen" },
     "hero": {
-      "h1": "Aus Event-Anfragen werden unterschriebene, bezahlte Buchungen – ohne Papierkram.",
-      "sub": "Eventeer bündelt jede Anfrage an einem Ort: personalisierte Angebote, digitale Vertragsunterzeichnung und Zahlung – in Ihrem eigenen Branding.",
-      "cta_primary": "30 Tage kostenlos testen",
+      "h1": "Aus Event-Anfragen werden unterschriebene, bezahlte Buchungen – mit minimaler Administration.",
+      "sub": "Eventeer bündelt jede Anfrage an einem Ort: personalisierte Angebote, digitale Vertragsunterzeichnung und Zahlung – in Ihrem eigenen Branding. Gewinnen Sie pro Woche einen Tag Verwaltung zurück und investieren Sie ihn dort, wo er zählt: in Ihre Kunden und in Events, die unvergesslich bleiben.",
       "cta_secondary": "Demo buchen",
-      "note": "Keine Kreditkarte nötig · Entwickelt in Berlin · DSGVO-konform gedacht"
+      "note": "Unverbindlich · Entwickelt in Berlin · DSGVO im Blick"
     },
     "pains": {
       "title": "Kommt Ihnen das bekannt vor?",
@@ -45,7 +44,7 @@
       "title": "Für wen",
       "w1": "Eventlocations & Bars",
       "w2": "Hotels",
-      "w3": "Restaurants mit Séparée",
+      "w3": "Restaurants mit Privatabteil",
       "w4": "Catering-Unternehmen",
       "w5": "Studios & Coworking-Spaces"
     },
@@ -59,7 +58,7 @@
       "q1": "Muss ich mein aktuelles CRM ersetzen?",
       "a1": "Nein. Starten Sie mit Angeboten und Verträgen und behalten Sie alles andere, was Sie nutzen.",
       "q2": "Wie lange dauert die Einrichtung?",
-      "a2": "Sie hinterlegen Ihre Räume, Pakete und Preise einmalig. Die meisten Locations sind noch am selben Tag startklar.",
+      "a2": "Sie hinterlegen Ihre Räume, Pakete und Preise einmal. Die meisten Locations sind innerhalb einer Stunde eingerichtet.",
       "q3": "Was passiert mit meinen Kundendaten?",
       "a3": "Sie bleiben in Ihrem eigenen Firmenkonto, mit rollenbasiertem Zugriff für Ihr Team. Sie können sie jederzeit exportieren oder löschen.",
       "q4": "Welche Sprachen werden unterstützt?",
@@ -73,7 +72,7 @@
       "name": "Ihr Name",
       "company": "Location / Unternehmen",
       "email": "Geschäftliche E-Mail",
-      "phone": "Telefon (optional)",
+      "phone": "Telefon",
       "events": "Events pro Monat (optional)",
       "events_placeholder": "Auswählen…",
       "message": "Sollten wir etwas wissen? (optional)",
