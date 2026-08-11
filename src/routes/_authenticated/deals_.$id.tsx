@@ -2098,6 +2098,10 @@ function DealDetail() {
               <Separator />
 
               <div className="space-y-1 text-sm">
+                {totals.item_discount_total > 0 && (
+                  <div className="flex justify-between"><span>Item discounts</span><span className="tabular-nums">-{money(totals.item_discount_total, currency)}</span></div>
+                )}
+
                 {!totals.discount_targeted && effectiveDiscount > 0 && (
                   <div className="flex justify-between"><span>Discount</span><span className="tabular-nums">-{money(effectiveDiscount, currency)}</span></div>
                 )}
