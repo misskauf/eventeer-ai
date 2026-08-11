@@ -2048,8 +2048,9 @@ function DealDetail() {
                     <span>
                       {l.qty} · {l.basis} · tax {l.tax_rate_pct}%
                       {l.discount_applied != null && l.discount_applied > 0 && (
-                        <> · discount -{money(l.discount_applied, currency)}</>
+                        <> · discount {l.discount_pct ? `${l.discount_pct}% ` : ""}-{money(l.discount_applied, currency)}</>
                       )}
+
                     </span>
                     <span className="tabular-nums">
                       net {money(l.net, currency)} · tax {money(l.tax, currency)}
