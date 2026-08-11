@@ -235,5 +235,10 @@
     color: black !important;
   }
   .no-print, .no-print * { display: none !important; visibility: hidden !important; }
+  .contract-html table { border-collapse: collapse !important; width: 100% !important; }
+  .contract-html th, .contract-html td { border: 1px solid #999 !important; padding: 4px 6px !important; }
+  .contract-html img { max-width: 100% !important; height: auto !important; }
+  .contract-html mark { background-color: #fef08a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .contract-html * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { size: A4; margin: 18mm; }
 }
