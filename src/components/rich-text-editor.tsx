@@ -91,6 +91,124 @@ function ToolBtn({
   );
 }
 
+const FONT_SIZES = ["12px", "14px", "16px", "18px", "24px", "32px"];
+
+const TEXT_COLORS = [
+  "#111827", "#374151", "#6b7280", "#b91c1c", "#c2410c",
+  "#a16207", "#15803d", "#0e7490", "#1d4ed8", "#6d28d9",
+];
+
+const HIGHLIGHT_COLORS = [
+  "#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e9d5ff",
+];
+
+function ColorMenu({
+  title,
+  icon,
+  colors = TEXT_COLORS,
+  onPick,
+  onClear,
+}: {
+  editor: Editor;
+  title: string;
+  icon: React.ReactNode;
+  colors?: string[];
+  onPick: (color: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title={title}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {icon}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-auto p-2">
+        <div className="grid grid-cols-5 gap-1">
+          {colors.map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              className="h-5 w-5 rounded border"
+              style={{ backgroundColor: c }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onPick(c)}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className="mt-2 w-full rounded px-1 py-1 text-left text-xs hover:bg-muted"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onClear}
+        >
+          No colour
+        </button>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function TableMenu({ editor }: { editor: Editor }) {
+  const inTable = editor.isActive("table");
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant={inTable ? "secondary" : "ghost"}
+          size="icon"
+          className="h-8 w-8"
+          title="Table"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <TableIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52">
+        <DropdownMenuItem
+          onSelect={() =>
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+          }
+        >
+          Insert table (3 × 3)
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().addRowAfter().run()}>
+          Add row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().deleteRow().run()}>
+          Delete row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().addColumnAfter().run()}>
+          Add column
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().deleteColumn().run()}>
+          Delete column
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().toggleHeaderRow().run()}>
+          Toggle header row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().mergeOrSplit().run()}>
+          Merge / split cells
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().deleteTable().run()}>
+          Delete table
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+
 const HEADER_BLOCK = `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address · email · phone</p></div><p></p>`;
 
 const TWO_COL_HEADER_BLOCK = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px"><div><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address<br/>Email · Phone</p></div><div style="text-align:right">{{company_logo}}</div></div><p></p>`;
