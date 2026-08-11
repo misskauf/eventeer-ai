@@ -1152,9 +1152,6 @@ function SingleChoiceSpaces({
               <Badge variant="secondary">{recommendedLabel(lang)}</Badge>
             )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {lang === "de" ? "Ab" : "From"} {money(s.base_rental_fee, currency)}
-          </div>
           {localDesc && <RichText source={localDesc} className="mt-2" />}
           <NoteToggle
             itemId={s.id}
