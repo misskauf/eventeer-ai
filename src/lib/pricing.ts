@@ -290,6 +290,43 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
     );
   }
 
+  // Per-item discounts: reduce each matching line's gross, re-derive net/tax.
+  const itemDiscounts = offer.item_discounts ?? null;
+  let item_discount_total = 0;
+  let item_discount_net = 0;
+  if (itemDiscounts) {
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      if (!l.sourceId) continue;
+      if (l.sourceKind !== "space" && l.sourceKind !== "package" && l.sourceKind !== "extra" && l.sourceKind !== "staff" && l.sourceKind !== "package_overtime") continue;
+      const d = itemDiscounts[l.sourceId];
+      if (!d || !(Number(d.value) > 0)) continue;
+      const raw =
+        d.type === "pct"
+          ? (l.gross * Math.min(100, Math.max(0, Number(d.value)))) / 100
+          : Number(d.value);
+      const applied = Math.min(Math.max(0, raw), l.gross);
+      if (applied <= 0) continue;
+      const newGross = l.gross - applied;
+      const { net: newNet, tax: newTax } = splitNetTaxGross(newGross, "gross", l.tax_rate_pct);
+      lines[i] = {
+        ...l,
+        gross: newGross,
+        amount: newGross,
+        net: newNet,
+        tax: newTax,
+        original_gross: l.gross,
+        original_net: l.net,
+        original_tax: l.tax,
+        discount_applied: applied,
+        discount_pct: d.type === "pct" ? Number(d.value) : undefined,
+      };
+      item_discount_total += applied;
+      item_discount_net += l.net - newNet;
+    }
+  }
+
+
   // Apply targeted discount inside a specific line (gross), re-derive its net/tax.
   const rawDiscount = Number(offer.discount ?? 0);
   const target = offer.discount_target ?? null;
