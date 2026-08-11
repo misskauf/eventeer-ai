@@ -579,15 +579,27 @@ function DealDetail() {
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
 
-  // Candidate lines (by sourceKind+sourceId) that the discount can be applied to.
-  const discountTargets = (totals?.lines ?? [])
-    .filter((l) => l.sourceKind === "space" || l.sourceKind === "package" || l.sourceKind === "extra" || l.sourceKind === "staff")
-    .map((l) => ({
-      kind: l.sourceKind as DiscountTarget["kind"],
-      id: l.sourceId!,
-      label: l.label,
-      gross: (l.original_gross ?? l.gross),
-    }));
+  // Every charged line in the quote is discountable, keyed by its source id.
+  const discountTargets = (() => {
+    const out: { kind: DiscountTarget["kind"]; id: string; label: string; gross: number }[] = [];
+    const byId = new Map<string, number>();
+    for (const l of totals?.lines ?? []) {
+      if (!l.sourceId) continue;
+      const kind =
+        l.sourceKind === "package_overtime" ? "package" : (l.sourceKind as DiscountTarget["kind"]);
+      if (kind !== "space" && kind !== "package" && kind !== "extra" && kind !== "staff") continue;
+      const gross = l.original_gross ?? l.gross;
+      const idx = byId.get(l.sourceId);
+      if (idx != null) {
+        out[idx].gross += gross;
+        continue;
+      }
+      byId.set(l.sourceId, out.length);
+      out.push({ kind, id: l.sourceId, label: l.label, gross });
+    }
+    return out;
+  })();
+
 
   function buildOfferConfig() {
     return {
