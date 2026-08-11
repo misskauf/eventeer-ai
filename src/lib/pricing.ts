@@ -101,8 +101,13 @@ export type Offer = {
   min_revenue_required?: number;
   discount?: number;
   discount_target?: DiscountTarget | null;
+  item_discounts?: ItemDiscounts | null;
   currency?: string;
 };
+
+export type ItemDiscount = { type: "pct" | "amount"; value: number };
+export type ItemDiscounts = Record<string, ItemDiscount>;
+
 
 
 export type Selection = {
