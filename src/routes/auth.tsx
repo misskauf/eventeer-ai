@@ -141,6 +141,7 @@ function AuthPage() {
           </Button>
         </CardContent>
       </Card>
+      <LegalLinks className="mt-4" />
     </div>
   );
 }
