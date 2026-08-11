@@ -1,29 +1,23 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useAuthUser } from "@/lib/auth-hooks";
+import { createFileRoute } from "@tanstack/react-router";
 import { APP_NAME } from "@/lib/app-brand";
 import { LandingPage, HERO_TITLE, HERO_SUB } from "@/components/landing-page";
 
-export const Route = createFileRoute("/")({
-  component: Index,
+export const Route = createFileRoute("/landing")({
+  component: LandingPreview,
   head: () => ({
     meta: [
       { title: `${APP_NAME} — ${HERO_TITLE}` },
       { name: "description", content: HERO_SUB },
+      { name: "robots", content: "noindex" },
       { property: "og:title", content: `${APP_NAME} — ${HERO_TITLE}` },
       { property: "og:description", content: HERO_SUB },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://eventeer-ai.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://eventeer-ai.lovable.app/" }],
   }),
 });
 
-function Index() {
-  const { user, loading } = useAuthUser();
-
-  if (loading) return null;
-  if (user) return <Navigate to="/deals" />;
-
+function LandingPreview() {
   return <LandingPage />;
 }

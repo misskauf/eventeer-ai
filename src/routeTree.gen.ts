@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -60,6 +61,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImpressumRoute = ImpressumRouteImport.update({
@@ -289,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
+  '/landing': typeof LandingRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
+  '/landing': typeof LandingRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
+  '/landing': typeof LandingRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -420,6 +429,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/datenschutz'
     | '/impressum'
+    | '/landing'
     | '/mcp'
     | '/onboarding'
     | '/.mcp/list-tools'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/datenschutz'
     | '/impressum'
+    | '/landing'
     | '/mcp'
     | '/onboarding'
     | '/.mcp/list-tools'
@@ -505,6 +516,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/datenschutz'
     | '/impressum'
+    | '/landing'
     | '/mcp'
     | '/onboarding'
     | '/.mcp/list-tools'
@@ -550,6 +562,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DatenschutzRoute: typeof DatenschutzRoute
   ImpressumRoute: typeof ImpressumRoute
+  LandingRoute: typeof LandingRoute
   McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
@@ -577,6 +590,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/impressum': {
@@ -959,6 +979,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DatenschutzRoute: DatenschutzRoute,
   ImpressumRoute: ImpressumRoute,
+  LandingRoute: LandingRoute,
   McpRoute: McpRoute,
   OnboardingRoute: OnboardingRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
