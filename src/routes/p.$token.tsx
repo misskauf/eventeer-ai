@@ -756,7 +756,7 @@ function ClientProposal() {
                       <span>
                         {l.qty}
                         {l.discount_applied != null && l.discount_applied > 0 && (
-                          <> · discount -{money(l.discount_applied, currency)}</>
+                          <> · {t(lang, "discount")} {l.discount_pct ? `${l.discount_pct}% ` : ""}-{money(l.discount_applied, currency)}</>
                         )}
                       </span>
                       <span className="tabular-nums">
@@ -767,11 +767,15 @@ function ClientProposal() {
                 ))}
                 <Separator className="my-2" />
                 <Row label={t(lang, "net")} value={money(totals.net_subtotal, currency)} />
+                {totals.item_discount_net > 0 && (
+                  <Row label={`${t(lang, "discount")} (${t(lang, "net").toLowerCase()})`} value={"-" + money(totals.item_discount_net, currency)} />
+                )}
                 {totals.discount_targeted && totals.discount_net > 0 && (
                   <Row label={`${t(lang, "discount")} (${t(lang, "net").toLowerCase()})`} value={"-" + money(totals.discount_net, currency)} />
                 )}
                 <Row label={t(lang, "tax")} value={money(totals.tax_subtotal, currency)} />
                 <Row label={t(lang, "gross")} value={money(totals.gross_subtotal, currency)} />
+
                 {!totals.discount_targeted && discount > 0 && <Row label={t(lang, "discount")} value={"-" + money(discount, currency)} />}
                 {(() => {
                   const fcAny = feesCfg as any;
