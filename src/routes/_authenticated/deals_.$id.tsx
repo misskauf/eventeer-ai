@@ -61,6 +61,7 @@ import {
   isSingleChoice,
   resolveCategoryModes,
   resolveOfferAlternatives,
+  resolveNoneDefaults,
   resolvePrimaryIds,
   type CategoryKey,
   type CategoryMode,
@@ -225,6 +226,10 @@ function DealDetail() {
   const [offerAlternatives, setOfferAlternatives] = useState<Record<CategoryKey, boolean>>(
     DEFAULT_OFFER_ALTERNATIVES,
   );
+  // For "Optional — one or none": client opens with nothing selected in this category.
+  const [noneDefaults, setNoneDefaults] = useState<Record<CategoryKey, boolean>>({
+    space: false, food: false, beverage: false, extra: false, staff: false,
+  });
   const [companyRow, setCompanyRow] = useState<any>(null);
 
 
@@ -340,6 +345,7 @@ function DealDetail() {
       const loadedModes = resolveCategoryModes(cfg, co.data);
       setCategoryModes(loadedModes);
       setOfferAlternatives(resolveOfferAlternatives(cfg));
+      setNoneDefaults(resolveNoneDefaults(cfg));
       {
         const pkgList = ((pk.data as PackageSel[]) ?? []);
         const selPkgs: string[] = cfg.package_ids ?? [];
@@ -481,11 +487,11 @@ function DealDetail() {
   const alternativesByCategory = useMemo<Record<CategoryKey, string[]>>(() => {
     const out = {} as Record<CategoryKey, string[]>;
     for (const cat of CATEGORY_KEYS) {
-      const charged = chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
+      const charged = chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat], noneDefaults[cat]);
       out[cat] = selectedByCategory[cat].filter((id) => !charged.includes(id));
     }
     return out;
-  }, [selectedByCategory, categoryModes, primaryIds]);
+  }, [selectedByCategory, categoryModes, primaryIds, noneDefaults]);
 
   // For the manager's own totals preview, resolve each alt group to its default choice.
 
@@ -505,7 +511,7 @@ function DealDetail() {
     // Only chargeable items count: the proposed pick in single-choice categories,
     // everything selected in multiple/fixed ones. Alternatives are never summed.
     const charged = (cat: CategoryKey) =>
-      chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat]);
+      chargeableIds(categoryModes[cat], primaryIds[cat], selectedByCategory[cat], noneDefaults[cat]);
     return {
       guest_count: deal?.guest_count ?? 0,
       space_ids: Array.from(new Set([...charged("space"), ...extraSpaces])),
@@ -517,7 +523,7 @@ function DealDetail() {
       package_hours: packageHours,
       event_date: deal?.event_date ?? null,
     } as Selection;
-  }, [deal, selectedByCategory, categoryModes, primaryIds, staffConfig, packageGuests, packageHours, altGroups]);
+  }, [deal, selectedByCategory, categoryModes, primaryIds, noneDefaults, staffConfig, packageGuests, packageHours, altGroups]);
 
 
   const effectiveDiscount = showDiscount ? discount : 0;
@@ -605,6 +611,7 @@ function DealDetail() {
       category_modes: categoryModes,
       primary_ids: primaryIds,
       offer_alternatives: offerAlternatives,
+      none_defaults: noneDefaults,
 
       seating_style: Object.fromEntries(
         Object.entries(seatingStyle).filter(([id, v]) => v && selectedSpaces.includes(id)),
@@ -1380,6 +1387,8 @@ function DealDetail() {
                   onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, space: v }))}
                   chargedCount={selectedByCategory.space.length - (alternativesByCategory.space?.length ?? 0)}
                   altCount={alternativesByCategory.space?.length ?? 0}
+                  noneDefault={noneDefaults.space}
+                  onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, space: v }))}
                 />
               </div>
               {deal.event_date && spaces.length > availableSpaces.length && (
@@ -1467,6 +1476,8 @@ function DealDetail() {
                 onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, food: v }))}
                 chargedCount={selectedByCategory.food.length - (alternativesByCategory.food?.length ?? 0)}
                 altCount={alternativesByCategory.food?.length ?? 0}
+                noneDefault={noneDefaults.food}
+                onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, food: v }))}
               />
             }
           />
@@ -1505,6 +1516,8 @@ function DealDetail() {
                 onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, beverage: v }))}
                 chargedCount={selectedByCategory.beverage.length - (alternativesByCategory.beverage?.length ?? 0)}
                 altCount={alternativesByCategory.beverage?.length ?? 0}
+                noneDefault={noneDefaults.beverage}
+                onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, beverage: v }))}
               />
             }
           />
@@ -1522,6 +1535,8 @@ function DealDetail() {
                   onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, extra: v }))}
                   chargedCount={selectedByCategory.extra.length - (alternativesByCategory.extra?.length ?? 0)}
                   altCount={alternativesByCategory.extra?.length ?? 0}
+                  noneDefault={noneDefaults.extra}
+                  onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, extra: v }))}
                 />
               </div>
             </CardHeader>
@@ -1555,6 +1570,8 @@ function DealDetail() {
                   onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, staff: v }))}
                   chargedCount={selectedByCategory.staff.length - (alternativesByCategory.staff?.length ?? 0)}
                   altCount={alternativesByCategory.staff?.length ?? 0}
+                  noneDefault={noneDefaults.staff}
+                  onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, staff: v }))}
                 />
               </div>
             </CardHeader>
@@ -2699,6 +2716,8 @@ function ModeInline({
   onAlternativesChange,
   chargedCount,
   altCount,
+  noneDefault = false,
+  onNoneDefaultChange,
 }: {
   cat: CategoryKey;
   mode: CategoryMode;
@@ -2707,6 +2726,8 @@ function ModeInline({
   onAlternativesChange: (v: boolean) => void;
   chargedCount: number;
   altCount: number;
+  noneDefault?: boolean;
+  onNoneDefaultChange?: (v: boolean) => void;
 }) {
   const single = isSingleChoice(mode);
   const [open, setOpen] = useState(false);
@@ -2720,6 +2741,18 @@ function ModeInline({
           ))}
         </SelectContent>
       </Select>
+      {mode === "optional_one" && onNoneDefaultChange && (
+        <Select
+          value={noneDefault ? "none" : "proposed"}
+          onValueChange={(v) => onNoneDefaultChange(v === "none")}
+        >
+          <SelectTrigger className="h-7 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="proposed">Default: proposed</SelectItem>
+            <SelectItem value="none">Default: none</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
       {single && (
         <button
           type="button"

@@ -137,13 +137,23 @@ export function resolvePrimaryIds(
   return out;
 }
 
+/** Per-category "client starts with nothing selected" flags (optional_one only). */
+export function resolveNoneDefaults(offer: any): Record<CategoryKey, boolean> {
+  const stored = (offer?.none_defaults ?? {}) as Record<string, unknown>;
+  const out = {} as Record<CategoryKey, boolean>;
+  for (const cat of CATEGORY_KEYS) out[cat] = stored[cat] === true;
+  return out;
+}
+
 /** Which of a category's selected items are actually charged. */
 export function chargeableIds(
   mode: CategoryMode,
   primaryId: string | undefined,
   selectedIds: string[],
+  noneDefault = false,
 ): string[] {
   if (!isSingleChoice(mode)) return selectedIds;
+  if (mode === "optional_one" && noneDefault) return [];
   if (primaryId && selectedIds.includes(primaryId)) return [primaryId];
   if (mode === "required_one") return selectedIds.slice(0, 1);
   return [];
