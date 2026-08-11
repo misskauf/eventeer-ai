@@ -37,14 +37,16 @@ import {
   sendPaymentReminder,
 } from "@/lib/payments.functions";
 import { usePermissions } from "@/lib/use-permissions";
+import { supabase } from "@/integrations/supabase/client";
+import { hasBankDetails as checkBank } from "@/lib/payments";
 
 type Props = {
   dealId: string;
+  companyId: string;
   eventDate: string | null;
   currency: string;
   /** Accepted proposal / quote grand total. */
   total: number;
-  hasBankDetails: boolean;
 };
 
 function money(currency: string, n: number) {
@@ -55,7 +57,7 @@ function money(currency: string, n: number) {
   }
 }
 
-export function PaymentSchedulePanel({ dealId, eventDate, currency, total, hasBankDetails }: Props) {
+export function PaymentSchedulePanel({ dealId, companyId, eventDate, currency, total }: Props) {
   const { can, loading: permLoading } = usePermissions();
   const canView = can("payments", "view");
   const canEdit = can("payments", "edit");
@@ -74,6 +76,7 @@ export function PaymentSchedulePanel({ dealId, eventDate, currency, total, hasBa
   const [afterDays, setAfterDays] = useState(14);
   const [fullDue, setFullDue] = useState<string>(toISODate(new Date()));
   const [drafts, setDrafts] = useState<PaymentDraft[]>([]);
+  const [bankOk, setBankOk] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
@@ -88,6 +91,16 @@ export function PaymentSchedulePanel({ dealId, eventDate, currency, total, hasBa
   useEffect(() => {
     if (canView) void refresh();
   }, [canView, refresh]);
+
+  useEffect(() => {
+    if (!canView) return;
+    void supabase
+      .from("companies")
+      .select("bank_account_name, bank_name, bank_iban, bank_bic, payment_reference_note")
+      .eq("id", companyId)
+      .maybeSingle()
+      .then(({ data }) => setBankOk(checkBank(data as never)));
+  }, [canView, companyId]);
 
   if (permLoading || !canView) return null;
 
@@ -191,7 +204,7 @@ export function PaymentSchedulePanel({ dealId, eventDate, currency, total, hasBa
         )}
       </div>
 
-      {!hasBankDetails && canEdit && (
+      {!bankOk && canEdit && (
         <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
           Add your bank/IBAN details in Settings → Invoicing so they appear on payment requests.
         </p>
