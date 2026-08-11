@@ -103,6 +103,8 @@ function ClientProposal() {
   const [introMarkdown, setIntroMarkdown] = useState<string>("");
   const [altGroups, setAltGroups] = useState<AlternativeGroup[]>([]);
   const [discountTarget, setDiscountTarget] = useState<{ kind: "space" | "package" | "extra"; id: string } | null>(null);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, { type: "pct" | "amount"; value: number }>>({});
+
   const [menuModeByPkg, setMenuModeByPkg] = useState<Record<string, "manager" | "client">>({});
   const [managerMenuChoices, setManagerMenuChoices] = useState<Record<string, Record<string, string[]>>>({});
   // How the client may interact with each category, resolved from the offer + company defaults.
@@ -178,6 +180,8 @@ function ClientProposal() {
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
       setDiscountTarget(offerCfg.discount_target ?? null);
+      setItemDiscounts(offerCfg.item_discounts ?? {});
+
       setMenuModeByPkg(offerCfg.menu_selection_mode_by_pkg ?? {});
       setManagerMenuChoices(offerCfg.menu_choices_by_pkg ?? {});
 
@@ -302,9 +306,10 @@ function ClientProposal() {
       min_revenue_required: minRev,
       discount,
       discount_target: discountTarget,
+      item_discounts: itemDiscounts,
       currency: state?.company?.currency ?? "USD",
     };
-  }, [spaces, packages, extras, staff, feesCfg, seasonMult, discount, discountTarget, minRev, servicePct, state?.company?.currency]);
+  }, [spaces, packages, extras, staff, feesCfg, seasonMult, discount, discountTarget, itemDiscounts, minRev, servicePct, state?.company?.currency]);
 
 
   const totals = useMemo(() => {
@@ -751,7 +756,7 @@ function ClientProposal() {
                       <span>
                         {l.qty}
                         {l.discount_applied != null && l.discount_applied > 0 && (
-                          <> · discount -{money(l.discount_applied, currency)}</>
+                          <> · {t(lang, "discount")} {l.discount_pct ? `${l.discount_pct}% ` : ""}-{money(l.discount_applied, currency)}</>
                         )}
                       </span>
                       <span className="tabular-nums">
@@ -762,11 +767,15 @@ function ClientProposal() {
                 ))}
                 <Separator className="my-2" />
                 <Row label={t(lang, "net")} value={money(totals.net_subtotal, currency)} />
+                {totals.item_discount_net > 0 && (
+                  <Row label={`${t(lang, "discount")} (${t(lang, "net").toLowerCase()})`} value={"-" + money(totals.item_discount_net, currency)} />
+                )}
                 {totals.discount_targeted && totals.discount_net > 0 && (
                   <Row label={`${t(lang, "discount")} (${t(lang, "net").toLowerCase()})`} value={"-" + money(totals.discount_net, currency)} />
                 )}
                 <Row label={t(lang, "tax")} value={money(totals.tax_subtotal, currency)} />
                 <Row label={t(lang, "gross")} value={money(totals.gross_subtotal, currency)} />
+
                 {!totals.discount_targeted && discount > 0 && <Row label={t(lang, "discount")} value={"-" + money(discount, currency)} />}
                 {(() => {
                   const fcAny = feesCfg as any;

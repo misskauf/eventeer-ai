@@ -203,6 +203,12 @@ function DealDetail() {
   const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
   const [minRevenue, setMinRevenue] = useState(0);
   const [servicePct, setServicePct] = useState<number>(0);
+  const [serviceDefaultPct, setServiceDefaultPct] = useState<number>(0);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, { type: "pct" | "amount"; value: number }>>({});
+  const [discSel, setDiscSel] = useState<string[]>([]);
+  const [discType, setDiscType] = useState<"pct" | "amount">("pct");
+  const [discValue, setDiscValue] = useState<number>(10);
+
   const [coverTitle, setCoverTitle] = useState("");
   const [coverTouched, setCoverTouched] = useState(false);
   const [introMarkdown, setIntroMarkdown] = useState("");
@@ -351,11 +357,13 @@ function DealDetail() {
       setMenuModeByPkg((cfg.menu_selection_mode_by_pkg as any) ?? {});
       setMenuChoicesByPkg((cfg.menu_choices_by_pkg as any) ?? {});
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
+      setItemDiscounts((cfg.item_discounts as any) ?? {});
       const savedService = cfg.service_charge_pct_override;
       const gratDefault =
         feeRow?.gratuity_mode === "fixed"
           ? Number(feeRow?.gratuity_fixed_pct ?? 0)
           : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServiceDefaultPct(gratDefault);
       setServicePct(typeof savedService === "number" ? savedService : gratDefault);
       // Prefer saved min-revenue if it was set explicitly, otherwise recompute from rules.
       const savedMin = Number(cfg.min_revenue_required ?? 0);
@@ -366,10 +374,12 @@ function DealDetail() {
         feeRow?.gratuity_mode === "fixed"
           ? Number(feeRow?.gratuity_fixed_pct ?? 0)
           : Number(feeRow?.gratuity_default_pct ?? feeRow?.service_charge_pct ?? 0);
+      setServiceDefaultPct(gratDefault);
       setServicePct(gratDefault);
       const matched = pickMinRevRule(rules, d.event_date, []);
       setMinRevenue(Number(matched?.min_revenue ?? 0));
     }
+
 
   }
 
@@ -530,9 +540,11 @@ function DealDetail() {
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
       discount_target: effectiveDiscountTarget,
+      item_discounts: itemDiscounts,
       currency,
     };
-  }, [spaces, packages, extras, staff, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency]);
+  }, [spaces, packages, extras, staff, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency, itemDiscounts]);
+
 
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
@@ -583,8 +595,10 @@ function DealDetail() {
       season_id: seasonId,
       discount: effectiveDiscount,
       discount_target: effectiveDiscountTarget,
+      item_discounts: itemDiscounts,
       min_revenue_required: minRevenue,
-      service_charge_pct_override: servicePct,
+      service_charge_pct_override: servicePct === serviceDefaultPct ? null : servicePct,
+
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
@@ -1805,6 +1819,36 @@ function DealDetail() {
                         onValueChange={(v) => setServicePct(v[0] ?? gMin)}
                       />
                     )}
+                    {gMode !== "fixed" && (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.5}
+                          className="h-8 w-24"
+                          value={servicePct}
+                          onChange={(e) =>
+                            setServicePct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))
+                          }
+                        />
+                        {servicePct !== serviceDefaultPct ? (
+                          <span className="text-xs text-muted-foreground">
+                            Overridden for this deal (default {serviceDefaultPct}%) ·{" "}
+                            <button
+                              type="button"
+                              className="underline underline-offset-2 hover:text-foreground"
+                              onClick={() => setServicePct(serviceDefaultPct)}
+                            >
+                              Reset to default
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Using company default</span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
                       Calculated {label.toLowerCase()}:{" "}
                       <span className="tabular-nums font-medium text-foreground">
@@ -1822,6 +1866,96 @@ function DealDetail() {
                   </div>
                 );
               })()}
+
+              {discountTargets.length > 0 && (
+                <div className="space-y-2 rounded-md border p-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Item discounts</Label>
+                    {Object.keys(itemDiscounts).length > 0 && (
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground underline underline-offset-2"
+                        onClick={() => setItemDiscounts({})}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={discType} onValueChange={(v) => setDiscType(v as "pct" | "amount")}>
+                      <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pct">Percent %</SelectItem>
+                        <SelectItem value="amount">Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-8 w-24"
+                      value={discValue}
+                      onChange={(e) => setDiscValue(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={discSel.length === 0 || discValue <= 0}
+                      onClick={() => {
+                        setItemDiscounts((prev) => {
+                          const next = { ...prev };
+                          for (const id of discSel) next[id] = { type: discType, value: discValue };
+                          return next;
+                        });
+                        setDiscSel([]);
+                      }}
+                    >
+                      Apply to selected ({discSel.length})
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    {discountTargets.map((t) => {
+                      const d = itemDiscounts[t.id];
+                      return (
+                        <div key={`${t.kind}:${t.id}`} className="flex items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={discSel.includes(t.id)}
+                            onChange={(e) =>
+                              setDiscSel((prev) =>
+                                e.target.checked ? [...prev, t.id] : prev.filter((x) => x !== t.id),
+                              )
+                            }
+                          />
+                          <span className="flex-1 truncate">{t.label}</span>
+                          <span className="tabular-nums text-muted-foreground">{money(t.gross, currency)}</span>
+                          {d && (
+                            <>
+                              <span className="rounded bg-muted px-1 py-0.5 tabular-nums">
+                                -{d.type === "pct" ? `${d.value}%` : money(d.value, currency)}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label="Remove discount"
+                                className="text-muted-foreground hover:text-foreground"
+                                onClick={() =>
+                                  setItemDiscounts((prev) => {
+                                    const next = { ...prev };
+                                    delete next[t.id];
+                                    return next;
+                                  })
+                                }
+                              >
+                                ×
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
 
               <div className="space-y-2">
@@ -1914,8 +2048,9 @@ function DealDetail() {
                     <span>
                       {l.qty} · {l.basis} · tax {l.tax_rate_pct}%
                       {l.discount_applied != null && l.discount_applied > 0 && (
-                        <> · discount -{money(l.discount_applied, currency)}</>
+                        <> · discount {l.discount_pct ? `${l.discount_pct}% ` : ""}-{money(l.discount_applied, currency)}</>
                       )}
+
                     </span>
                     <span className="tabular-nums">
                       net {money(l.net, currency)} · tax {money(l.tax, currency)}
@@ -1943,6 +2078,13 @@ function DealDetail() {
 
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
+                {totals.item_discount_net > 0 && (
+                  <div className="flex justify-between text-foreground">
+                    <span>Item discounts (net)</span>
+                    <span className="tabular-nums">-{money(totals.item_discount_net, currency)}</span>
+                  </div>
+                )}
+
                 {totals.discount_targeted && totals.discount_net > 0 && (
                   <div className="flex justify-between text-foreground">
                     <span>Discount (net)</span>
@@ -1956,6 +2098,10 @@ function DealDetail() {
               <Separator />
 
               <div className="space-y-1 text-sm">
+                {totals.item_discount_total > 0 && (
+                  <div className="flex justify-between"><span>Item discounts</span><span className="tabular-nums">-{money(totals.item_discount_total, currency)}</span></div>
+                )}
+
                 {!totals.discount_targeted && effectiveDiscount > 0 && (
                   <div className="flex justify-between"><span>Discount</span><span className="tabular-nums">-{money(effectiveDiscount, currency)}</span></div>
                 )}
