@@ -579,15 +579,27 @@ function DealDetail() {
     return extras.map((e) => ({ id: e.id, name: e.name }));
   };
 
-  // Candidate lines (by sourceKind+sourceId) that the discount can be applied to.
-  const discountTargets = (totals?.lines ?? [])
-    .filter((l) => l.sourceKind === "space" || l.sourceKind === "package" || l.sourceKind === "extra" || l.sourceKind === "staff")
-    .map((l) => ({
-      kind: l.sourceKind as DiscountTarget["kind"],
-      id: l.sourceId!,
-      label: l.label,
-      gross: (l.original_gross ?? l.gross),
-    }));
+  // Every charged line in the quote is discountable, keyed by its source id.
+  const discountTargets = (() => {
+    const out: { kind: DiscountTarget["kind"]; id: string; label: string; gross: number }[] = [];
+    const byId = new Map<string, number>();
+    for (const l of totals?.lines ?? []) {
+      if (!l.sourceId) continue;
+      const kind =
+        l.sourceKind === "package_overtime" ? "package" : (l.sourceKind as DiscountTarget["kind"]);
+      if (kind !== "space" && kind !== "package" && kind !== "extra" && kind !== "staff") continue;
+      const gross = l.original_gross ?? l.gross;
+      const idx = byId.get(l.sourceId);
+      if (idx != null) {
+        out[idx].gross += gross;
+        continue;
+      }
+      byId.set(l.sourceId, out.length);
+      out.push({ kind, id: l.sourceId, label: l.label, gross });
+    }
+    return out;
+  })();
+
 
   function buildOfferConfig() {
     return {
@@ -1975,67 +1987,6 @@ function DealDetail() {
               )}
 
 
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showDiscount}
-                    onChange={(e) => {
-                      setShowDiscount(e.target.checked);
-                      if (e.target.checked && !discountTarget && discountTargets.length > 0) {
-                        setDiscountTarget({ kind: discountTargets[0].kind, id: discountTargets[0].id });
-                      }
-                    }}
-                  />
-                  Apply a discount (optional)
-                </label>
-                {showDiscount && (
-                  <div className="space-y-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Apply discount to</Label>
-                      <Select
-                        value={discountTarget ? `${discountTarget.kind}:${discountTarget.id}` : ""}
-                        onValueChange={(v) => {
-                          const [kind, id] = v.split(":") as [DiscountTarget["kind"], string];
-                          setDiscountTarget({ kind, id });
-                        }}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Choose a line…" /></SelectTrigger>
-                        <SelectContent>
-                          {discountTargets.length === 0 && (
-                            <div className="px-2 py-1 text-xs text-muted-foreground">Select a space, package, or extra first.</div>
-                          )}
-                          {discountTargets.map((t) => (
-                            <SelectItem key={`${t.kind}:${t.id}`} value={`${t.kind}:${t.id}`}>
-                              {t.label} — {money(t.gross, currency)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Discount amount (gross)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={discount}
-                        onChange={(e) => setDiscount(Math.max(0, Number(e.target.value) || 0))}
-                      />
-                      {discountTarget && (() => {
-                        const t = discountTargets.find((x) => x.kind === discountTarget.kind && x.id === discountTarget.id);
-                        if (!t) return null;
-                        const over = discount > t.gross;
-                        return (
-                          <p className={"text-xs " + (over ? "text-red-600" : "text-muted-foreground")}>
-                            Line gross: {money(t.gross, currency)}
-                            {over && <> — capped at line amount.</>}
-                          </p>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </div>
 
             </CardContent>
           </Card>
