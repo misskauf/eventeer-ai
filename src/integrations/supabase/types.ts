@@ -18,6 +18,10 @@ export type Database = {
         Row: {
           activated_at: string | null
           address: string | null
+          bank_account_name: string | null
+          bank_bic: string | null
+          bank_iban: string | null
+          bank_name: string | null
           billing_note: string | null
           brief_mode: string
           client_select_beverage: string
@@ -34,6 +38,7 @@ export type Database = {
           invoice_notes: string | null
           logo_url: string | null
           name: string
+          payment_reference_note: string | null
           primary_color: string
           proposal_reminder_days: number
           quote_format: string
@@ -52,6 +57,10 @@ export type Database = {
         Insert: {
           activated_at?: string | null
           address?: string | null
+          bank_account_name?: string | null
+          bank_bic?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
           billing_note?: string | null
           brief_mode?: string
           client_select_beverage?: string
@@ -68,6 +77,7 @@ export type Database = {
           invoice_notes?: string | null
           logo_url?: string | null
           name: string
+          payment_reference_note?: string | null
           primary_color?: string
           proposal_reminder_days?: number
           quote_format?: string
@@ -86,6 +96,10 @@ export type Database = {
         Update: {
           activated_at?: string | null
           address?: string | null
+          bank_account_name?: string | null
+          bank_bic?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
           billing_note?: string | null
           brief_mode?: string
           client_select_beverage?: string
@@ -102,6 +116,7 @@ export type Database = {
           invoice_notes?: string | null
           logo_url?: string | null
           name?: string
+          payment_reference_note?: string | null
           primary_color?: string
           proposal_reminder_days?: number
           quote_format?: string
@@ -1235,6 +1250,69 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          deal_id: string
+          due_date: string | null
+          id: string
+          label: string
+          marked_by: string | null
+          method: string | null
+          paid_at: string | null
+          sort: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          company_id: string
+          created_at?: string
+          deal_id: string
+          due_date?: string | null
+          id?: string
+          label: string
+          marked_by?: string | null
+          method?: string | null
+          paid_at?: string | null
+          sort?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          deal_id?: string
+          due_date?: string | null
+          id?: string
+          label?: string
+          marked_by?: string | null
+          method?: string | null
+          paid_at?: string | null
+          sort?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permission_audit: {
         Row: {
           action: string
@@ -1969,7 +2047,7 @@ export type Database = {
         | "payment_delayed"
         | "changes_requested"
       extra_pricing_type: "per_person" | "flat" | "per_hour"
-      share_token_kind: "client_proposal" | "dashboard" | "preview"
+      share_token_kind: "client_proposal" | "dashboard" | "preview" | "payments"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2126,7 +2204,7 @@ export const Constants = {
         "changes_requested",
       ],
       extra_pricing_type: ["per_person", "flat", "per_hour"],
-      share_token_kind: ["client_proposal", "dashboard", "preview"],
+      share_token_kind: ["client_proposal", "dashboard", "preview", "payments"],
     },
   },
 } as const
