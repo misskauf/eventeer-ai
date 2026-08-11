@@ -1819,6 +1819,36 @@ function DealDetail() {
                         onValueChange={(v) => setServicePct(v[0] ?? gMin)}
                       />
                     )}
+                    {gMode !== "fixed" && (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.5}
+                          className="h-8 w-24"
+                          value={servicePct}
+                          onChange={(e) =>
+                            setServicePct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))
+                          }
+                        />
+                        {servicePct !== serviceDefaultPct ? (
+                          <span className="text-xs text-muted-foreground">
+                            Overridden for this deal (default {serviceDefaultPct}%) ·{" "}
+                            <button
+                              type="button"
+                              className="underline underline-offset-2 hover:text-foreground"
+                              onClick={() => setServicePct(serviceDefaultPct)}
+                            >
+                              Reset to default
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Using company default</span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
                       Calculated {label.toLowerCase()}:{" "}
                       <span className="tabular-nums font-medium text-foreground">
