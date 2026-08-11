@@ -1,6 +1,9 @@
 {
   "landing": {
-    "nav": { "signin": "Anmelden", "demo": "Demo buchen" },
+    "nav": {
+      "signin": "Anmelden",
+      "demo": "Demo buchen"
+    },
     "hero": {
       "h1": "Aus Event-Anfragen werden unterschriebene, bezahlte Buchungen – mit minimaler Administration.",
       "sub": "Eventeer bündelt jede Anfrage an einem Ort: personalisierte Angebote, digitale Vertragsunterzeichnung und Zahlung – in Ihrem eigenen Branding. Gewinnen Sie pro Woche einen Tag Verwaltung zurück und investieren Sie ihn dort, wo er zählt: in Ihre Kunden und in Events, die unvergesslich bleiben.",
@@ -73,8 +76,24 @@
       "company": "Location / Unternehmen",
       "email": "Geschäftliche E-Mail",
       "phone": "Telefon",
-      "events": "Events pro Monat (optional)",
-      "events_placeholder": "Auswählen…",
+      "role": "Ich bin",
+      "role_owner": "Inhaber:in der Location",
+      "role_venue_sales_manager": "Sales Manager:in der Location",
+      "role_venue_event_manager": "Event Manager:in der Location",
+      "role_event_manager": "Event Manager:in",
+      "role_other": "Sonstiges",
+      "venue": "Was für eine Location betreibt ihr?",
+      "venue_restaurant_cafe": "Restaurant / Café",
+      "venue_bar": "Bar",
+      "venue_gallery_studio": "Galerie / Atelier / Studio",
+      "venue_event_venue": "Eventlocation",
+      "venue_catering": "Catering",
+      "venue_none": "Keine",
+      "software": "Nutzt ihr aktuell eine Software für Event-Anfragen?",
+      "software_none": "Nein — E-Mail, Excel und Telefon",
+      "software_crm": "Ja — ein CRM (z. B. Monday, HubSpot)",
+      "software_event_software": "Ja — eine Event- oder Booking-Software",
+      "software_unknown": "Weiß ich nicht",
       "message": "Sollten wir etwas wissen? (optional)",
       "consent": "Ich bin damit einverstanden, dass meine Daten gespeichert und zur Kontaktaufnahme bezüglich Eventeer genutzt werden. Siehe Datenschutzhinweis.",
       "privacy_link": "Datenschutzhinweis",

@@ -1,6 +1,9 @@
 {
   "landing": {
-    "nav": { "signin": "Sign in", "demo": "Book a demo" },
+    "nav": {
+      "signin": "Sign in",
+      "demo": "Book a demo"
+    },
     "hero": {
       "h1": "Turn event inquiries into signed, paid bookings — with minimal admin.",
       "sub": "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand. Win back a day of admin every week and spend it where it counts: your clients, and events people never forget.",
@@ -73,8 +76,24 @@
       "company": "Venue / company",
       "email": "Work email",
       "phone": "Phone",
-      "events": "Events per month (optional)",
-      "events_placeholder": "Select…",
+      "role": "I am",
+      "role_owner": "Venue owner",
+      "role_venue_sales_manager": "Sales manager at the venue",
+      "role_venue_event_manager": "Event manager at the venue",
+      "role_event_manager": "Event manager",
+      "role_other": "Other",
+      "venue": "What kind of venue do you run?",
+      "venue_restaurant_cafe": "Restaurant / café",
+      "venue_bar": "Bar",
+      "venue_gallery_studio": "Gallery / atelier / studio",
+      "venue_event_venue": "Event venue",
+      "venue_catering": "Catering",
+      "venue_none": "None",
+      "software": "Do you currently use software for event inquiries?",
+      "software_none": "No — email, Excel and phone",
+      "software_crm": "Yes — a CRM (e.g. Monday, HubSpot)",
+      "software_event_software": "Yes — event or booking software",
+      "software_unknown": "Not sure",
       "message": "Anything we should know? (optional)",
       "consent": "I agree that my details may be stored and used to contact me about Eventeer. See the privacy notice.",
       "privacy_link": "privacy notice",
