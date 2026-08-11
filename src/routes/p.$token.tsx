@@ -180,6 +180,8 @@ function ClientProposal() {
       setIntroMarkdown(cons.intro_markdown ?? cons.client_message ?? "");
       setAltGroups(groups);
       setDiscountTarget(offerCfg.discount_target ?? null);
+      setItemDiscounts(offerCfg.item_discounts ?? {});
+
       setMenuModeByPkg(offerCfg.menu_selection_mode_by_pkg ?? {});
       setManagerMenuChoices(offerCfg.menu_choices_by_pkg ?? {});
 
