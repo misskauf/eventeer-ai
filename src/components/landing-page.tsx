@@ -36,8 +36,7 @@ import { submitMarketingLead } from "@/lib/marketing-leads.functions";
 export const HERO_TITLE = "Turn event inquiries into signed, paid bookings — with minimal admin.";
 export const HERO_SUB =
   "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand. Win back a day of admin every week and spend it where it counts: your clients, and events people never forget.";
-// TODO: replace with real contact address
-const CONTACT_EMAIL = "hello@eventeer.app";
+const CONTACT_EMAIL = "keren@dressedforpeace.com";
 
 function scrollToDemo() {
   document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -252,7 +251,7 @@ export function LandingPage() {
             <Link to="/datenschutz" className="hover:text-foreground">
               {t("landing.footer.datenschutz")}
             </Link>
-            {/* TODO: replace with real contact address */}
+            
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground">
               {t("landing.footer.contact")}
             </a>

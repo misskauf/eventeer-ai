@@ -10,6 +10,7 @@ import { usePermissions } from "@/lib/use-permissions";
 import type { PermissionModule } from "@/lib/permissions";
 import { PaywallGate } from "@/components/paywall-gate";
 import { usePlatformAdmin } from "@/lib/use-platform-admin";
+import { LegalLinks } from "@/components/legal-content";
 
 type Company = {
   id: string;
@@ -136,6 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <LogOut className="mr-2 h-4 w-4" /> {t("nav.sign_out")}
           </Button>
+          <LegalLinks className="mt-2 pb-1 text-[11px]" />
         </div>
       </aside>
       <div className="md:pl-56">
