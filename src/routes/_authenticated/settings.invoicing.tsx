@@ -151,6 +151,11 @@ function InvoicingSettings() {
       .update({
         invoice_mode: (fd.get("invoice_mode") as string) || "external",
         invoice_notes: (fd.get("invoice_notes") as string) || null,
+        bank_account_name: (fd.get("bank_account_name") as string) || null,
+        bank_name: (fd.get("bank_name") as string) || null,
+        bank_iban: (fd.get("bank_iban") as string) || null,
+        bank_bic: (fd.get("bank_bic") as string) || null,
+        payment_reference_note: (fd.get("payment_reference_note") as string) || null,
       } as any)
       .eq("id", company.id);
     if (error) return toast.error(error.message);
@@ -214,6 +219,40 @@ function InvoicingSettings() {
                 placeholder="Payment terms, bank details, thank-you note…"
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
+            </div>
+            <div className="space-y-3 rounded-md border p-3">
+              <div>
+                <div className="text-sm font-medium">Bank details</div>
+                <p className="text-xs text-muted-foreground">
+                  Shown on payment requests and on the client payment page.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Account holder</label>
+                  <Input name="bank_account_name" defaultValue={(company as any).bank_account_name ?? ""} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">Bank name</label>
+                  <Input name="bank_name" defaultValue={(company as any).bank_name ?? ""} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">IBAN</label>
+                  <Input name="bank_iban" defaultValue={(company as any).bank_iban ?? ""} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">BIC / SWIFT</label>
+                  <Input name="bank_bic" defaultValue={(company as any).bank_bic ?? ""} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Payment reference note (optional)</label>
+                <Input
+                  name="payment_reference_note"
+                  defaultValue={(company as any).payment_reference_note ?? ""}
+                  placeholder="e.g. Please use your quote number as reference"
+                />
+              </div>
             </div>
             <Button className="w-full">Save invoicing</Button>
           </form>
