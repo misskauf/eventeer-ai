@@ -57,7 +57,6 @@ import {
   CATEGORY_MODE_LABELS,
   DEFAULT_CATEGORY_MODES,
   DEFAULT_OFFER_ALTERNATIVES,
-  categoryModeSummary,
   chargeableIds,
   isSingleChoice,
   resolveCategoryModes,
@@ -71,7 +70,7 @@ import { MenuSelectionPicker, type MenuGroupDef } from "@/components/menu-select
 import { Slider } from "@/components/ui/slider";
 import { randomToken } from "@/lib/auth-hooks";
 import { toast } from "sonner";
-import { Archive, ArchiveRestore, MoreHorizontal, ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock, ChevronRight } from "lucide-react";
+import { Archive, ArchiveRestore, MoreHorizontal, ArrowLeft, Copy, Send, AlertTriangle, Eye, Pencil, Plus, Trash2, MessageSquare, Sparkles, Receipt, CheckCircle2, ShieldCheck, Clock, ChevronRight, Star } from "lucide-react";
 import { SEATING_STYLES } from "@/lib/seating";
 import { stageLabel, HARD_CONFLICT_STAGES, SOFT_CONFLICT_STAGES } from "@/lib/deal-stages";
 import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/deal-approval";
@@ -1353,65 +1352,22 @@ function DealDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Selection rules</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                How the client interacts with each category on the proposal. Defaults come from Settings.
-              </p>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              {CATEGORY_KEYS.map((cat) => {
-                const single = isSingleChoice(categoryModes[cat]);
-                const altCount = alternativesByCategory[cat]?.length ?? 0;
-                const chargedCount =
-                  selectedByCategory[cat].length - altCount;
-                return (
-                  <div key={cat} className="space-y-1 rounded-md border p-3">
-                    <p className="text-sm font-medium">{CATEGORY_LABELS[cat]}</p>
-                    <Select
-                      value={categoryModes[cat]}
-                      onValueChange={(v) =>
-                        setCategoryModes((cur) => ({ ...cur, [cat]: v as CategoryMode }))
-                      }
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
-                          <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {categoryModeSummary(cat, categoryModes[cat])}
-                    </p>
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs">Offer alternatives to client</span>
-                      <Switch
-                        checked={single ? offerAlternatives[cat] : false}
-                        disabled={!single}
-                        onCheckedChange={(v) =>
-                          setOfferAlternatives((cur) => ({ ...cur, [cat]: v }))
-                        }
-                      />
-                    </div>
-                    {single && selectedByCategory[cat].length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        {chargedCount} proposed + {altCount} alternative{altCount === 1 ? "" : "s"}
-                        {altCount > 0 && !offerAlternatives[cat] ? " (hidden from client)" : ""}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </CardContent>
-
-          </Card>
 
 
           <Card>
-            <CardHeader>
-              <CardTitle>Spaces</CardTitle>
+            <CardHeader className="gap-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle>Spaces</CardTitle>
+                <ModeInline
+                  cat="space"
+                  mode={categoryModes.space}
+                  onModeChange={(m) => setCategoryModes((c) => ({ ...c, space: m }))}
+                  offerAlternatives={offerAlternatives.space}
+                  onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, space: v }))}
+                  chargedCount={selectedByCategory.space.length - (alternativesByCategory.space?.length ?? 0)}
+                  altCount={alternativesByCategory.space?.length ?? 0}
+                />
+              </div>
               {deal.event_date && spaces.length > availableSpaces.length && (
                 <p className="text-xs text-muted-foreground">
                   Showing spaces available on {formatEventDate(deal.event_date)} ({spaces.length - availableSpaces.length} hidden).
@@ -1488,6 +1444,17 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
+            modeInline={
+              <ModeInline
+                cat="food"
+                mode={categoryModes.food}
+                onModeChange={(m) => setCategoryModes((c) => ({ ...c, food: m }))}
+                offerAlternatives={offerAlternatives.food}
+                onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, food: v }))}
+                chargedCount={selectedByCategory.food.length - (alternativesByCategory.food?.length ?? 0)}
+                altCount={alternativesByCategory.food?.length ?? 0}
+              />
+            }
           />
           <PackageCard
             singleChoice={isSingleChoice(categoryModes.beverage)}
@@ -1515,11 +1482,35 @@ function DealDetail() {
             onMenuChoiceChange={(pid, gl, next) =>
               setMenuChoicesByPkg((c) => ({ ...c, [pid]: { ...(c[pid] ?? {}), [gl]: next } }))
             }
+            modeInline={
+              <ModeInline
+                cat="beverage"
+                mode={categoryModes.beverage}
+                onModeChange={(m) => setCategoryModes((c) => ({ ...c, beverage: m }))}
+                offerAlternatives={offerAlternatives.beverage}
+                onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, beverage: v }))}
+                chargedCount={selectedByCategory.beverage.length - (alternativesByCategory.beverage?.length ?? 0)}
+                altCount={alternativesByCategory.beverage?.length ?? 0}
+              />
+            }
           />
 
 
           <Card>
-            <CardHeader><CardTitle>Extras</CardTitle></CardHeader>
+            <CardHeader className="gap-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle>Extras</CardTitle>
+                <ModeInline
+                  cat="extra"
+                  mode={categoryModes.extra}
+                  onModeChange={(m) => setCategoryModes((c) => ({ ...c, extra: m }))}
+                  offerAlternatives={offerAlternatives.extra}
+                  onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, extra: v }))}
+                  chargedCount={selectedByCategory.extra.length - (alternativesByCategory.extra?.length ?? 0)}
+                  altCount={alternativesByCategory.extra?.length ?? 0}
+                />
+              </div>
+            </CardHeader>
             <CardContent className="space-y-2">
               {extras.length === 0 && <EmptyHint to="/catalog/extras" label="Add extras in catalog" />}
               {extras.map((e) => (
@@ -1539,7 +1530,20 @@ function DealDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Staffing</CardTitle></CardHeader>
+            <CardHeader className="gap-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle>Staffing</CardTitle>
+                <ModeInline
+                  cat="staff"
+                  mode={categoryModes.staff}
+                  onModeChange={(m) => setCategoryModes((c) => ({ ...c, staff: m }))}
+                  offerAlternatives={offerAlternatives.staff}
+                  onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, staff: v }))}
+                  chargedCount={selectedByCategory.staff.length - (alternativesByCategory.staff?.length ?? 0)}
+                  altCount={alternativesByCategory.staff?.length ?? 0}
+                />
+              </div>
+            </CardHeader>
             <CardContent className="space-y-2">
               {staff.length === 0 && <EmptyHint to="/catalog/staff" label="Add staff roles in catalog" />}
               {staff.map((x) => (
@@ -2273,6 +2277,7 @@ function PackageCard({
   menuModeByPkg, onMenuModeChange, menuChoicesByPkg, onMenuChoiceChange,
   hiddenCount = 0, showAll = false, onShowAllChange, fitLabel = "this deal",
   singleChoice = false, primaryId = "", onMakePrimary,
+  modeInline,
 }: {
   singleChoice?: boolean;
   primaryId?: string;
@@ -2297,11 +2302,15 @@ function PackageCard({
   onMenuModeChange: (pid: string, mode: "manager" | "client") => void;
   menuChoicesByPkg: Record<string, Record<string, string[]>>;
   onMenuChoiceChange: (pid: string, groupLabel: string, next: string[]) => void;
+  modeInline?: React.ReactNode;
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+      <CardHeader className="gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>{title}</CardTitle>
+          {modeInline}
+        </div>
         {hiddenCount > 0 && onShowAllChange && (
           <button
             type="button"
@@ -2341,11 +2350,15 @@ function PackageCard({
                     {checked && singleChoice && primaryId !== p.id && onMakePrimary && (
                       <button
                         type="button"
-                        className="text-[11px] text-primary underline"
+                        aria-label="Mark as proposed"
+                        className="text-muted-foreground hover:text-primary"
                         onClick={(e) => { e.preventDefault(); onMakePrimary(p.id); }}
                       >
-                        Mark as proposed
+                        <Star className="h-3.5 w-3.5" />
                       </button>
+                    )}
+                    {checked && singleChoice && primaryId === p.id && (
+                      <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">
@@ -2477,6 +2490,19 @@ function PickRow({
                 {isPrimary ? "Proposed" : "Alternative"}
               </span>
             )}
+            {checked && singleChoice && !isPrimary && onMakePrimary && (
+              <button
+                type="button"
+                aria-label="Mark as proposed"
+                className="text-muted-foreground hover:text-primary"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMakePrimary(); }}
+              >
+                <Star className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {checked && singleChoice && isPrimary && (
+              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+            )}
           </div>
           <div className="text-xs text-muted-foreground">{subtitle}</div>
           {link?.href && (
@@ -2492,15 +2518,6 @@ function PickRow({
           )}
         </div>
       </label>
-      {checked && singleChoice && !isPrimary && onMakePrimary && (
-        <button
-          type="button"
-          className="mt-2 ml-7 text-xs text-primary underline"
-          onClick={onMakePrimary}
-        >
-          Mark as proposed
-        </button>
-      )}
     </div>
   );
 }
@@ -2520,6 +2537,67 @@ function EmptyHint({ to, label }: { to: string; label: string }) {
     <Link to={to as string} className="block rounded-md border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/40">
       {label} →
     </Link>
+  );
+}
+
+/**
+ * Compact inline control for a category's selection mode. Renders a small
+ * dropdown in the section header plus a collapsible "offer alternatives"
+ * toggle + summary, shown only for single-choice modes.
+ */
+function ModeInline({
+  cat,
+  mode,
+  onModeChange,
+  offerAlternatives,
+  onAlternativesChange,
+  chargedCount,
+  altCount,
+}: {
+  cat: CategoryKey;
+  mode: CategoryMode;
+  onModeChange: (m: CategoryMode) => void;
+  offerAlternatives: boolean;
+  onAlternativesChange: (v: boolean) => void;
+  chargedCount: number;
+  altCount: number;
+}) {
+  const single = isSingleChoice(mode);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex items-center gap-1.5">
+      <Select value={mode} onValueChange={(v) => onModeChange(v as CategoryMode)}>
+        <SelectTrigger className="h-7 w-[150px] text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {(Object.keys(CATEGORY_MODE_LABELS) as CategoryMode[]).map((m) => (
+            <SelectItem key={m} value={m}>{CATEGORY_MODE_LABELS[m]}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {single && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ChevronRight className={"h-3 w-3 transition-transform " + (open ? "rotate-90" : "")} />
+          Alt {offerAlternatives ? "on" : "off"}
+        </button>
+      )}
+      {open && single && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Switch
+            checked={offerAlternatives}
+            onCheckedChange={onAlternativesChange}
+            className="h-4 w-7 data-[state=checked]:bg-primary"
+          />
+          <span>
+            {chargedCount} proposed + {altCount} alt{altCount === 1 ? "" : "s"}
+            {altCount > 0 && !offerAlternatives ? " (hidden)" : ""}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
