@@ -181,15 +181,79 @@ function Toolbar({
       >
         <ListOrdered className="h-4 w-4" />
       </ToolBtn>
-      {mode === "full" && (
-        <ToolBtn
-          title="Section divider"
-          onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        >
-          <Minus className="h-4 w-4" />
-        </ToolBtn>
-      )}
+      <ToolBtn
+        title="Section divider"
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      >
+        <Minus className="h-4 w-4" />
+      </ToolBtn>
       <span className="mx-1 h-5 w-px bg-border" />
+      <ToolBtn
+        title="Align left"
+        onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        active={editor.isActive({ textAlign: "left" })}
+      >
+        <AlignLeft className="h-4 w-4" />
+      </ToolBtn>
+      <ToolBtn
+        title="Align center"
+        onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        active={editor.isActive({ textAlign: "center" })}
+      >
+        <AlignCenter className="h-4 w-4" />
+      </ToolBtn>
+      <ToolBtn
+        title="Align right"
+        onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        active={editor.isActive({ textAlign: "right" })}
+      >
+        <AlignRight className="h-4 w-4" />
+      </ToolBtn>
+      <ToolBtn
+        title="Justify"
+        onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+        active={editor.isActive({ textAlign: "justify" })}
+      >
+        <AlignJustify className="h-4 w-4" />
+      </ToolBtn>
+      <span className="mx-1 h-5 w-px bg-border" />
+      <ColorMenu
+        editor={editor}
+        title="Text colour"
+        icon={<Baseline className="h-4 w-4" />}
+        onPick={(c) => editor.chain().focus().setColor(c).run()}
+        onClear={() => editor.chain().focus().unsetColor().run()}
+      />
+      <ColorMenu
+        editor={editor}
+        title="Highlight"
+        icon={<Highlighter className="h-4 w-4" />}
+        colors={HIGHLIGHT_COLORS}
+        onPick={(c) => editor.chain().focus().setHighlight({ color: c }).run()}
+        onClear={() => editor.chain().focus().unsetHighlight().run()}
+      />
+      <Select
+        value={(editor.getAttributes("textStyle").fontSize as string) ?? "default"}
+        onValueChange={(v) => {
+          if (v === "default") editor.chain().focus().unsetFontSize().run();
+          else editor.chain().focus().setFontSize(v).run();
+        }}
+      >
+        <SelectTrigger className="h-8 w-[92px] text-xs" title="Font size">
+          <SelectValue placeholder="Size" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">Default</SelectItem>
+          {FONT_SIZES.map((s) => (
+            <SelectItem key={s} value={s}>
+              {s}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <TableMenu editor={editor} />
+      <span className="mx-1 h-5 w-px bg-border" />
+
       <ToolBtn
         title="Add link"
         onClick={() => {
