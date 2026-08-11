@@ -198,6 +198,8 @@ export const PAY_COPY = {
     reference: "Reference",
     paid: "Paid",
     outstanding: "Outstanding",
+    pay_card: "Pay by card / SEPA",
+    or_transfer: "Or pay by bank transfer:",
   },
   de: {
     subject_due: "Zahlung für Ihre Veranstaltung fällig",
@@ -217,6 +219,8 @@ export const PAY_COPY = {
     reference: "Verwendungszweck",
     paid: "Bezahlt",
     outstanding: "Offen",
+    pay_card: "Mit Karte / SEPA zahlen",
+    or_transfer: "Oder per Überweisung zahlen:",
   },
 } as const;
 

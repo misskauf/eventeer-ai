@@ -1,4 +1,9 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { createPaymentCheckout } from "@/lib/payments.functions";
 import { resolvePaymentToken } from "@/lib/payments.functions";
 import { effectiveStatus, payCopy, STATUS_LABELS, STATUS_TONES, summarize } from "@/lib/payments";
 
@@ -50,8 +55,33 @@ function money(currency: string, n: number) {
   }
 }
 
+function PayButton({ token, paymentId, label }: { token: string; paymentId: string; label: string }) {
+  const checkout = useServerFn(createPaymentCheckout);
+  const [busy, setBusy] = useState(false);
+
+  async function go() {
+    setBusy(true);
+    try {
+      const res: any = await checkout({
+        data: { token, paymentId, origin: window.location.origin },
+      });
+      window.location.href = res.url;
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not start the card payment");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Button size="sm" variant="outline" onClick={go} disabled={busy}>
+      {busy ? "Opening…" : label}
+    </Button>
+  );
+}
+
 function PaymentPage() {
   const data = Route.useLoaderData() as any;
+  const params = Route.useParams();
 
   if (!data?.ok) {
     return (
@@ -68,6 +98,9 @@ function PaymentPage() {
   const c = payCopy(deal.language);
   const currency = company.currency ?? "EUR";
   const summary = summarize(payments);
+  const stripeOn = Boolean(company.stripe_enabled);
+  const search = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const justPaid = search?.get("paid") === "1";
 
   return (
     <Shell>
@@ -84,6 +117,12 @@ function PaymentPage() {
         </div>
       </header>
 
+      {justPaid && (
+        <p className="mb-4 rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 text-sm">
+          Thank you — your payment is being processed. This page updates once it settles.
+        </p>
+      )}
+
       <div className="overflow-hidden rounded-md border text-sm">
         <div className="grid grid-cols-[1fr_auto_auto] gap-3 bg-muted/50 px-3 py-2 text-xs font-medium">
           <span>{c.amount}</span>
@@ -99,7 +138,12 @@ function PaymentPage() {
                 <span className="text-xs text-muted-foreground">{money(currency, Number(p.amount))}</span>
               </span>
               <span className="text-xs text-muted-foreground">{p.due_date ?? "—"}</span>
-              <span className={`rounded px-2 py-0.5 text-xs ${STATUS_TONES[st]}`}>{STATUS_LABELS[st]}</span>
+              <span className="flex items-center gap-2">
+                <span className={`rounded px-2 py-0.5 text-xs ${STATUS_TONES[st]}`}>{STATUS_LABELS[st]}</span>
+                {stripeOn && st !== "paid" && (
+                  <PayButton token={params.token} paymentId={p.id} label={c.pay_card} />
+                )}
+              </span>
             </div>
           );
         })}
