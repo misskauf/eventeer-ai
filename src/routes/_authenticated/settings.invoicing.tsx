@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StripeSettingsCard } from "@/components/stripe-settings-card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -258,6 +259,12 @@ function InvoicingSettings() {
           </form>
         </CardContent>
       </Card>
+
+      <StripeSettingsCard
+        companyId={company.id}
+        stripeEnabled={Boolean((company as any).stripe_enabled)}
+        publishableKey={(company as any).stripe_publishable_key ?? null}
+      />
 
       {currentMode === "template" && (
         <Card>

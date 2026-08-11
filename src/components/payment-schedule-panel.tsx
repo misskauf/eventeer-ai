@@ -20,6 +20,7 @@ import {
   round2,
   scheduleMatchesTotal,
   shiftDays,
+  METHOD_LABELS,
   STATUS_LABELS,
   STATUS_TONES,
   sumDrafts,
@@ -77,6 +78,7 @@ export function PaymentSchedulePanel({ dealId, companyId, eventDate, currency, t
   const [fullDue, setFullDue] = useState<string>(toISODate(new Date()));
   const [drafts, setDrafts] = useState<PaymentDraft[]>([]);
   const [bankOk, setBankOk] = useState(true);
+  const [stripeOn, setStripeOn] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -96,10 +98,13 @@ export function PaymentSchedulePanel({ dealId, companyId, eventDate, currency, t
     if (!canView) return;
     void supabase
       .from("companies")
-      .select("bank_account_name, bank_name, bank_iban, bank_bic, payment_reference_note")
+      .select("bank_account_name, bank_name, bank_iban, bank_bic, payment_reference_note, stripe_enabled")
       .eq("id", companyId)
       .maybeSingle()
-      .then(({ data }) => setBankOk(checkBank(data as never)));
+      .then(({ data }) => {
+        setBankOk(checkBank(data as never));
+        setStripeOn(Boolean((data as any)?.stripe_enabled));
+      });
   }, [canView, companyId]);
 
   if (permLoading || !canView) return null;
@@ -221,6 +226,7 @@ export function PaymentSchedulePanel({ dealId, companyId, eventDate, currency, t
                   <div className="text-xs text-muted-foreground">
                     {p.due_date ? `Due ${p.due_date}` : "No due date"}
                     {p.paid_at ? ` · Paid ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                    {p.paid_at && p.method ? ` · ${METHOD_LABELS[p.method] ?? p.method}` : ""}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -252,6 +258,12 @@ export function PaymentSchedulePanel({ dealId, companyId, eventDate, currency, t
             )}
           </div>
         </div>
+      )}
+
+      {stripeOn && rows.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Card &amp; SEPA payments are on — clients can pay each item from the payment page link.
+        </p>
       )}
 
       {rows.length === 0 && !editing && (
