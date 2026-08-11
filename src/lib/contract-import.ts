@@ -30,14 +30,71 @@ export function validateFileSize(file: File) {
 
 // ---------- Parsers ----------
 
+const MAX_IMAGE_BYTES = 400 * 1024;
+
+// Map common Word styles onto clean semantic HTML.
+const DOCX_STYLE_MAP = [
+  "p[style-name='Title'] => h1:fresh",
+  "p[style-name='Subtitle'] => h2:fresh",
+  "p[style-name='Heading 1'] => h1:fresh",
+  "p[style-name='Heading 2'] => h2:fresh",
+  "p[style-name='Heading 3'] => h3:fresh",
+  "p[style-name='Heading 4'] => h4:fresh",
+  "p[style-name='heading 1'] => h1:fresh",
+  "p[style-name='heading 2'] => h2:fresh",
+  "p[style-name='heading 3'] => h3:fresh",
+  "p[style-name='heading 4'] => h4:fresh",
+  "p[style-name='Quote'] => blockquote:fresh",
+  "p[style-name='Intense Quote'] => blockquote:fresh",
+  "r[style-name='Strong'] => strong",
+  "r[style-name='Emphasis'] => em",
+  "b => strong",
+  "i => em",
+  "u => u",
+  "strike => s",
+  "table => table",
+].join("\n");
+
+/** Strips Word noise and normalizes the converted HTML for the editor. */
+export function cleanImportedHtml(html: string): string {
+  let out = html;
+  // Normalise Word typography that trips up placeholder detection.
+  out = out
+    .replace(/\u00a0/g, " ")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"');
+  // Drop empty paragraphs / headings left behind by Word spacing runs.
+  out = out.replace(/<(p|h[1-6])>(?:\s|<br\s*\/?>)*<\/\1>/gi, "");
+  // Remove Word class noise, keep structure.
+  out = out.replace(/\sclass="(?:Mso|Normal|Default)[^"]*"/gi, "");
+  return out.trim();
+}
+
 export async function parseDocx(file: File): Promise<ParsedDoc> {
   validateFileSize(file);
   const mammoth = await import("mammoth/mammoth.browser");
   const buf = await file.arrayBuffer();
-  const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+  const skippedImages: string[] = [];
+  const result = await mammoth.convertToHtml(
+    { arrayBuffer: buf },
+    {
+      styleMap: DOCX_STYLE_MAP,
+      includeDefaultStyleMap: true,
+      convertImage: (mammoth as any).images.imgElement(async (image: any) => {
+        const base64: string = await image.read("base64");
+        // Rough byte size of the decoded image.
+        if ((base64.length * 3) / 4 > MAX_IMAGE_BYTES) {
+          skippedImages.push("An image was too large to embed and was left out.");
+          return { src: "" };
+        }
+        return { src: `data:${image.contentType};base64,${base64}` };
+      }),
+    } as any,
+  );
+  const messages = (result.messages ?? []).map((m: any) => String(m.message ?? m));
   return {
-    html: result.value || "",
-    warnings: (result.messages ?? []).map((m: any) => String(m.message ?? m)),
+    html: cleanImportedHtml(result.value || ""),
+    warnings: [...new Set([...messages, ...skippedImages])],
   };
 }
 
