@@ -53,11 +53,14 @@ export const submitMarketingLead = createServerFn({ method: "POST" })
     const company = cap(data.company, 160);
     const email = cap(data.email, 200).toLowerCase();
     const phone = cap(data.phone, 60) || null;
-    const events = cap(data.events_per_month, 20) || null;
+    const role = pick(data.role, ROLE_KEYS);
+    const venueType = pick(data.venue_type, VENUE_TYPE_KEYS);
+    const currentSoftware = pick(data.current_software, SOFTWARE_KEYS);
     const message = cap(data.message, 2000) || null;
     const locale = data.locale === "de" ? "de" : "en";
 
     if (!name || !company || !EMAIL_RE.test(email)) throw new Error("Invalid input");
+    if (!role || !venueType || !currentSoftware) throw new Error("Invalid input");
     if (data.consent !== true) throw new Error("Consent required");
 
     const supabase = createClient(
@@ -71,7 +74,9 @@ export const submitMarketingLead = createServerFn({ method: "POST" })
       company,
       email,
       phone,
-      events_per_month: events,
+      role,
+      venue_type: venueType,
+      current_software: currentSoftware,
       message,
       consent: true,
       source: "landing",
