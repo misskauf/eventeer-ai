@@ -1867,6 +1867,96 @@ function DealDetail() {
                 );
               })()}
 
+              {discountTargets.length > 0 && (
+                <div className="space-y-2 rounded-md border p-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Item discounts</Label>
+                    {Object.keys(itemDiscounts).length > 0 && (
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground underline underline-offset-2"
+                        onClick={() => setItemDiscounts({})}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={discType} onValueChange={(v) => setDiscType(v as "pct" | "amount")}>
+                      <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pct">Percent %</SelectItem>
+                        <SelectItem value="amount">Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-8 w-24"
+                      value={discValue}
+                      onChange={(e) => setDiscValue(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={discSel.length === 0 || discValue <= 0}
+                      onClick={() => {
+                        setItemDiscounts((prev) => {
+                          const next = { ...prev };
+                          for (const id of discSel) next[id] = { type: discType, value: discValue };
+                          return next;
+                        });
+                        setDiscSel([]);
+                      }}
+                    >
+                      Apply to selected ({discSel.length})
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    {discountTargets.map((t) => {
+                      const d = itemDiscounts[t.id];
+                      return (
+                        <div key={`${t.kind}:${t.id}`} className="flex items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={discSel.includes(t.id)}
+                            onChange={(e) =>
+                              setDiscSel((prev) =>
+                                e.target.checked ? [...prev, t.id] : prev.filter((x) => x !== t.id),
+                              )
+                            }
+                          />
+                          <span className="flex-1 truncate">{t.label}</span>
+                          <span className="tabular-nums text-muted-foreground">{money(t.gross, currency)}</span>
+                          {d && (
+                            <>
+                              <span className="rounded bg-muted px-1 py-0.5 tabular-nums">
+                                -{d.type === "pct" ? `${d.value}%` : money(d.value, currency)}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label="Remove discount"
+                                className="text-muted-foreground hover:text-foreground"
+                                onClick={() =>
+                                  setItemDiscounts((prev) => {
+                                    const next = { ...prev };
+                                    delete next[t.id];
+                                    return next;
+                                  })
+                                }
+                              >
+                                ×
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
 
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm">
