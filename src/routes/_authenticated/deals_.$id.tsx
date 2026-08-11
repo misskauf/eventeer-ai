@@ -595,8 +595,10 @@ function DealDetail() {
       season_id: seasonId,
       discount: effectiveDiscount,
       discount_target: effectiveDiscountTarget,
+      item_discounts: itemDiscounts,
       min_revenue_required: minRevenue,
-      service_charge_pct_override: servicePct,
+      service_charge_pct_override: servicePct === serviceDefaultPct ? null : servicePct,
+
       guest_count: deal?.guest_count ?? 0,
       cover_title: coverTitle,
       alternative_groups: altGroups,
