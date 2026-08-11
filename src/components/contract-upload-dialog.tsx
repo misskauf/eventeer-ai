@@ -30,11 +30,21 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (result: { name: string; html: string }) => void;
+  /** Placeholder list for the mapping step (defaults to contract placeholders). */
+  placeholders?: Array<{ key: string; label: string }>;
+  /** Document kind shown in the dialog copy, e.g. "event brief" or "invoice". */
+  docLabel?: string;
 };
 
 type Stage = "pick" | "mapping";
 
-export function ContractUploadDialog({ open, onOpenChange, onImport }: Props) {
+export function ContractUploadDialog({
+  open,
+  onOpenChange,
+  onImport,
+  placeholders = PLACEHOLDER_OPTIONS,
+  docLabel = "contract",
+}: Props) {
   const [stage, setStage] = useState<Stage>("pick");
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -91,9 +101,10 @@ export function ContractUploadDialog({ open, onOpenChange, onImport }: Props) {
     >
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upload contract document</DialogTitle>
+          <DialogTitle>Upload document</DialogTitle>
           <DialogDescription>
-            Import an existing contract as an editable template. Supported: .docx, .pdf, .txt, .md.
+            Import an existing {docLabel} as an editable template. Supported: .docx, .pdf, .txt,
+            .md.
           </DialogDescription>
         </DialogHeader>
 
@@ -112,7 +123,8 @@ export function ContractUploadDialog({ open, onOpenChange, onImport }: Props) {
                 {busy ? "Reading document…" : "Click to choose a file"}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                .docx keeps formatting. PDF text is extracted — layout is simplified. Max 5&nbsp;MB.
+                Word (.docx) keeps text, headings, tables, lists, bold/italic and inline images.
+                PDF text is extracted — layout is simplified. Max 5&nbsp;MB.
               </div>
               <input
                 id="contract-upload-input"
@@ -127,6 +139,10 @@ export function ContractUploadDialog({ open, onOpenChange, onImport }: Props) {
                 }}
               />
             </label>
+            <div className="rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              Complex shapes, text boxes, and exact page layout may not be preserved — imported
+              content becomes editable text you can adjust.
+            </div>
           </div>
         )}
 
@@ -137,13 +153,22 @@ export function ContractUploadDialog({ open, onOpenChange, onImport }: Props) {
               <span className="truncate">{file?.name}</span>
             </div>
 
-            {warnings.length > 0 && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                {warnings.map((w, i) => (
-                  <div key={i}>{w}</div>
-                ))}
-              </div>
-            )}
+            <div className="rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              Complex shapes, text boxes, and exact page layout may not be preserved — imported
+              content becomes editable text you can adjust.
+              {warnings.length > 0 && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer underline underline-offset-2">
+                    {warnings.length} conversion note{warnings.length === 1 ? "" : "s"}
+                  </summary>
+                  <div className="mt-1 max-h-32 space-y-0.5 overflow-y-auto">
+                    {warnings.map((w, i) => (
+                      <div key={i}>{w}</div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
 
             <div>
               <div className="mb-2 text-sm font-medium">Map detected fields to placeholders</div>
@@ -176,7 +201,7 @@ export function ContractUploadDialog({ open, onOpenChange, onImport }: Props) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__skip">Skip</SelectItem>
-                          {PLACEHOLDER_OPTIONS.map((p) => (
+                          {placeholders.map((p) => (
                             <SelectItem key={p.key} value={p.key}>
                               <span className="font-mono text-xs">{`{{${p.key}}}`}</span>
                               <span className="ml-2 text-muted-foreground">{p.label}</span>
