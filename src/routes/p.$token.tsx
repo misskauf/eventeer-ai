@@ -306,9 +306,10 @@ function ClientProposal() {
       min_revenue_required: minRev,
       discount,
       discount_target: discountTarget,
+      item_discounts: itemDiscounts,
       currency: state?.company?.currency ?? "USD",
     };
-  }, [spaces, packages, extras, staff, feesCfg, seasonMult, discount, discountTarget, minRev, servicePct, state?.company?.currency]);
+  }, [spaces, packages, extras, staff, feesCfg, seasonMult, discount, discountTarget, itemDiscounts, minRev, servicePct, state?.company?.currency]);
 
 
   const totals = useMemo(() => {
