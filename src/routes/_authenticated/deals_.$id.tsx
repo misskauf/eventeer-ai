@@ -203,6 +203,12 @@ function DealDetail() {
   const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
   const [minRevenue, setMinRevenue] = useState(0);
   const [servicePct, setServicePct] = useState<number>(0);
+  const [serviceDefaultPct, setServiceDefaultPct] = useState<number>(0);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, { type: "pct" | "amount"; value: number }>>({});
+  const [discSel, setDiscSel] = useState<string[]>([]);
+  const [discType, setDiscType] = useState<"pct" | "amount">("pct");
+  const [discValue, setDiscValue] = useState<number>(10);
+
   const [coverTitle, setCoverTitle] = useState("");
   const [coverTouched, setCoverTouched] = useState(false);
   const [introMarkdown, setIntroMarkdown] = useState("");
