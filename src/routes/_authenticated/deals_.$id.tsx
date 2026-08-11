@@ -1387,6 +1387,8 @@ function DealDetail() {
                   onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, space: v }))}
                   chargedCount={selectedByCategory.space.length - (alternativesByCategory.space?.length ?? 0)}
                   altCount={alternativesByCategory.space?.length ?? 0}
+                  noneDefault={noneDefaults.space}
+                  onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, space: v }))}
                 />
               </div>
               {deal.event_date && spaces.length > availableSpaces.length && (
@@ -1474,6 +1476,8 @@ function DealDetail() {
                 onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, food: v }))}
                 chargedCount={selectedByCategory.food.length - (alternativesByCategory.food?.length ?? 0)}
                 altCount={alternativesByCategory.food?.length ?? 0}
+                noneDefault={noneDefaults.food}
+                onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, food: v }))}
               />
             }
           />
@@ -1512,6 +1516,8 @@ function DealDetail() {
                 onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, beverage: v }))}
                 chargedCount={selectedByCategory.beverage.length - (alternativesByCategory.beverage?.length ?? 0)}
                 altCount={alternativesByCategory.beverage?.length ?? 0}
+                noneDefault={noneDefaults.beverage}
+                onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, beverage: v }))}
               />
             }
           />
@@ -1529,6 +1535,8 @@ function DealDetail() {
                   onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, extra: v }))}
                   chargedCount={selectedByCategory.extra.length - (alternativesByCategory.extra?.length ?? 0)}
                   altCount={alternativesByCategory.extra?.length ?? 0}
+                  noneDefault={noneDefaults.extra}
+                  onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, extra: v }))}
                 />
               </div>
             </CardHeader>
@@ -1562,6 +1570,8 @@ function DealDetail() {
                   onAlternativesChange={(v) => setOfferAlternatives((c) => ({ ...c, staff: v }))}
                   chargedCount={selectedByCategory.staff.length - (alternativesByCategory.staff?.length ?? 0)}
                   altCount={alternativesByCategory.staff?.length ?? 0}
+                  noneDefault={noneDefaults.staff}
+                  onNoneDefaultChange={(v) => setNoneDefaults((c) => ({ ...c, staff: v }))}
                 />
               </div>
             </CardHeader>
@@ -2706,6 +2716,8 @@ function ModeInline({
   onAlternativesChange,
   chargedCount,
   altCount,
+  noneDefault = false,
+  onNoneDefaultChange,
 }: {
   cat: CategoryKey;
   mode: CategoryMode;
@@ -2714,6 +2726,8 @@ function ModeInline({
   onAlternativesChange: (v: boolean) => void;
   chargedCount: number;
   altCount: number;
+  noneDefault?: boolean;
+  onNoneDefaultChange?: (v: boolean) => void;
 }) {
   const single = isSingleChoice(mode);
   const [open, setOpen] = useState(false);
@@ -2727,6 +2741,18 @@ function ModeInline({
           ))}
         </SelectContent>
       </Select>
+      {mode === "optional_one" && onNoneDefaultChange && (
+        <Select
+          value={noneDefault ? "none" : "proposed"}
+          onValueChange={(v) => onNoneDefaultChange(v === "none")}
+        >
+          <SelectTrigger className="h-7 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="proposed">Default: proposed</SelectItem>
+            <SelectItem value="none">Default: none</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
       {single && (
         <button
           type="button"
