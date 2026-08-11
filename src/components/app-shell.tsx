@@ -10,6 +10,7 @@ import { usePermissions } from "@/lib/use-permissions";
 import type { PermissionModule } from "@/lib/permissions";
 import { PaywallGate } from "@/components/paywall-gate";
 import { usePlatformAdmin } from "@/lib/use-platform-admin";
+import { LegalLinks } from "@/components/legal-content";
 
 type Company = {
   id: string;
