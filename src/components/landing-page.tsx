@@ -16,13 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Accordion,
   AccordionContent,
@@ -288,13 +282,32 @@ function Section({
   );
 }
 
+const ROLE_OPTIONS = [
+  "owner",
+  "venue_sales_manager",
+  "venue_event_manager",
+  "event_manager",
+  "other",
+] as const;
+const VENUE_OPTIONS = [
+  "restaurant_cafe",
+  "bar",
+  "gallery_studio",
+  "event_venue",
+  "catering",
+  "none",
+] as const;
+const SOFTWARE_OPTIONS = ["none", "crm", "event_software", "unknown"] as const;
+
 function DemoForm({ lang }: { lang: AppLang }) {
   const { t } = useTranslation();
   const submit = useServerFn(submitMarketingLead);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [events, setEvents] = useState("");
+  const [role, setRole] = useState("");
+  const [venueType, setVenueType] = useState("");
+  const [software, setSoftware] = useState("");
 
   if (done) {
     return (
@@ -317,6 +330,7 @@ function DemoForm({ lang }: { lang: AppLang }) {
     if (!name || !company || !email || !phone) return toast.error(t("landing.demo.required"));
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return toast.error(t("landing.demo.invalid_email"));
+    if (!role || !venueType || !software) return toast.error(t("landing.demo.required"));
     if (!consent) return toast.error(t("landing.demo.consent_required"));
 
     setSending(true);
@@ -326,8 +340,10 @@ function DemoForm({ lang }: { lang: AppLang }) {
           name,
           company,
           email,
-          phone: String(fd.get("phone") ?? ""),
-          events_per_month: events,
+          phone,
+          role,
+          venue_type: venueType,
+          current_software: software,
           message: String(fd.get("message") ?? ""),
           consent: true,
           locale: lang,
@@ -361,18 +377,30 @@ function DemoForm({ lang }: { lang: AppLang }) {
         </Field>
       </div>
 
-      <Field id="ml-events" label={t("landing.demo.events")}>
-        <Select value={events} onValueChange={setEvents}>
-          <SelectTrigger id="ml-events">
-            <SelectValue placeholder={t("landing.demo.events_placeholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1-5">1–5</SelectItem>
-            <SelectItem value="6-20">6–20</SelectItem>
-            <SelectItem value="20+">20+</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
+      <RadioQuestion
+        label={t("landing.demo.role")}
+        value={role}
+        onChange={setRole}
+        options={ROLE_OPTIONS.map((k) => ({ value: k, label: t(`landing.demo.role_${k}`) }))}
+        name="role"
+      />
+      <RadioQuestion
+        label={t("landing.demo.venue")}
+        value={venueType}
+        onChange={setVenueType}
+        options={VENUE_OPTIONS.map((k) => ({ value: k, label: t(`landing.demo.venue_${k}`) }))}
+        name="venue_type"
+      />
+      <RadioQuestion
+        label={t("landing.demo.software")}
+        value={software}
+        onChange={setSoftware}
+        options={SOFTWARE_OPTIONS.map((k) => ({
+          value: k,
+          label: t(`landing.demo.software_${k}`),
+        }))}
+        name="current_software"
+      />
 
       <Field id="ml-message" label={t("landing.demo.message")}>
         <Textarea id="ml-message" name="message" rows={4} maxLength={2000} />
@@ -403,6 +431,42 @@ function DemoForm({ lang }: { lang: AppLang }) {
         {sending ? t("landing.demo.sending") : t("landing.demo.submit")}
       </Button>
     </form>
+  );
+}
+
+function RadioQuestion({
+  label,
+  value,
+  onChange,
+  options,
+  name,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  name: string;
+}) {
+  return (
+    <fieldset className="space-y-3 rounded-lg border p-4">
+      <legend className="px-1 text-sm font-medium">
+        {label}
+        <span className="text-destructive"> *</span>
+      </legend>
+      <RadioGroup value={value} onValueChange={onChange} className="gap-2" required>
+        {options.map((o) => (
+          <div key={o.value} className="flex items-center gap-3">
+            <RadioGroupItem value={o.value} id={`ml-${name}-${o.value}`} />
+            <Label
+              htmlFor={`ml-${name}-${o.value}`}
+              className="text-sm font-normal leading-relaxed"
+            >
+              {o.label}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+    </fieldset>
   );
 }
 

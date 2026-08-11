@@ -6,7 +6,9 @@ type LeadInput = {
   company: string;
   email: string;
   phone?: string;
-  events_per_month?: string;
+  role?: string;
+  venue_type?: string;
+  current_software?: string;
   message?: string;
   consent: boolean;
   locale?: string;
@@ -19,6 +21,28 @@ const cap = (v: unknown, max: number) =>
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export const ROLE_KEYS = [
+  "owner",
+  "venue_sales_manager",
+  "venue_event_manager",
+  "event_manager",
+  "other",
+] as const;
+export const VENUE_TYPE_KEYS = [
+  "restaurant_cafe",
+  "bar",
+  "gallery_studio",
+  "event_venue",
+  "catering",
+  "none",
+] as const;
+export const SOFTWARE_KEYS = ["none", "crm", "event_software", "unknown"] as const;
+
+const pick = (v: unknown, allowed: readonly string[]) => {
+  const s = cap(v, 40);
+  return allowed.includes(s) ? s : null;
+};
+
 export const submitMarketingLead = createServerFn({ method: "POST" })
   .inputValidator((data: LeadInput) => data)
   .handler(async ({ data }) => {
@@ -29,11 +53,14 @@ export const submitMarketingLead = createServerFn({ method: "POST" })
     const company = cap(data.company, 160);
     const email = cap(data.email, 200).toLowerCase();
     const phone = cap(data.phone, 60) || null;
-    const events = cap(data.events_per_month, 20) || null;
+    const role = pick(data.role, ROLE_KEYS);
+    const venueType = pick(data.venue_type, VENUE_TYPE_KEYS);
+    const currentSoftware = pick(data.current_software, SOFTWARE_KEYS);
     const message = cap(data.message, 2000) || null;
     const locale = data.locale === "de" ? "de" : "en";
 
     if (!name || !company || !EMAIL_RE.test(email)) throw new Error("Invalid input");
+    if (!role || !venueType || !currentSoftware) throw new Error("Invalid input");
     if (data.consent !== true) throw new Error("Consent required");
 
     const supabase = createClient(
@@ -47,7 +74,9 @@ export const submitMarketingLead = createServerFn({ method: "POST" })
       company,
       email,
       phone,
-      events_per_month: events,
+      role,
+      venue_type: venueType,
+      current_software: currentSoftware,
       message,
       consent: true,
       source: "landing",
