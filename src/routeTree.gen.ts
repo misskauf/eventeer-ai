@@ -17,6 +17,7 @@ import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PayTokenRouteImport } from './routes/pay.$token'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
@@ -90,6 +91,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PayTokenRoute = PayTokenRouteImport.update({
+  id: '/pay/$token',
+  path: '/pay/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PTokenRoute = PTokenRouteImport.update({
@@ -310,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/pay/$token': typeof PayTokenRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
@@ -352,6 +359,7 @@ export interface FileRoutesByTo {
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/pay/$token': typeof PayTokenRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
@@ -398,6 +406,7 @@ export interface FileRoutesById {
   '/f/$slug': typeof FSlugRoute
   '/invite/$token': typeof InviteTokenRoute
   '/p/$token': typeof PTokenRoute
+  '/pay/$token': typeof PayTokenRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/catalog/beverages': typeof AuthenticatedCatalogBeveragesRoute
@@ -444,6 +453,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/invite/$token'
     | '/p/$token'
+    | '/pay/$token'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/catalog/beverages'
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/invite/$token'
     | '/p/$token'
+    | '/pay/$token'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/catalog/beverages'
@@ -531,6 +542,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/invite/$token'
     | '/p/$token'
+    | '/pay/$token'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/catalog/beverages'
@@ -572,6 +584,7 @@ export interface RootRouteChildren {
   FSlugRoute: typeof FSlugRoute
   InviteTokenRoute: typeof InviteTokenRoute
   PTokenRoute: typeof PTokenRoute
+  PayTokenRoute: typeof PayTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -632,6 +645,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pay/$token': {
+      id: '/pay/$token'
+      path: '/pay/$token'
+      fullPath: '/pay/$token'
+      preLoaderRoute: typeof PayTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/p/$token': {
@@ -990,6 +1010,7 @@ const rootRouteChildren: RootRouteChildren = {
   FSlugRoute: FSlugRoute,
   InviteTokenRoute: InviteTokenRoute,
   PTokenRoute: PTokenRoute,
+  PayTokenRoute: PayTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
