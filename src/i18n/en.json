@@ -2,11 +2,10 @@
   "landing": {
     "nav": { "signin": "Sign in", "demo": "Book a demo" },
     "hero": {
-      "h1": "Turn event inquiries into signed, paid bookings — without the admin.",
-      "sub": "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand.",
-      "cta_primary": "Start 30-day free trial",
+      "h1": "Turn event inquiries into signed, paid bookings — with minimal admin.",
+      "sub": "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand. Win back a day of admin every week and spend it where it counts: your clients, and events people never forget.",
       "cta_secondary": "Book a demo",
-      "note": "No credit card required · Built in Berlin · Built with GDPR in mind"
+      "note": "No obligation · Built in Berlin · GDPR in mind"
     },
     "pains": {
       "title": "Sound familiar?",
@@ -59,7 +58,7 @@
       "q1": "Do I have to replace my current CRM?",
       "a1": "No. Start with proposals and contracts; keep whatever else you use.",
       "q2": "How long does setup take?",
-      "a2": "You add your spaces, packages and prices once. Most venues are ready the same day.",
+      "a2": "You add your spaces, packages and prices once. Most venues are set up within an hour.",
       "q3": "What happens to my client data?",
       "a3": "It stays in your own company account with role-based access for your team. You can export or delete it at any time.",
       "q4": "Which languages does it support?",
@@ -73,7 +72,7 @@
       "name": "Your name",
       "company": "Venue / company",
       "email": "Work email",
-      "phone": "Phone (optional)",
+      "phone": "Phone",
       "events": "Events per month (optional)",
       "events_placeholder": "Select…",
       "message": "Anything we should know? (optional)",
