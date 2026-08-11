@@ -309,14 +309,15 @@ export function DatenschutzEN() {
 
       <H2>3. Hosting, database and processing on our behalf</H2>
       <P>
-        This website and its database are operated by external service providers: Lovable (provision
-        and operation of the application) and Supabase (database and authentication). These
-        providers process data solely on our documented instructions on the basis of data processing
-        agreements under Art. 28 GDPR. Where personal data is transferred to a country outside the
-        EU or EEA, this takes place on the basis of the EU Commission's standard contractual clauses
-        (Art. 46(2)(c) GDPR) or an adequacy decision (Art. 45 GDPR). Data is transmitted encrypted
-        end to end (TLS) and is also stored encrypted at rest. Access to the database is restricted
-        by access rules enforced at database level.
+        This website and the associated application are provided and operated by Lovable Labs
+        Incorporated, 1 Lincoln St, Boston, MA 02111, USA. Lovable processes personal data on our
+        behalf as a processor; the provider's data processing terms under Art. 28 GDPR apply. For
+        the database and authentication, Lovable engages Supabase as a sub-processor. As the
+        provider is based in the USA, personal data is processed outside the EU or EEA. This takes
+        place on the basis of the EU Commission's standard contractual clauses (Art. 46(2)(c) GDPR)
+        or an adequacy decision (Art. 45 GDPR). Data is transmitted encrypted end to end (TLS) and
+        is also stored encrypted at rest. Access to the database is restricted by access rules
+        enforced at database level.
       </P>
 
       <H2>4. Server log files</H2>
