@@ -540,9 +540,11 @@ function DealDetail() {
       min_revenue_required: minRevenue,
       discount: effectiveDiscount,
       discount_target: effectiveDiscountTarget,
+      item_discounts: itemDiscounts,
       currency,
     };
-  }, [spaces, packages, extras, staff, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency]);
+  }, [spaces, packages, extras, staff, fees, seasonMult, effectiveDiscount, effectiveDiscountTarget, minRevenue, servicePct, currency, itemDiscounts]);
+
 
 
   const totals = offer ? computeTotals(offer, resolvedSelection) : null;
