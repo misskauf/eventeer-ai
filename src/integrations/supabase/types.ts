@@ -47,6 +47,8 @@ export type Database = {
           quote_seq_padding: number
           quote_seq_year: number | null
           require_deal_approval: boolean
+          stripe_enabled: boolean
+          stripe_publishable_key: string | null
           subscription_status: string
           timezone: string
           trial_ends_at: string | null
@@ -86,6 +88,8 @@ export type Database = {
           quote_seq_padding?: number
           quote_seq_year?: number | null
           require_deal_approval?: boolean
+          stripe_enabled?: boolean
+          stripe_publishable_key?: string | null
           subscription_status?: string
           timezone?: string
           trial_ends_at?: string | null
@@ -125,6 +129,8 @@ export type Database = {
           quote_seq_padding?: number
           quote_seq_year?: number | null
           require_deal_approval?: boolean
+          stripe_enabled?: boolean
+          stripe_publishable_key?: string | null
           subscription_status?: string
           timezone?: string
           trial_ends_at?: string | null
@@ -173,6 +179,47 @@ export type Database = {
             foreignKeyName: "company_invites_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_stripe_credentials: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          mode: string
+          secret_key_encrypted: string
+          secret_key_last4: string
+          updated_at: string
+          webhook_secret_encrypted: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          mode?: string
+          secret_key_encrypted: string
+          secret_key_last4: string
+          updated_at?: string
+          webhook_secret_encrypted?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          secret_key_encrypted?: string
+          secret_key_last4?: string
+          updated_at?: string
+          webhook_secret_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_stripe_credentials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
@@ -1264,6 +1311,10 @@ export type Database = {
           paid_at: string | null
           sort: number
           status: string
+          stripe_checkout_url: string | null
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          stripe_url_expires_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1279,6 +1330,10 @@ export type Database = {
           paid_at?: string | null
           sort?: number
           status?: string
+          stripe_checkout_url?: string | null
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          stripe_url_expires_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1294,6 +1349,10 @@ export type Database = {
           paid_at?: string | null
           sort?: number
           status?: string
+          stripe_checkout_url?: string | null
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          stripe_url_expires_at?: string | null
           updated_at?: string
         }
         Relationships: [
