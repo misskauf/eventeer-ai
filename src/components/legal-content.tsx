@@ -177,16 +177,17 @@ export function DatenschutzDE() {
 
       <H2>3. Hosting, Datenbank und Auftragsverarbeitung</H2>
       <P>
-        Diese Website und die zugehörige Datenbank werden von externen Dienstleistern betrieben:
-        Lovable (Bereitstellung und Betrieb der Anwendung) sowie Supabase (Datenbank und
-        Authentifizierung). Diese Anbieter verarbeiten Daten ausschließlich weisungsgebunden für uns
-        auf Grundlage von Verträgen zur Auftragsverarbeitung nach Art. 28 DSGVO. Soweit dabei
-        personenbezogene Daten in ein Land außerhalb der EU bzw. des EWR übermittelt werden, erfolgt
-        dies auf Grundlage der Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c
-        DSGVO) oder eines Angemessenheitsbeschlusses (Art. 45 DSGVO). Die Übertragung erfolgt
-        durchgängig verschlüsselt (TLS); die Daten werden auch im Ruhezustand verschlüsselt
-        gespeichert. Der Zugriff auf die Datenbank ist durch Zugriffsregeln auf Datenbankebene
-        beschränkt.
+        Diese Website und die zugehörige Anwendung werden von Lovable Labs Incorporated, 1 Lincoln
+        St, Boston, MA 02111, USA, bereitgestellt und betrieben. Lovable verarbeitet
+        personenbezogene Daten in unserem Auftrag als Auftragsverarbeiter; es gelten die
+        Auftragsverarbeitungsbedingungen des Anbieters nach Art. 28 DSGVO. Für die Datenbank und die
+        Authentifizierung setzt Lovable Supabase als Unterauftragsverarbeiter ein. Da der Anbieter
+        seinen Sitz in den USA hat, findet eine Verarbeitung personenbezogener Daten außerhalb der
+        EU bzw. des EWR statt. Grundlage hierfür sind die Standardvertragsklauseln der
+        EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO) beziehungsweise ein Angemessenheitsbeschluss
+        (Art. 45 DSGVO). Die Übertragung erfolgt durchgängig verschlüsselt (TLS); die Daten werden
+        auch im Ruhezustand verschlüsselt gespeichert. Der Zugriff auf die Datenbank ist durch
+        Zugriffsregeln auf Datenbankebene beschränkt.
       </P>
 
       <H2>4. Server-Logfiles</H2>
@@ -256,9 +257,10 @@ export function DatenschutzDE() {
 
       <H2>9. Empfänger der Daten</H2>
       <P>
-        Eine Weitergabe erfolgt ausschließlich an die unter Ziffer 3 genannten Dienstleister im
-        Rahmen der Auftragsverarbeitung. Ein Verkauf Ihrer Daten oder eine Weitergabe zu
-        Werbezwecken an Dritte findet nicht statt.
+        Eine Weitergabe erfolgt ausschließlich an den unter Ziffer 3 genannten Auftragsverarbeiter
+        (Lovable Labs Incorporated) und dessen Unterauftragsverarbeiter (Supabase) im Rahmen der
+        Auftragsverarbeitung. Ein Verkauf Ihrer Daten oder eine Weitergabe zu Werbezwecken an Dritte
+        findet nicht statt.
       </P>
 
       <H2>10. Ihre Rechte</H2>
@@ -307,14 +309,15 @@ export function DatenschutzEN() {
 
       <H2>3. Hosting, database and processing on our behalf</H2>
       <P>
-        This website and its database are operated by external service providers: Lovable (provision
-        and operation of the application) and Supabase (database and authentication). These
-        providers process data solely on our documented instructions on the basis of data processing
-        agreements under Art. 28 GDPR. Where personal data is transferred to a country outside the
-        EU or EEA, this takes place on the basis of the EU Commission's standard contractual clauses
-        (Art. 46(2)(c) GDPR) or an adequacy decision (Art. 45 GDPR). Data is transmitted encrypted
-        end to end (TLS) and is also stored encrypted at rest. Access to the database is restricted
-        by access rules enforced at database level.
+        This website and the associated application are provided and operated by Lovable Labs
+        Incorporated, 1 Lincoln St, Boston, MA 02111, USA. Lovable processes personal data on our
+        behalf as a processor; the provider's data processing terms under Art. 28 GDPR apply. For
+        the database and authentication, Lovable engages Supabase as a sub-processor. As the
+        provider is based in the USA, personal data is processed outside the EU or EEA. This takes
+        place on the basis of the EU Commission's standard contractual clauses (Art. 46(2)(c) GDPR)
+        or an adequacy decision (Art. 45 GDPR). Data is transmitted encrypted end to end (TLS) and
+        is also stored encrypted at rest. Access to the database is restricted by access rules
+        enforced at database level.
       </P>
 
       <H2>4. Server log files</H2>
@@ -382,9 +385,9 @@ export function DatenschutzEN() {
 
       <H2>9. Recipients of the data</H2>
       <P>
-        Data is disclosed only to the service providers named in section 3, acting as processors on
-        our behalf. We do not sell your data or pass it on to third parties for advertising
-        purposes.
+        Data is disclosed only to the processor named in section 3 (Lovable Labs Incorporated) and
+        its sub-processor (Supabase), acting on our behalf. We do not sell your data or pass it on
+        to third parties for advertising purposes.
       </P>
 
       <H2>10. Your rights</H2>
