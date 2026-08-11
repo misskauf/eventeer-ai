@@ -2078,6 +2078,13 @@ function DealDetail() {
 
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
+                {totals.item_discount_net > 0 && (
+                  <div className="flex justify-between text-foreground">
+                    <span>Item discounts (net)</span>
+                    <span className="tabular-nums">-{money(totals.item_discount_net, currency)}</span>
+                  </div>
+                )}
+
                 {totals.discount_targeted && totals.discount_net > 0 && (
                   <div className="flex justify-between text-foreground">
                     <span>Discount (net)</span>
