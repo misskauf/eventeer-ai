@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { acceptInvites } from "@/lib/team.functions";
+import { LegalLinks } from "@/components/legal-content";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { next?: string } =>
