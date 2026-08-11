@@ -39,9 +39,9 @@ import {
 } from "@/i18n";
 import { submitMarketingLead } from "@/lib/marketing-leads.functions";
 
-export const HERO_TITLE = "Turn event inquiries into signed, paid bookings — without the admin.";
+export const HERO_TITLE = "Turn event inquiries into signed, paid bookings — with minimal admin.";
 export const HERO_SUB =
-  "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand.";
+  "Eventeer gives event venues one place to handle every inquiry: personalised proposals, digital signing and payment — all under your own brand. Win back a day of admin every week and spend it where it counts: your clients, and events people never forget.";
 // TODO: replace with real contact address
 const CONTACT_EMAIL = "hello@eventeer.app";
 
@@ -128,13 +128,8 @@ export function LandingPage() {
             <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
               {t("landing.hero.sub")}
             </p>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link to="/auth">
-                <Button size="lg" className="w-full sm:w-auto">
-                  {t("landing.hero.cta_primary")}
-                </Button>
-              </Link>
-              <Button size="lg" variant="outline" onClick={scrollToDemo} className="w-full sm:w-auto">
+            <div className="mt-8 flex justify-center">
+              <Button size="lg" onClick={scrollToDemo} className="w-full sm:w-auto">
                 {t("landing.hero.cta_secondary")}
               </Button>
             </div>
@@ -317,8 +312,9 @@ function DemoForm({ lang }: { lang: AppLang }) {
     const name = String(fd.get("name") ?? "").trim();
     const company = String(fd.get("company") ?? "").trim();
     const email = String(fd.get("email") ?? "").trim();
+    const phone = String(fd.get("phone") ?? "").trim();
 
-    if (!name || !company || !email) return toast.error(t("landing.demo.required"));
+    if (!name || !company || !email || !phone) return toast.error(t("landing.demo.required"));
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return toast.error(t("landing.demo.invalid_email"));
     if (!consent) return toast.error(t("landing.demo.consent_required"));
@@ -360,8 +356,8 @@ function DemoForm({ lang }: { lang: AppLang }) {
         <Field id="ml-email" label={t("landing.demo.email")} required>
           <Input id="ml-email" name="email" type="email" required maxLength={200} autoComplete="email" />
         </Field>
-        <Field id="ml-phone" label={t("landing.demo.phone")}>
-          <Input id="ml-phone" name="phone" type="tel" maxLength={60} autoComplete="tel" />
+        <Field id="ml-phone" label={t("landing.demo.phone")} required>
+          <Input id="ml-phone" name="phone" type="tel" required maxLength={60} autoComplete="tel" />
         </Field>
       </div>
 
