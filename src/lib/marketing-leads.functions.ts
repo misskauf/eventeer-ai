@@ -6,7 +6,9 @@ type LeadInput = {
   company: string;
   email: string;
   phone?: string;
-  events_per_month?: string;
+  role?: string;
+  venue_type?: string;
+  current_software?: string;
   message?: string;
   consent: boolean;
   locale?: string;
@@ -18,6 +20,28 @@ const cap = (v: unknown, max: number) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const ROLE_KEYS = [
+  "owner",
+  "venue_sales_manager",
+  "venue_event_manager",
+  "event_manager",
+  "other",
+] as const;
+export const VENUE_TYPE_KEYS = [
+  "restaurant_cafe",
+  "bar",
+  "gallery_studio",
+  "event_venue",
+  "catering",
+  "none",
+] as const;
+export const SOFTWARE_KEYS = ["none", "crm", "event_software", "unknown"] as const;
+
+const pick = (v: unknown, allowed: readonly string[]) => {
+  const s = cap(v, 40);
+  return allowed.includes(s) ? s : null;
+};
 
 export const submitMarketingLead = createServerFn({ method: "POST" })
   .inputValidator((data: LeadInput) => data)
