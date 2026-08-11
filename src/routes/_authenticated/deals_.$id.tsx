@@ -78,6 +78,7 @@ import { approvalLabel, approvalToneClass, type ApprovalStatus } from "@/lib/dea
 import { formatEventDate, weekdayOf, pickMinRevRule, type MinRevRule } from "@/lib/date-format";
 import { ContractsPanel } from "@/components/contracts-panel";
 import { InvoicePanel } from "@/components/invoice-panel";
+import { PaymentSchedulePanel } from "@/components/payment-schedule-panel";
 import { EventBriefPanel } from "@/components/event-brief-panel";
 import { RequirePermission } from "@/components/permission-guard";
 
@@ -2233,6 +2234,15 @@ function DealDetail() {
                   service_charge: totals?.gratuity_gross,
                   invoice_notes: invoiceNotes,
                 }}
+              />
+            </div>
+            <div id="payments-panel" className="border-t bg-background/95 p-3 scroll-mt-4">
+              <PaymentSchedulePanel
+                dealId={deal.id}
+                companyId={deal.company_id}
+                eventDate={deal.event_date ?? null}
+                currency={currency}
+                total={totals?.grand_total ?? 0}
               />
             </div>
 
