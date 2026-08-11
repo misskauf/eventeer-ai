@@ -354,10 +354,11 @@ export function computeTotals(offer: Offer, selection: Selection): Totals {
         amount: newGross,
         net: newNet,
         tax: newTax,
-        original_gross: origGross,
-        original_net: origNet,
-        original_tax: origTax,
-        discount_applied: applied,
+        original_gross: line.original_gross ?? origGross,
+        original_net: line.original_net ?? origNet,
+        original_tax: line.original_tax ?? origTax,
+        discount_applied: (line.discount_applied ?? 0) + applied,
+
       };
       discount_applied_gross = applied;
       discount_net = origNet - newNet;
