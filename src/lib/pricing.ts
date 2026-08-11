@@ -139,6 +139,8 @@ export type LineItem = {
   original_net?: number;
   original_tax?: number;
   discount_applied?: number; // gross discount taken from this line
+  discount_pct?: number; // set when the line discount was a percentage
+
 };
 
 export type Totals = {
