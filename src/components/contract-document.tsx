@@ -6,16 +6,18 @@ import { ensureHtml } from "@/lib/contracts";
 // so they can never diverge.
 const ALLOWED_TAGS = [
   "ul", "ol", "li",
-  "h1", "h2", "h3", "h4",
+  "h1", "h2", "h3", "h4", "h5", "h6",
   "p", "hr", "br", "div", "span",
-  "table", "thead", "tbody", "tr", "td", "th",
-  "img", "a",
-  "strong", "em", "u", "b", "i",
+  "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
+  "img", "a", "figure", "figcaption",
+  "strong", "em", "u", "b", "i", "s", "sub", "sup", "mark", "small",
   "blockquote", "pre", "code",
 ];
 const ALLOWED_ATTR = [
   "style", "href", "src", "alt", "target", "rel",
   "colspan", "rowspan", "class", "width", "height",
+  "align", "valign", "colwidth", "span",
+  "data-color", "data-text-align", "data-background-color", "data-colwidth",
 ];
 
 export function ContractDocument({

@@ -181,7 +181,12 @@ export function InvoiceTemplatesEditor({ companyId }: { companyId: string }) {
         </DialogContent>
       </Dialog>
 
-      <ContractUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} onImport={openFromUpload} />
+      <ContractUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onImport={openFromUpload}
+        docLabel="invoice"
+      />
     </div>
   );
 }

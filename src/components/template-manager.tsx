@@ -279,7 +279,13 @@ export function TemplateManager({
         </DialogContent>
       </Dialog>
 
-      <ContractUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} onImport={openFromUpload} />
+      <ContractUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onImport={openFromUpload}
+        placeholders={placeholders}
+        docLabel="document"
+      />
     </div>
   );
 }

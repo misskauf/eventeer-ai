@@ -2,6 +2,10 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
+import { TextStyle, Color, FontSize } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +26,13 @@ import {
   PenLine,
   Image as LogoIcon,
   Variable,
-
+  Table as TableIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Baseline,
+  Highlighter,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -80,6 +90,124 @@ function ToolBtn({
     </Button>
   );
 }
+
+const FONT_SIZES = ["12px", "14px", "16px", "18px", "24px", "32px"];
+
+const TEXT_COLORS = [
+  "#111827", "#374151", "#6b7280", "#b91c1c", "#c2410c",
+  "#a16207", "#15803d", "#0e7490", "#1d4ed8", "#6d28d9",
+];
+
+const HIGHLIGHT_COLORS = [
+  "#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e9d5ff",
+];
+
+function ColorMenu({
+  title,
+  icon,
+  colors = TEXT_COLORS,
+  onPick,
+  onClear,
+}: {
+  editor: Editor;
+  title: string;
+  icon: React.ReactNode;
+  colors?: string[];
+  onPick: (color: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title={title}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {icon}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-auto p-2">
+        <div className="grid grid-cols-5 gap-1">
+          {colors.map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              className="h-5 w-5 rounded border"
+              style={{ backgroundColor: c }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onPick(c)}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className="mt-2 w-full rounded px-1 py-1 text-left text-xs hover:bg-muted"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onClear}
+        >
+          No colour
+        </button>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function TableMenu({ editor }: { editor: Editor }) {
+  const inTable = editor.isActive("table");
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant={inTable ? "secondary" : "ghost"}
+          size="icon"
+          className="h-8 w-8"
+          title="Table"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <TableIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52">
+        <DropdownMenuItem
+          onSelect={() =>
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+          }
+        >
+          Insert table (3 × 3)
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().addRowAfter().run()}>
+          Add row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().deleteRow().run()}>
+          Delete row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().addColumnAfter().run()}>
+          Add column
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().deleteColumn().run()}>
+          Delete column
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().toggleHeaderRow().run()}>
+          Toggle header row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().mergeOrSplit().run()}>
+          Merge / split cells
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={() => editor.chain().focus().deleteTable().run()}>
+          Delete table
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
 
 const HEADER_BLOCK = `<div style="border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:16px"><h1 style="margin:0">Company name</h1><p style="margin:4px 0 0;font-size:12px;color:#555">Address · email · phone</p></div><p></p>`;
 
@@ -171,15 +299,79 @@ function Toolbar({
       >
         <ListOrdered className="h-4 w-4" />
       </ToolBtn>
-      {mode === "full" && (
-        <ToolBtn
-          title="Section divider"
-          onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        >
-          <Minus className="h-4 w-4" />
-        </ToolBtn>
-      )}
+      <ToolBtn
+        title="Section divider"
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+      >
+        <Minus className="h-4 w-4" />
+      </ToolBtn>
       <span className="mx-1 h-5 w-px bg-border" />
+      <ToolBtn
+        title="Align left"
+        onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        active={editor.isActive({ textAlign: "left" })}
+      >
+        <AlignLeft className="h-4 w-4" />
+      </ToolBtn>
+      <ToolBtn
+        title="Align center"
+        onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        active={editor.isActive({ textAlign: "center" })}
+      >
+        <AlignCenter className="h-4 w-4" />
+      </ToolBtn>
+      <ToolBtn
+        title="Align right"
+        onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        active={editor.isActive({ textAlign: "right" })}
+      >
+        <AlignRight className="h-4 w-4" />
+      </ToolBtn>
+      <ToolBtn
+        title="Justify"
+        onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+        active={editor.isActive({ textAlign: "justify" })}
+      >
+        <AlignJustify className="h-4 w-4" />
+      </ToolBtn>
+      <span className="mx-1 h-5 w-px bg-border" />
+      <ColorMenu
+        editor={editor}
+        title="Text colour"
+        icon={<Baseline className="h-4 w-4" />}
+        onPick={(c) => editor.chain().focus().setColor(c).run()}
+        onClear={() => editor.chain().focus().unsetColor().run()}
+      />
+      <ColorMenu
+        editor={editor}
+        title="Highlight"
+        icon={<Highlighter className="h-4 w-4" />}
+        colors={HIGHLIGHT_COLORS}
+        onPick={(c) => editor.chain().focus().setHighlight({ color: c }).run()}
+        onClear={() => editor.chain().focus().unsetHighlight().run()}
+      />
+      <Select
+        value={(editor.getAttributes("textStyle").fontSize as string) ?? "default"}
+        onValueChange={(v) => {
+          if (v === "default") editor.chain().focus().unsetFontSize().run();
+          else editor.chain().focus().setFontSize(v).run();
+        }}
+      >
+        <SelectTrigger className="h-8 w-[92px] text-xs" title="Font size">
+          <SelectValue placeholder="Size" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">Default</SelectItem>
+          {FONT_SIZES.map((s) => (
+            <SelectItem key={s} value={s}>
+              {s}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <TableMenu editor={editor} />
+      <span className="mx-1 h-5 w-px bg-border" />
+
       <ToolBtn
         title="Add link"
         onClick={() => {
@@ -313,6 +505,12 @@ export function RichTextEditor({ value, onChange, placeholder, minHeight = 320, 
         link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: "noopener noreferrer" } },
       }),
       Image.configure({ inline: false, allowBase64: true }),
+      TableKit.configure({ table: { resizable: true } }),
+      TextStyle,
+      Color,
+      FontSize,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder: placeholder ?? "Start typing…" }),
     ],
     content: value || "",
