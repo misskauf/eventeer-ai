@@ -385,9 +385,9 @@ export function DatenschutzEN() {
 
       <H2>9. Recipients of the data</H2>
       <P>
-        Data is disclosed only to the service providers named in section 3, acting as processors on
-        our behalf. We do not sell your data or pass it on to third parties for advertising
-        purposes.
+        Data is disclosed only to the processor named in section 3 (Lovable Labs Incorporated) and
+        its sub-processor (Supabase), acting on our behalf. We do not sell your data or pass it on
+        to third parties for advertising purposes.
       </P>
 
       <H2>10. Your rights</H2>
