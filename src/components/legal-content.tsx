@@ -257,9 +257,10 @@ export function DatenschutzDE() {
 
       <H2>9. Empfänger der Daten</H2>
       <P>
-        Eine Weitergabe erfolgt ausschließlich an die unter Ziffer 3 genannten Dienstleister im
-        Rahmen der Auftragsverarbeitung. Ein Verkauf Ihrer Daten oder eine Weitergabe zu
-        Werbezwecken an Dritte findet nicht statt.
+        Eine Weitergabe erfolgt ausschließlich an den unter Ziffer 3 genannten Auftragsverarbeiter
+        (Lovable Labs Incorporated) und dessen Unterauftragsverarbeiter (Supabase) im Rahmen der
+        Auftragsverarbeitung. Ein Verkauf Ihrer Daten oder eine Weitergabe zu Werbezwecken an Dritte
+        findet nicht statt.
       </P>
 
       <H2>10. Ihre Rechte</H2>
