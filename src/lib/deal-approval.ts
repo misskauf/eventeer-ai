@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 export type ApprovalStatus =
   | "not_required"
   | "pending"
@@ -19,7 +21,9 @@ export const APPROVAL_TONES: Record<ApprovalStatus, string> = {
 };
 
 export function approvalLabel(s: string): string {
-  return APPROVAL_LABELS[(s as ApprovalStatus)] ?? s;
+  return i18n.t(`approval.${s}`, {
+    defaultValue: APPROVAL_LABELS[s as ApprovalStatus] ?? s,
+  }) as string;
 }
 export function approvalToneClass(s: string): string {
   return APPROVAL_TONES[(s as ApprovalStatus)] ?? APPROVAL_TONES.not_required;

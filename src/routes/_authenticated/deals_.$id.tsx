@@ -81,6 +81,7 @@ import { InvoicePanel } from "@/components/invoice-panel";
 import { PaymentSchedulePanel } from "@/components/payment-schedule-panel";
 import { EventBriefPanel } from "@/components/event-brief-panel";
 import { RequirePermission } from "@/components/permission-guard";
+import { useTranslation } from "@/i18n";
 
 
 
@@ -175,6 +176,7 @@ function newGroupId() {
 }
 
 function DealDetail() {
+  const { t } = useTranslation();
   const { id } = Route.useParams();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [spaces, setSpaces] = useState<SpaceRow[]>([]);
@@ -262,20 +264,20 @@ function DealDetail() {
   async function onArchive() {
     try {
       await archiveDeal(id, deal?.company_id ?? null);
-      toast.success("Deal archived");
+      toast.success(t("dealDetail.toast_deal_archived"));
       loadAll();
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not archive this deal");
+      toast.error(e?.message ?? t("dealDetail.toast_could_not_archive"));
     }
   }
 
   async function onRestore() {
     try {
       await restoreDeal(id, deal?.company_id ?? null);
-      toast.success("Deal restored");
+      toast.success(t("dealDetail.toast_deal_restored"));
       loadAll();
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not restore this deal");
+      toast.error(e?.message ?? t("dealDetail.toast_could_not_restore"));
     }
   }
 
@@ -665,13 +667,13 @@ function DealDetail() {
       .map((l) => `<p>${l.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`)
       .join("");
     setIntroMarkdown(html);
-    toast.success("Suggested text inserted");
+    toast.success(t("dealDetail.toast_suggested_text_inserted"));
   }
 
   async function saveProposal(send: boolean): Promise<{ id: string; version: number } | null> {
     if (!deal || !totals) return null;
     if (send && requireApproval && deal.approval_status !== "approved") {
-      toast.error("This deal needs internal approval before it can be sent to the client.");
+      toast.error(t("dealDetail.toast_needs_approval_before_send"));
       return null;
     }
     const version = existingProposal ? existingProposal.version + 1 : 1;
@@ -740,7 +742,7 @@ function DealDetail() {
       });
       const shareUrl = `${window.location.origin}/p/${token}`;
       await navigator.clipboard.writeText(shareUrl).catch(() => {});
-      toast.success("Proposal sent · link copied to clipboard");
+      toast.success(t("dealDetail.toast_proposal_sent"));
     } else {
       // Saving a new draft invalidates any prior approval so it must be re-reviewed.
       const patch: any = { stage: "proposal_draft" };
@@ -750,7 +752,7 @@ function DealDetail() {
         patch.approved_at = null;
       }
       await supabase.from("deals").update(patch).eq("id", deal.id);
-      toast.success(`Draft v${version} saved`);
+      toast.success(t("dealDetail.toast_draft_saved", { version }));
     }
     await loadAll();
     return { id: newProp.id, version };
@@ -777,7 +779,7 @@ function DealDetail() {
       deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
       kind: "approval_requested",
     });
-    toast.success("Sent for approval");
+    toast.success(t("dealDetail.toast_sent_for_approval"));
     await loadAll();
   }
 
@@ -797,7 +799,7 @@ function DealDetail() {
       deal_id: deal.id, company_id: deal.company_id, actor_id: userId,
       kind: "approval_granted",
     });
-    toast.success("Deal approved");
+    toast.success(t("dealDetail.toast_deal_approved"));
     await loadAll();
   }
 
@@ -819,7 +821,7 @@ function DealDetail() {
     });
     setApprovalNoteOpen(false);
     setApprovalNoteDraft("");
-    toast.success("Changes requested");
+    toast.success(t("dealDetail.toast_changes_requested"));
     await loadAll();
   }
 
@@ -848,7 +850,7 @@ function DealDetail() {
     });
     const url = `${window.location.origin}/d/${token}`;
     await navigator.clipboard.writeText(url);
-    toast.success("Dashboard link copied");
+    toast.success(t("dealDetail.toast_dashboard_link_copied"));
   }
 
   const sendReminderFn = useServerFn(sendProposalReminder);
@@ -892,10 +894,10 @@ function DealDetail() {
     setSendingReminder(true);
     try {
       await sendReminderFn({ data: { dealId: deal.id } });
-      toast.success("Reminder sent to client");
+      toast.success(t("dealDetail.toast_reminder_sent"));
       await loadAll();
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to send reminder");
+      toast.error(err?.message ?? t("dealDetail.toast_reminder_failed"));
     } finally {
       setSendingReminder(false);
     }

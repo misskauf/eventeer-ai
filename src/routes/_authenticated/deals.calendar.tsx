@@ -21,6 +21,7 @@ import {
 } from "@/lib/deal-stages";
 import { cn } from "@/lib/utils";
 import { RequirePermission } from "@/components/permission-guard";
+import { useTranslation } from "@/i18n";
 
 export const Route = createFileRoute("/_authenticated/deals/calendar")({
   component: () => (
@@ -39,6 +40,7 @@ type CalDeal = {
 };
 
 function DealsCalendarPage() {
+  const { t } = useTranslation();
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
   const [deals, setDeals] = useState<CalDeal[]>([]);
   const navigate = useNavigate();
@@ -74,23 +76,31 @@ function DealsCalendarPage() {
     days.push(new Date(d));
   }
 
-  const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weekdayLabels = [
+    t("deals.weekday_mon"),
+    t("deals.weekday_tue"),
+    t("deals.weekday_wed"),
+    t("deals.weekday_thu"),
+    t("deals.weekday_fri"),
+    t("deals.weekday_sat"),
+    t("deals.weekday_sun"),
+  ];
 
   return (
     <AppShell>
-      <PageHeader title="Deals" description="All events on the calendar, colored by stage." />
+      <PageHeader title={t("deals.title")} description={t("deals.calendar_description")} />
       <DealsTabs />
 
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setCursor(addMonths(cursor, -1))} aria-label="Previous month">
+          <Button variant="outline" size="icon" onClick={() => setCursor(addMonths(cursor, -1))} aria-label={t("deals.previous_month")}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => setCursor(addMonths(cursor, 1))} aria-label="Next month">
+          <Button variant="outline" size="icon" onClick={() => setCursor(addMonths(cursor, 1))} aria-label={t("deals.next_month")}>
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setCursor(startOfMonth(new Date()))}>
-            Today
+            {t("deals.today")}
           </Button>
         </div>
         <div className="text-lg font-medium">{format(cursor, "MMMM yyyy")}</div>
