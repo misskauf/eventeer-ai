@@ -2327,6 +2327,7 @@ function EditDealDialog({
   deal: Deal;
   onSaved: () => void | Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -2352,7 +2353,7 @@ function EditDealDialog({
       company_id: deal.company_id,
       kind: "deal_updated",
     });
-    toast.success("Deal updated");
+    toast.success(t("dealDetail.toast_deal_updated"));
     onOpenChange(false);
     await onSaved();
   }
@@ -2361,24 +2362,24 @@ function EditDealDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>Edit deal</DialogTitle>
+          <DialogTitle>{t("dealDetail.title_edit_deal")}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={onSubmit}>
           <div className="grid grid-cols-2 gap-3">
-            <TextField name="client_name" label="Client name" defaultValue={deal.client_name} required />
-            <TextField name="client_email" label="Client email" type="email" defaultValue={deal.client_email} required />
+            <TextField name="client_name" label={t("dealDetail.label_client_name")} defaultValue={deal.client_name} required />
+            <TextField name="client_email" label={t("dealDetail.label_client_email")} type="email" defaultValue={deal.client_email} required />
           </div>
-          <TextField name="client_company" label="Client company" defaultValue={deal.client_company ?? ""} />
+          <TextField name="client_company" label={t("dealDetail.label_client_company")} defaultValue={deal.client_company ?? ""} />
           <div className="grid grid-cols-3 gap-3">
-            <TextField name="event_type" label="Event type" defaultValue={deal.event_type ?? ""} />
-            <TextField name="event_date" label="Event date" type="date" defaultValue={deal.event_date ?? ""} />
-            <TextField name="guest_count" label="Guests" type="number" defaultValue={String(deal.guest_count ?? 0)} />
+            <TextField name="event_type" label={t("dealDetail.label_event_type")} defaultValue={deal.event_type ?? ""} />
+            <TextField name="event_date" label={t("dealDetail.label_event_date")} type="date" defaultValue={deal.event_date ?? ""} />
+            <TextField name="guest_count" label={t("dealDetail.label_guests")} type="number" defaultValue={String(deal.guest_count ?? 0)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("dealDetail.label_notes")}</Label>
             <Textarea id="notes" name="notes" rows={3} defaultValue={deal.notes ?? ""} />
           </div>
-          <Button className="w-full" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
+          <Button className="w-full" disabled={busy}>{busy ? t("dealDetail.btn_saving") : t("dealDetail.btn_save_changes")}</Button>
         </form>
       </DialogContent>
     </Dialog>
@@ -2386,12 +2387,12 @@ function EditDealDialog({
 }
 
 function TextField(props: {
-  name: string; label: string; type?: string; required?: boolean; defaultValue?: string;
+  name: string; label: React.ReactNode; type?: string; required?: boolean; defaultValue?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={props.name}>{props.label}</Label>
-      <Input {...props} id={props.name} />
+      <Input {...props} label={undefined} id={props.name} />
     </div>
   );
 }
@@ -2429,6 +2430,7 @@ function PackageCard({
   onMenuChoiceChange: (pid: string, groupLabel: string, next: string[]) => void;
   modeInline?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader className="gap-1">
@@ -2443,13 +2445,13 @@ function PackageCard({
             onClick={() => onShowAllChange(!showAll)}
           >
             {showAll
-              ? `Show only options that fit ${fitLabel}`
-              : `Show all (${hiddenCount} don't fit ${fitLabel})`}
+              ? t("dealDetail.pkg_show_only_fitting", { label: fitLabel })
+              : t("dealDetail.pkg_show_all", { count: hiddenCount, label: fitLabel })}
           </button>
         )}
       </CardHeader>
       <CardContent className="space-y-2">
-        {items.length === 0 && <EmptyHint to={emptyTo} label={`Add ${title.toLowerCase()} in catalog`} />}
+        {items.length === 0 && <EmptyHint to={emptyTo} label={t("dealDetail.empty_add_in_catalog", { title: title.toLowerCase() })} />}
         {items.map((p) => {
           const checked = selected.includes(p.id);
           const guests = packageGuests[p.id] ?? dealGuests;
@@ -2469,13 +2471,13 @@ function PackageCard({
                     <span className="font-medium">{p.name}</span>
                     {checked && singleChoice && (
                       <span className={"rounded px-1.5 py-0.5 text-[10px] " + (primaryId === p.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                        {primaryId === p.id ? "Proposed" : "Alternative"}
+                        {primaryId === p.id ? t("dealDetail.badge_proposed") : t("dealDetail.badge_alternative")}
                       </span>
                     )}
                     {checked && singleChoice && primaryId !== p.id && onMakePrimary && (
                       <button
                         type="button"
-                        aria-label="Mark as proposed"
+                        aria-label={t("dealDetail.aria_mark_as_proposed")}
                         className="text-muted-foreground hover:text-primary"
                         onClick={(e) => { e.preventDefault(); onMakePrimary(p.id); }}
                       >
@@ -2487,8 +2489,8 @@ function PackageCard({
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {money(p.price_per_person, currency)} per guest · {standardHours}h included
-                    {overRate > 0 && <> · +{money(overRate, currency)}/guest/h overtime</>}
+                    {t("dealDetail.label_price_per_guest_hours_included", { price: money(p.price_per_person, currency), hours: standardHours })}
+                    {overRate > 0 && <> {t("dealDetail.label_overtime_rate", { rate: money(overRate, currency) })}</>}
                   </div>
                   {p.details_url && (
                     <a
@@ -2498,7 +2500,7 @@ function PackageCard({
                       className="mt-1 inline-block text-xs text-primary underline"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      View details ↗
+                      {t("dealDetail.link_view_details")}
                     </a>
                   )}
                 </div>
@@ -2506,7 +2508,7 @@ function PackageCard({
               {checked && (
                 <div className="mt-2 space-y-2 border-t pt-2 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="w-32 text-muted-foreground">Guests</span>
+                    <span className="w-32 text-muted-foreground">{t("dealDetail.label_guests_field")}</span>
                     <Input
                       type="number"
                       min={1}
@@ -2517,12 +2519,12 @@ function PackageCard({
                     {guests !== dealGuests && (
                       <button type="button" className="text-primary underline"
                         onClick={() => onGuestChange(p.id, dealGuests)}>
-                        reset to {dealGuests}
+                        {t("dealDetail.btn_reset_to", { count: dealGuests })}
                       </button>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-32 text-muted-foreground">Event hours</span>
+                    <span className="w-32 text-muted-foreground">{t("dealDetail.label_event_hours")}</span>
                     <Input
                       type="number"
                       min={0}
@@ -2531,11 +2533,11 @@ function PackageCard({
                       onChange={(e) => onHoursChange(p.id, Math.max(0, Number(e.target.value) || 0))}
                       className="h-7 w-20"
                     />
-                    <span className="text-muted-foreground">standard {standardHours}h</span>
+                    <span className="text-muted-foreground">{t("dealDetail.label_standard_hours", { count: standardHours })}</span>
                     {hours !== standardHours && (
                       <button type="button" className="text-primary underline"
                         onClick={() => onHoursChange(p.id, standardHours)}>
-                        reset
+                        {t("dealDetail.btn_reset")}
                       </button>
                     )}
                   </div>
@@ -2572,7 +2574,7 @@ function PackageCard({
                     />
                   ) : (
                     <div className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
-                      Client will pick menu items in the proposal.
+                      {t("dealDetail.hint_client_will_pick_menu")}
                     </div>
                   )}
                 </div>
@@ -2603,6 +2605,7 @@ function PickRow({
   isPrimary?: boolean;
   onMakePrimary?: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className={"rounded-md border p-3 hover:bg-muted/40 " + (checked && singleChoice && isPrimary ? "border-primary bg-primary/5" : "")}>
       <label className="flex cursor-pointer items-center gap-3">
@@ -2612,13 +2615,13 @@ function PickRow({
             <span className="font-medium">{title}</span>
             {checked && singleChoice && (
               <span className={"rounded px-1.5 py-0.5 text-[10px] " + (isPrimary ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                {isPrimary ? "Proposed" : "Alternative"}
+                {isPrimary ? t("dealDetail.badge_proposed") : t("dealDetail.badge_alternative")}
               </span>
             )}
             {checked && singleChoice && !isPrimary && onMakePrimary && (
               <button
                 type="button"
-                aria-label="Mark as proposed"
+                aria-label={t("dealDetail.aria_mark_as_proposed")}
                 className="text-muted-foreground hover:text-primary"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMakePrimary(); }}
               >
@@ -2638,7 +2641,7 @@ function PickRow({
               onClick={(e) => e.stopPropagation()}
               className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
             >
-              {link.label ?? "View space details"} ↗
+              {link.label ?? t("dealDetail.label_view_space_details")} ↗
             </a>
           )}
         </div>
@@ -2691,6 +2694,7 @@ function ModeInline({
   noneDefault?: boolean;
   onNoneDefaultChange?: (v: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const single = isSingleChoice(mode);
   const [open, setOpen] = useState(false);
   return (
@@ -2710,8 +2714,8 @@ function ModeInline({
         >
           <SelectTrigger className="h-7 w-[130px] text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="proposed">Default: proposed</SelectItem>
-            <SelectItem value="none">Default: none</SelectItem>
+            <SelectItem value="proposed">{t("dealDetail.option_default_proposed")}</SelectItem>
+            <SelectItem value="none">{t("dealDetail.option_default_none")}</SelectItem>
           </SelectContent>
         </Select>
       )}
@@ -2722,7 +2726,7 @@ function ModeInline({
           className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
         >
           <ChevronRight className={"h-3 w-3 transition-transform " + (open ? "rotate-90" : "")} />
-          Alt {offerAlternatives ? "on" : "off"}
+          {t("dealDetail.label_alt_toggle", { state: offerAlternatives ? t("dealDetail.state_on") : t("dealDetail.state_off") })}
         </button>
       )}
       {open && single && (
@@ -2733,8 +2737,10 @@ function ModeInline({
             className="h-4 w-7 data-[state=checked]:bg-primary"
           />
           <span>
-            {chargedCount} proposed + {altCount} alt{altCount === 1 ? "" : "s"}
-            {altCount > 0 && !offerAlternatives ? " (hidden)" : ""}
+            {altCount === 1
+              ? t("dealDetail.label_proposed_plus_alt", { charged: chargedCount, alt: altCount })
+              : t("dealDetail.label_proposed_plus_alts", { charged: chargedCount, alt: altCount })}
+            {altCount > 0 && !offerAlternatives ? ` ${t("dealDetail.label_hidden_suffix")}` : ""}
           </span>
         </div>
       )}
@@ -2754,6 +2760,7 @@ function SeatingSection({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const entries = SEATING_STYLES.filter((s) => Number(capacities?.[s] ?? 0) > 0).map(
     (s) => [s, Number(capacities![s])] as const,
@@ -2769,14 +2776,14 @@ function SeatingSection({
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
       >
         <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
-        <span className="font-medium">Seating arrangements</span>
-        <span className="ml-auto text-muted-foreground">{value || "Internal reference"}</span>
+        <span className="font-medium">{t("dealDetail.label_seating_arrangements")}</span>
+        <span className="ml-auto text-muted-foreground">{value || t("dealDetail.label_internal_reference")}</span>
       </button>
       {open && (
         <div className="space-y-2 border-t px-3 py-2 text-xs">
           {size && (
             <div className="text-muted-foreground">
-              Size: <span className="text-foreground">{size}</span>
+              {t("dealDetail.label_size")} <span className="text-foreground">{size}</span>
             </div>
           )}
           {entries.length > 0 && (
@@ -2790,13 +2797,13 @@ function SeatingSection({
                 ))}
               </div>
               <div className="flex items-center gap-2 pt-1">
-                <span className="text-muted-foreground">Used for this event</span>
+                <span className="text-muted-foreground">{t("dealDetail.label_used_for_event")}</span>
                 <select
                   className="rounded-md border bg-background px-2 py-1 text-xs"
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                 >
-                  <option value="">Not set</option>
+                  <option value="">{t("dealDetail.option_not_set")}</option>
                   {entries.map(([style]) => (
                     <option key={style} value={style}>
                       {style}

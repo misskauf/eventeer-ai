@@ -544,6 +544,12 @@
     "conflict_soft_one": "Warning: {{count}} deal in negotiation for this date",
     "conflict_soft_other": "Warning: {{count}} deals in negotiation for this date",
     "reminder_title_one": "Proposal sent {{count}} day ago — no reply yet.",
-    "reminder_title_other": "Proposal sent {{count}} days ago — no reply yet."
+    "reminder_title_other": "Proposal sent {{count}} days ago — no reply yet.",
+    "pkg_show_only_fitting": "Show only options that fit {{label}}",
+    "pkg_show_all": "Show all ({{count}} don't fit {{label}})",
+    "empty_add_in_catalog": "Add {{title}} in catalog",
+    "label_view_space_details": "View space details",
+    "option_default_proposed": "Default: proposed",
+    "option_default_none": "Default: none"
   }
 }

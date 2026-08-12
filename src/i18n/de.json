@@ -544,6 +544,12 @@
     "conflict_soft_one": "Warnung: {{count}} Deal in Verhandlung für dieses Datum",
     "conflict_soft_other": "Warnung: {{count}} Deals in Verhandlung für dieses Datum",
     "reminder_title_one": "Angebot vor {{count}} Tag gesendet — noch keine Antwort.",
-    "reminder_title_other": "Angebot vor {{count}} Tagen gesendet — noch keine Antwort."
+    "reminder_title_other": "Angebot vor {{count}} Tagen gesendet — noch keine Antwort.",
+    "pkg_show_only_fitting": "Nur passende Optionen für {{label}} zeigen",
+    "pkg_show_all": "Alle anzeigen ({{count}} passen nicht zu {{label}})",
+    "empty_add_in_catalog": "{{title}} im Katalog anlegen",
+    "label_view_space_details": "Raumdetails ansehen",
+    "option_default_proposed": "Standard: vorgeschlagen",
+    "option_default_none": "Standard: keine"
   }
 }
