@@ -2389,10 +2389,11 @@ function EditDealDialog({
 function TextField(props: {
   name: string; label: React.ReactNode; type?: string; required?: boolean; defaultValue?: string;
 }) {
+  const { label, ...inputProps } = props;
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={props.name}>{props.label}</Label>
-      <Input {...props} label={undefined} id={props.name} />
+      <Label htmlFor={props.name}>{label}</Label>
+      <Input {...inputProps} id={props.name} />
     </div>
   );
 }
