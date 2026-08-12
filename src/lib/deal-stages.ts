@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 export type DealStage =
   | "new"
   | "contacted"
@@ -113,7 +115,7 @@ export const STAGE_GROUP_LABELS: Record<string, string> = {
 };
 
 export function stageLabel(stage: string): string {
-  return STAGE_LABELS[stage] ?? stage;
+  return i18n.t(`stages.${stage}`, { defaultValue: STAGE_LABELS[stage] ?? stage }) as string;
 }
 
 export function stageToneClass(stage: string): string {

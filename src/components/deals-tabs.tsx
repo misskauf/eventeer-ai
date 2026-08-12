@@ -1,11 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useTranslation } from "@/i18n";
 
 export function DealsTabs() {
+  const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tabs = [
-    { to: "/deals", label: "List", exact: true },
-    { to: "/deals/calendar", label: "Calendar", exact: false },
-  ] as const;
+    { to: "/deals", label: t("deals.tab_list"), exact: true },
+    { to: "/deals/calendar", label: t("deals.tab_calendar"), exact: false },
+  ];
   return (
     <div className="mb-6 flex gap-1 border-b">
       {tabs.map((t) => {

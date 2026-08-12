@@ -43,6 +43,7 @@ import {
   stageToneClass,
 } from "@/lib/deal-stages";
 import { formatEventDate } from "@/lib/date-format";
+import { useTranslation } from "@/i18n";
 import { approvalLabel, approvalToneClass } from "@/lib/deal-approval";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/use-permissions";
@@ -78,6 +79,7 @@ type Deal = {
 
 
 function DealsPage() {
+  const { t } = useTranslation();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -128,20 +130,20 @@ function DealsPage() {
   async function onArchive(d: Deal) {
     try {
       await archiveDeal(d.id);
-      toast.success("Deal archived");
+      toast.success(t("deals.archived_toast"));
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not archive this deal");
+      toast.error(e?.message ?? t("deals.archive_failed"));
     }
   }
 
   async function onRestore(d: Deal) {
     try {
       await restoreDeal(d.id);
-      toast.success("Deal restored");
+      toast.success(t("deals.restored_toast"));
       refresh();
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not restore this deal");
+      toast.error(e?.message ?? t("deals.restore_failed"));
     }
   }
 
@@ -177,7 +179,7 @@ function DealsPage() {
         meta: { from: prev, to: next },
       });
     }
-    toast.success(`Moved to ${stageLabel(next)}`);
+    toast.success(t("deals.moved_toast", { stage: stageLabel(next) }));
   }
 
   const stageCounts = useMemo(() => {
@@ -227,8 +229,8 @@ function DealsPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Deals"
-        description="Every event inquiry, from first contact to paid in full."
+        title={t("deals.title")}
+        description={t("deals.description")}
         action={<NewDealDialog onCreated={(id) => navigate({ to: "/deals/$id", params: { id } })} />}
       />
       <DealsTabs />
@@ -236,8 +238,8 @@ function DealsPage() {
 
       {loading ? null : deals.length === 0 && !showArchived ? (
         <EmptyState
-          title="No deals yet"
-          body="Create your first deal to get started."
+          title={t("deals.empty_title")}
+          body={t("deals.empty_body")}
           action={<NewDealDialog onCreated={(id) => navigate({ to: "/deals/$id", params: { id } })} />}
         />
       ) : (
@@ -248,19 +250,19 @@ function DealsPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search client, email, company"
+                placeholder={t("deals.search_placeholder")}
                 className="pl-8"
               />
             </div>
             <div className="text-xs text-muted-foreground">
-              {filtered.length} of {deals.length} deals
+              {t("deals.count", { shown: filtered.length, total: deals.length })}
             </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-1.5">
               <StageChip
-                label="All"
+                label={t("deals.filter_all")}
                 count={stageCounts.all}
                 active={stageFilter === "all"}
                 onClick={() => setStageFilter("all")}
@@ -268,21 +270,21 @@ function DealsPage() {
               {Object.entries(STAGE_GROUPS).map(([key, stages]) => (
                 <StageChip
                   key={key}
-                  label={STAGE_GROUP_LABELS[key] ?? key}
+                  label={t(`deals.group_${key}`, { defaultValue: STAGE_GROUP_LABELS[key] ?? key })}
                   count={stages.reduce((sum, s) => sum + (stageCounts[s] ?? 0), 0)}
                   active={stageFilter === `group:${key}`}
                   onClick={() => setStageFilter(`group:${key}`)}
                 />
               ))}
               <StageChip
-                label="Archived"
+                label={t("deals.filter_archived")}
                 count={showArchived ? deals.length : 0}
                 active={showArchived}
                 onClick={() => setShowArchived((v) => !v)}
               />
               {requireApproval && (
                 <StageChip
-                  label="Awaiting my approval"
+                  label={t("deals.filter_awaiting")}
                   count={awaitingMyApprovalCount}
                   active={awaitingMine}
                   onClick={() => setAwaitingMine((v) => !v)}
@@ -294,10 +296,10 @@ function DealsPage() {
               onValueChange={(v) => setStageFilter(v)}
             >
               <SelectTrigger className="h-8 w-[200px] text-xs">
-                <SelectValue placeholder="All stages" />
+                <SelectValue placeholder={t("deals.all_stages")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All stages</SelectItem>
+                <SelectItem value="all">{t("deals.all_stages")}</SelectItem>
                 {STAGE_ORDER.map((s) => (
                   <SelectItem key={s} value={s}>
                     {stageLabel(s)}
@@ -313,17 +315,17 @@ function DealsPage() {
                 <table className="w-full text-sm">
                   <thead className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-2 text-left font-medium">Client</th>
-                      <th className="px-4 py-2 text-left font-medium">Event date</th>
-                      <th className="px-4 py-2 text-right font-medium">Guests</th>
-                      <th className="px-4 py-2 text-right font-medium">Est. value</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("deals.col_client")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("deals.col_event_date")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("deals.col_guests")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("deals.col_value")}</th>
 
-                      <th className="px-4 py-2 text-left font-medium">Stage</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("deals.col_stage")}</th>
                       {requireApproval && (
-                        <th className="px-4 py-2 text-left font-medium">Approval</th>
+                        <th className="px-4 py-2 text-left font-medium">{t("deals.col_approval")}</th>
                       )}
-                      <th className="px-4 py-2 text-left font-medium">Updated</th>
-                      <th className="px-4 py-2 text-right font-medium">Action</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("deals.col_updated")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("deals.col_action")}</th>
                     </tr>
 
                   </thead>
@@ -337,7 +339,7 @@ function DealsPage() {
                         )}
                         tabIndex={0}
                         role="button"
-                        aria-label={`Open deal for ${d.client_name}`}
+                        aria-label={t("deals.open_deal", { name: d.client_name })}
                         onClick={(event) => {
                           const target = event.target as HTMLElement;
                           if (target.closest("button,a,[role='combobox']")) return;
@@ -355,7 +357,7 @@ function DealsPage() {
                             {d.client_name}
                             {d.archived_at && (
                               <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                Archived
+                                {t("deals.badge_archived")}
                               </span>
                             )}
                           </div>
@@ -414,7 +416,7 @@ function DealsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
-                                  <DropdownMenuLabel>Move to stage</DropdownMenuLabel>
+                                  <DropdownMenuLabel>{t("deals.move_to_stage")}</DropdownMenuLabel>
                                   {STAGE_ORDER.map((s) => (
                                     <DropdownMenuItem
                                       key={s}
@@ -427,11 +429,11 @@ function DealsPage() {
                                   <DropdownMenuSeparator />
                                   {d.archived_at ? (
                                     <DropdownMenuItem onSelect={() => onRestore(d)}>
-                                      <ArchiveRestore className="mr-2 h-4 w-4" /> Restore
+                                      <ArchiveRestore className="mr-2 h-4 w-4" /> {t("deals.restore")}
                                     </DropdownMenuItem>
                                   ) : (
                                     <DropdownMenuItem onSelect={() => onArchive(d)}>
-                                      <Archive className="mr-2 h-4 w-4" /> Archive
+                                      <Archive className="mr-2 h-4 w-4" /> {t("deals.archive")}
                                     </DropdownMenuItem>
                                   )}
                                   {canDeleteDeals && (
@@ -439,7 +441,7 @@ function DealsPage() {
                                       className="text-destructive focus:text-destructive"
                                       onSelect={() => setDeleteTarget(d)}
                                     >
-                                      <Trash2 className="mr-2 h-4 w-4" /> Delete permanently
+                                      <Trash2 className="mr-2 h-4 w-4" /> {t("deals.delete_permanently")}
                                     </DropdownMenuItem>
                                   )}
                                 </DropdownMenuContent>
@@ -451,7 +453,7 @@ function DealsPage() {
                               size="sm"
                               onClick={() => openDeal(d.id, true)}
                             >
-                              <Pencil className="mr-1 h-4 w-4" /> Edit
+                              <Pencil className="mr-1 h-4 w-4" /> {t("deals.edit")}
                             </Button>
                           </div>
                         </td>
@@ -463,7 +465,7 @@ function DealsPage() {
                           colSpan={requireApproval ? 8 : 7}
                           className="px-4 py-8 text-center text-sm text-muted-foreground"
                         >
-                          No deals match your filters.
+                          {t("deals.no_match")}
                         </td>
                       </tr>
                     )}
@@ -595,6 +597,7 @@ function mergeLeadFormFields(rawForms: unknown[]): ExtraField[] {
 }
 
 function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [extraFields, setExtraFields] = useState<ExtraField[]>([]);
@@ -663,7 +666,7 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
       if (empty) {
         if (f.required) {
           setBusy(false);
-          return toast.error(`Please complete: ${f.label}`);
+          return toast.error(t("deals.complete_field", { label: f.label }));
         }
         continue;
       }
@@ -699,7 +702,7 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
       .select("id")
       .single();
     setBusy(false);
-    if (error || !deal) return toast.error(error?.message ?? "Failed");
+    if (error || !deal) return toast.error(error?.message ?? t("deals.create_failed"));
     await supabase.from("deal_activities").insert({
       deal_id: deal.id,
       company_id: role.company_id,
@@ -767,7 +770,7 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
           </Label>
           <Select value={(value as string) ?? ""} onValueChange={(v) => setExtra(f.key, v)}>
             <SelectTrigger>
-              <SelectValue placeholder="Select…" />
+              <SelectValue placeholder={t("deals.select_placeholder")} />
             </SelectTrigger>
             <SelectContent>
               {(f.options ?? []).map((o) => (
@@ -803,41 +806,41 @@ function NewDealDialog({ onCreated }: { onCreated: (id: string) => void }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-1 h-4 w-4" /> New deal
+          <Plus className="mr-1 h-4 w-4" /> {t("deals.new_deal")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New deal</DialogTitle>
+          <DialogTitle>{t("deals.new_deal")}</DialogTitle>
         </DialogHeader>
         <form className="space-y-3" onSubmit={onSubmit}>
           <div className="grid grid-cols-2 gap-3">
-            <Field name="client_name" label="Client name" required />
-            <Field name="client_email" label="Client email" type="email" required />
+            <Field name="client_name" label={t("deals.client_name")} required />
+            <Field name="client_email" label={t("deals.client_email")} type="email" required />
           </div>
-          <Field name="client_company" label="Client company (optional)" />
+          <Field name="client_company" label={t("deals.client_company")} />
           <div className="grid grid-cols-3 gap-3">
-            <Field name="event_type" label="Event type" placeholder="Wedding, gala..." />
-            <Field name="event_date" label="Event date" type="date" />
-            <Field name="guest_count" label="Guests" type="number" />
+            <Field name="event_type" label={t("deals.event_type")} placeholder={t("deals.event_type_placeholder")} />
+            <Field name="event_date" label={t("deals.col_event_date")} type="date" />
+            <Field name="guest_count" label={t("deals.col_guests")} type="number" />
           </div>
           {presetExtras.length > 0 && (
             <div className="grid grid-cols-2 gap-3">{presetExtras.map(renderExtra)}</div>
           )}
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("deals.notes")}</Label>
             <Textarea id="notes" name="notes" rows={3} />
           </div>
           {customExtras.length > 0 && (
             <div className="space-y-3 border-t pt-3">
               <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Additional details
+                {t("deals.additional_details")}
               </div>
               {customExtras.map(renderExtra)}
             </div>
           )}
           <Button className="w-full" disabled={busy}>
-            {busy ? "Creating…" : "Create deal"}
+            {busy ? t("deals.creating") : t("deals.create_deal")}
           </Button>
         </form>
       </DialogContent>
