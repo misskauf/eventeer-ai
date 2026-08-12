@@ -1058,8 +1058,8 @@ function DealDetail() {
             <div className="flex-1">
               <div className="font-medium">
                 {isHard
-                  ? `Conflict: ${hard.length} booked event${hard.length > 1 ? "s" : ""} on this date`
-                  : `Warning: ${soft.length} deal${soft.length > 1 ? "s" : ""} in negotiation for this date`}
+                  ? t(hard.length === 1 ? "dealDetail.conflict_hard_one" : "dealDetail.conflict_hard_other", { count: hard.length })
+                  : t(soft.length === 1 ? "dealDetail.conflict_soft_one" : "dealDetail.conflict_soft_other", { count: soft.length })}
               </div>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                 {list.map((c) => (
@@ -1084,9 +1084,9 @@ function DealDetail() {
         (existingProposal?.constraints as any)?.autodrafted && (
           <div className="mb-4 flex flex-wrap items-start gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
             <div className="flex-1 min-w-0">
-              <div className="font-medium">Suggested draft from lead — review &amp; adjust</div>
+              <div className="font-medium">{t("dealDetail.autodraft_title")}</div>
               <div className="mt-0.5 text-xs text-muted-foreground">
-                We pre-filled a space and packages from this lead. Nothing has been sent to the client yet.
+                {t("dealDetail.autodraft_desc")}
               </div>
             </div>
             <Button
@@ -1096,7 +1096,7 @@ function DealDetail() {
                 document.getElementById("proposal-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
               }
             >
-              Review draft
+              {t("dealDetail.btn_review_draft")}
             </Button>
           </div>
         )}
@@ -1106,11 +1106,11 @@ function DealDetail() {
           <Clock className="mt-0.5 h-4 w-4 flex-none" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <div className="font-medium">
-              Proposal sent {daysSinceSent} day{daysSinceSent === 1 ? "" : "s"} ago — no reply yet.
+              {t(daysSinceSent === 1 ? "dealDetail.reminder_title_one" : "dealDetail.reminder_title_other", { count: daysSinceSent })}
             </div>
             {lastReminderAt && (
               <div className="mt-0.5 text-xs">
-                Last reminded on {new Date(lastReminderAt).toLocaleString()}.
+                {t("dealDetail.reminder_last_sent", { date: new Date(lastReminderAt).toLocaleString() })}
               </div>
             )}
           </div>
@@ -1119,10 +1119,10 @@ function DealDetail() {
             variant="outline"
             onClick={handleSendReminder}
             disabled={sendingReminder || cooldownActive}
-            title={cooldownActive ? "You already reminded the client in the last 24 hours." : undefined}
+            title={cooldownActive ? t("dealDetail.reminder_cooldown_title") : undefined}
           >
             <Send className="mr-1 h-4 w-4" />
-            {sendingReminder ? "Sending…" : "Send reminder to client"}
+            {sendingReminder ? t("dealDetail.btn_sending") : t("dealDetail.btn_send_reminder")}
           </Button>
         </div>
       )}
