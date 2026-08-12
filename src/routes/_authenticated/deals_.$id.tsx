@@ -945,7 +945,7 @@ function DealDetail() {
             {(canEditDeals || canDeleteDeals) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" aria-label="More actions">
+                  <Button variant="outline" size="icon" aria-label={t("dealDetail.aria_more_actions")}>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1019,7 +1019,7 @@ function DealDetail() {
               rows={4}
               value={approvalNoteDraft}
               onChange={(e) => setApprovalNoteDraft(e.target.value)}
-              placeholder="What should be adjusted before this goes to the client?"
+              placeholder={t("dealDetail.placeholder_approval_note")}
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setApprovalNoteOpen(false)}>Cancel</Button>
