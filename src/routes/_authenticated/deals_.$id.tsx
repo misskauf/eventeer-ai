@@ -1010,10 +1010,10 @@ function DealDetail() {
       <Dialog open={approvalNoteOpen} onOpenChange={setApprovalNoteOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Request changes</DialogTitle>
+            <DialogTitle>{t("dealDetail.dialog_request_changes_title")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Label htmlFor="approval-note">Note for the deal owner</Label>
+            <Label htmlFor="approval-note">{t("dealDetail.label_note_for_owner")}</Label>
             <Textarea
               id="approval-note"
               rows={4}
@@ -1023,7 +1023,7 @@ function DealDetail() {
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setApprovalNoteOpen(false)}>Cancel</Button>
-              <Button onClick={requestChanges}>Send back for changes</Button>
+              <Button onClick={requestChanges}>{t("dealDetail.btn_send_back_for_changes")}</Button>
             </div>
           </div>
         </DialogContent>
@@ -2547,7 +2547,7 @@ function PackageCard({
               {checked && hasSelection && (
                 <div className="mt-3 space-y-2 border-t pt-2">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="font-medium">Menu selection</span>
+                    <span className="font-medium">{t("dealDetail.label_menu_selection")}</span>
                     <span className="text-muted-foreground">— selected by:</span>
                     <div className="inline-flex overflow-hidden rounded-md border">
                       <button
