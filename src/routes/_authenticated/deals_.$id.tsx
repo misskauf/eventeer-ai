@@ -1137,35 +1137,35 @@ function DealDetail() {
         onKeyDown={(e) => { if (e.key === "Enter") setEditOpen(true); }}
       >
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Deal details</CardTitle>
+          <CardTitle>{t("dealDetail.section_deal_details")}</CardTitle>
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Pencil className="h-3.5 w-3.5" /> Click to edit
+            <Pencil className="h-3.5 w-3.5" /> {t("dealDetail.click_to_edit")}
           </span>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-          <Detail label="Client">{deal.client_name}</Detail>
-          <Detail label="Email">{deal.client_email}</Detail>
-          <Detail label="Company">{deal.client_company || "—"}</Detail>
-          <Detail label="Event type">{deal.event_type || "—"}</Detail>
-          <Detail label="Event date">{deal.event_date ? formatEventDate(deal.event_date) : "—"}</Detail>
-          <Detail label="Guests">{deal.guest_count || "—"}</Detail>
-          <Detail label="Stage">{stageLabel(deal.stage)}</Detail>
-          <Detail label="Estimated value">{money(Number(deal.estimated_value), currency)}</Detail>
+          <Detail label={t("dealDetail.label_client")}>{deal.client_name}</Detail>
+          <Detail label={t("dealDetail.label_email")}>{deal.client_email}</Detail>
+          <Detail label={t("dealDetail.label_company")}>{deal.client_company || t("dealDetail.value_dash")}</Detail>
+          <Detail label={t("dealDetail.label_event_type")}>{deal.event_type || t("dealDetail.value_dash")}</Detail>
+          <Detail label={t("dealDetail.label_event_date")}>{deal.event_date ? formatEventDate(deal.event_date) : t("dealDetail.value_dash")}</Detail>
+          <Detail label={t("dealDetail.label_guests")}>{deal.guest_count || t("dealDetail.value_dash")}</Detail>
+          <Detail label={t("dealDetail.label_stage")}>{stageLabel(deal.stage)}</Detail>
+          <Detail label={t("dealDetail.label_estimated_value")}>{money(Number(deal.estimated_value), currency)}</Detail>
           {deal.notes && (
             <div className="sm:col-span-2 lg:col-span-4">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Notes</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("dealDetail.label_notes")}</div>
               <div className="mt-1 whitespace-pre-wrap">{deal.notes}</div>
             </div>
           )}
           {deal.custom_fields && Object.keys(deal.custom_fields).length > 0 && (
             <div className="sm:col-span-2 lg:col-span-4">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Additional info</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("dealDetail.label_additional_info")}</div>
               <dl className="mt-1 grid gap-2 sm:grid-cols-2">
                 {Object.entries(deal.custom_fields).map(([k, entry]) => {
                   const label = (entry && typeof entry === "object" && "label" in entry && entry.label) || k;
                   const raw = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
                   const display =
-                    raw === true ? "Yes" : raw === false ? "No" : raw == null || raw === "" ? "—" : String(raw);
+                    raw === true ? t("dealDetail.value_yes") : raw === false ? t("dealDetail.value_no") : raw == null || raw === "" ? t("dealDetail.value_dash") : String(raw);
                   return (
                     <div key={k} className="text-sm">
                       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -1194,7 +1194,7 @@ function DealDetail() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-1">
               <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" /> Client response
+                <MessageSquare className="h-4 w-4" /> {t("dealDetail.section_client_response")}
               </CardTitle>
               <div>
                 <Badge
@@ -1208,10 +1208,10 @@ function DealDetail() {
                   }
                 >
                   {clientAction === "changes_requested"
-                    ? "Changes requested"
+                    ? t("dealDetail.status_changes_requested")
                     : clientAction === "declined"
-                    ? "Declined"
-                    : "Confirmed"}
+                    ? t("dealDetail.status_declined")
+                    : t("dealDetail.status_confirmed")}
                 </Badge>
               </div>
             </div>
@@ -1224,7 +1224,7 @@ function DealDetail() {
           <CardContent className="space-y-3 text-sm">
             {clientResponse.overall_message && (
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Message</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("dealDetail.label_message")}</div>
                 <div className="mt-1 whitespace-pre-wrap rounded-md border bg-background p-3">
                   {clientResponse.overall_message}
                 </div>
@@ -1232,7 +1232,7 @@ function DealDetail() {
             )}
             {clientResponse.selected_alternatives && Object.keys(clientResponse.selected_alternatives).length > 0 && (
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Client picks</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("dealDetail.label_client_picks")}</div>
                 <ul className="mt-1 space-y-1">
                   {Object.entries(clientResponse.selected_alternatives).map(([gid, itemId]) => {
                     const g = altGroups.find((x) => x.id === gid);
@@ -1248,7 +1248,7 @@ function DealDetail() {
             )}
             {clientResponse.item_notes && Object.keys(clientResponse.item_notes).length > 0 && (
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Item notes</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("dealDetail.label_item_notes")}</div>
                 <ul className="mt-1 space-y-1">
                   {Object.entries(clientResponse.item_notes).map(([itemId, note]) => (
                     <li key={itemId}>
@@ -1261,13 +1261,13 @@ function DealDetail() {
             )}
             {clientResponse.computed_total != null && (
               <div className="text-xs text-muted-foreground">
-                Client-computed total: {money(clientResponse.computed_total, currency)}
+                {t("dealDetail.label_client_computed_total", { amount: money(clientResponse.computed_total, currency) })}
               </div>
             )}
             {clientResponse.note && (
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {clientAction === "declined" ? "Reason" : "Requested changes"}
+                  {clientAction === "declined" ? t("dealDetail.label_reason") : t("dealDetail.label_requested_changes")}
                 </div>
                 <div className="mt-1 whitespace-pre-wrap rounded-md border bg-background p-3">
                   {clientResponse.note}
@@ -1280,10 +1280,10 @@ function DealDetail() {
                   size="sm"
                   onClick={() => {
                     document.getElementById("proposal-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    toast.info("Edit the proposal below and click \"Send to client\" to deliver a new version.");
+                    toast.info(t("dealDetail.toast_edit_and_send"));
                   }}
                 >
-                  <Pencil className="mr-1 h-4 w-4" /> Edit &amp; send new version
+                  <Pencil className="mr-1 h-4 w-4" /> {t("dealDetail.btn_edit_and_send_new_version")}
                 </Button>
               </div>
             )}
@@ -1295,7 +1295,7 @@ function DealDetail() {
                     document.getElementById("contracts-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                 >
-                  <Send className="mr-1 h-4 w-4" /> Create contract
+                  <Send className="mr-1 h-4 w-4" /> {t("dealDetail.btn_create_contract")}
                 </Button>
               </div>
             )}
@@ -1304,18 +1304,18 @@ function DealDetail() {
       )}
 
       <div className="mb-4 flex gap-1 border-b">
-        {(["proposal", "brief"] as const).map((t) => (
+        {(["proposal", "brief"] as const).map((tabKey) => (
           <button
-            key={t}
+            key={tabKey}
             type="button"
-            onClick={() => setDealTab(t)}
+            onClick={() => setDealTab(tabKey)}
             className={`border-b-2 px-3 py-2 text-sm capitalize ${
-              dealTab === t
+              dealTab === tabKey
                 ? "border-primary font-medium"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t}
+            {t(`dealDetail.tab_${tabKey}`)}
           </button>
         ))}
       </div>
@@ -1325,7 +1325,7 @@ function DealDetail() {
       {/* PROPOSAL SECTION */}
       <div id="proposal-section" className="mb-3 flex items-center justify-between scroll-mt-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Proposal</h2>
+          <h2 className="text-lg font-semibold">{t("dealDetail.section_proposal")}</h2>
           {existingProposal?.quote_number && (
             <span className="rounded border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
               {existingProposal.quote_number}
@@ -1334,7 +1334,7 @@ function DealDetail() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={previewAsClient}>
-            <Eye className="mr-1 h-4 w-4" /> Preview as client
+            <Eye className="mr-1 h-4 w-4" /> {t("dealDetail.btn_preview_as_client")}
           </Button>
         </div>
       </div>
@@ -1342,30 +1342,30 @@ function DealDetail() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Card>
-            <CardHeader><CardTitle>Cover</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("dealDetail.section_cover")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Cover title</Label>
+                <Label>{t("dealDetail.label_cover_title")}</Label>
                 <Input
                   value={coverTitle}
                   onChange={(e) => { setCoverTitle(e.target.value); setCoverTouched(true); }}
-                  placeholder="e.g. Your winter wedding at Villa Rosa"
+                  placeholder={t("dealDetail.placeholder_cover_title")}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Auto-generated from event type + date. Edit to override.
+                  {t("dealDetail.hint_cover_title")}
                 </p>
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label>Intro message</Label>
+                  <Label>{t("dealDetail.label_intro_message")}</Label>
                   <Button type="button" size="sm" variant="outline" onClick={suggestIntroText}>
-                    <Sparkles className="mr-1 h-3.5 w-3.5" /> Suggest text
+                    <Sparkles className="mr-1 h-3.5 w-3.5" /> {t("dealDetail.btn_suggest_text")}
                   </Button>
                 </div>
                 <Tabs value={editorTab} onValueChange={(v) => setEditorTab(v as any)}>
                   <TabsList className="mb-2">
-                    <TabsTrigger value="write">Write</TabsTrigger>
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                    <TabsTrigger value="write">{t("dealDetail.tab_write")}</TabsTrigger>
+                    <TabsTrigger value="preview">{t("dealDetail.tab_preview")}</TabsTrigger>
                   </TabsList>
                   <TabsContent value="write">
                     <RichTextEditor
@@ -1373,13 +1373,13 @@ function DealDetail() {
                       onChange={setIntroMarkdown}
                       toolbar="basic"
                       minHeight={180}
-                      placeholder={"Dear Alex, we're delighted to share the following options for your event."}
+                      placeholder={t("dealDetail.placeholder_intro_editor")}
                     />
                   </TabsContent>
                   <TabsContent value="preview">
                     <div className="min-h-[8rem] rounded-md border p-3">
                       {introMarkdown ? <RichText source={introMarkdown} /> : (
-                        <div className="text-sm text-muted-foreground">Nothing to preview yet.</div>
+                        <div className="text-sm text-muted-foreground">{t("dealDetail.hint_nothing_to_preview")}</div>
                       )}
                     </div>
                   </TabsContent>
@@ -1393,7 +1393,7 @@ function DealDetail() {
           <Card>
             <CardHeader className="gap-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Spaces</CardTitle>
+                <CardTitle>{t("dealDetail.section_spaces")}</CardTitle>
                 <ModeInline
                   cat="space"
                   mode={categoryModes.space}
@@ -1408,7 +1408,7 @@ function DealDetail() {
               </div>
               {deal.event_date && spaces.length > availableSpaces.length && (
                 <p className="text-xs text-muted-foreground">
-                  Showing spaces available on {formatEventDate(deal.event_date)} ({spaces.length - availableSpaces.length} hidden).
+                  {t("dealDetail.hint_spaces_available_on", { date: formatEventDate(deal.event_date), count: spaces.length - availableSpaces.length })}
                 </p>
               )}
               {availableSpaces.length > fittingSpaces.length && (
@@ -1418,18 +1418,18 @@ function DealDetail() {
                   onClick={() => setShowAllSpaces((v) => !v)}
                 >
                   {showAllSpaces
-                    ? `Show only spaces that fit ${dealGuestCount} guests`
-                    : `Show all spaces (${availableSpaces.length - fittingSpaces.length} don't fit ${dealGuestCount} guests)`}
+                    ? t("dealDetail.btn_show_only_fitting_spaces", { count: dealGuestCount })
+                    : t("dealDetail.btn_show_all_spaces", { count: availableSpaces.length - fittingSpaces.length, guests: dealGuestCount })}
                 </button>
               )}
             </CardHeader>
             <CardContent className="space-y-2">
-              {spaces.length === 0 && <EmptyHint to="/catalog/spaces" label="Add spaces in catalog" />}
+              {spaces.length === 0 && <EmptyHint to="/catalog/spaces" label={t("dealDetail.empty_add_spaces")} />}
               {availableSpaces.length === 0 && spaces.length > 0 && (
-                <p className="text-sm text-muted-foreground">No spaces are configured for this weekday.</p>
+                <p className="text-sm text-muted-foreground">{t("dealDetail.hint_no_spaces_for_weekday")}</p>
               )}
               {shownSpaces.length === 0 && availableSpaces.length > 0 && (
-                <p className="text-sm text-muted-foreground">No spaces fit this guest count.</p>
+                <p className="text-sm text-muted-foreground">{t("dealDetail.hint_no_spaces_fit_guests")}</p>
               )}
               {shownSpaces.map((s) => (
                 <div key={s.id} className="space-y-2">
@@ -1437,7 +1437,7 @@ function DealDetail() {
                     checked={selectedSpaces.includes(s.id)}
                     onChange={(v) => toggle(setSelectedSpaces, s.id, v)}
                     title={s.name}
-                    subtitle={`Base ${money(s.base_rental_fee, currency)} · min ${money(s.min_rental_fee, currency)}`}
+                    subtitle={t("dealDetail.subtitle_space", { base: money(s.base_rental_fee, currency), min: money(s.min_rental_fee, currency) })}
                     link={s.details_url ? { href: s.details_url } : null}
                     singleChoice={isSingleChoice(categoryModes.space)}
                     isPrimary={primaryIds.space === s.id}
@@ -1460,13 +1460,13 @@ function DealDetail() {
             singleChoice={isSingleChoice(categoryModes.food)}
             primaryId={primaryIds.food}
             onMakePrimary={(pid) => setPrimaryIds((c) => ({ ...c, food: pid }))}
-            title="Food packages"
+            title={t("dealDetail.title_food_packages")}
             emptyTo="/catalog/food"
             items={foodPackages}
             hiddenCount={allFoodPackages.length - fittingFood.length}
             showAll={showAllFood}
             onShowAllChange={setShowAllFood}
-            fitLabel={`this deal (${dealGuestCount} guests${dealEventType ? `, ${dealEventType}` : ""})`}
+            fitLabel={dealEventType ? t("dealDetail.fit_label_deal_with_type", { count: dealGuestCount, type: dealEventType }) : t("dealDetail.fit_label_deal", { count: dealGuestCount })}
             currency={currency}
             selected={selectedPackages}
             onToggle={(id, v) => toggle(setSelectedPackages, id, v)}
@@ -1500,13 +1500,13 @@ function DealDetail() {
             singleChoice={isSingleChoice(categoryModes.beverage)}
             primaryId={primaryIds.beverage}
             onMakePrimary={(pid) => setPrimaryIds((c) => ({ ...c, beverage: pid }))}
-            title="Beverage packages"
+            title={t("dealDetail.title_beverage_packages")}
             emptyTo="/catalog/beverages"
             items={beveragePackages}
             hiddenCount={allBeveragePackages.length - fittingBeverages.length}
             showAll={showAllBeverages}
             onShowAllChange={setShowAllBeverages}
-            fitLabel={`this deal (${dealGuestCount} guests${dealEventType ? `, ${dealEventType}` : ""})`}
+            fitLabel={dealEventType ? t("dealDetail.fit_label_deal_with_type", { count: dealGuestCount, type: dealEventType }) : t("dealDetail.fit_label_deal", { count: dealGuestCount })}
             currency={currency}
             selected={selectedPackages}
             onToggle={(id, v) => toggle(setSelectedPackages, id, v)}
@@ -1541,7 +1541,7 @@ function DealDetail() {
           <Card>
             <CardHeader className="gap-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Extras</CardTitle>
+                <CardTitle>{t("dealDetail.section_extras")}</CardTitle>
                 <ModeInline
                   cat="extra"
                   mode={categoryModes.extra}
@@ -1556,7 +1556,7 @@ function DealDetail() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {extras.length === 0 && <EmptyHint to="/catalog/extras" label="Add extras in catalog" />}
+              {extras.length === 0 && <EmptyHint to="/catalog/extras" label={t("dealDetail.empty_add_extras")} />}
               {extras.map((e) => (
                 <div key={e.id} className="space-y-2">
                   <PickRow
@@ -1576,7 +1576,7 @@ function DealDetail() {
           <Card>
             <CardHeader className="gap-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Staffing</CardTitle>
+                <CardTitle>{t("dealDetail.section_staffing")}</CardTitle>
                 <ModeInline
                   cat="staff"
                   mode={categoryModes.staff}
@@ -1591,7 +1591,7 @@ function DealDetail() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {staff.length === 0 && <EmptyHint to="/catalog/staff" label="Add staff roles in catalog" />}
+              {staff.length === 0 && <EmptyHint to="/catalog/staff" label={t("dealDetail.empty_add_staff")} />}
               {staff.map((x) => (
                 <div key={x.id} className="space-y-2">
                   <PickRow
@@ -1606,7 +1606,7 @@ function DealDetail() {
                   {selectedStaff.includes(x.id) && x.pricing_type !== "per_person" && (
                     <div className="flex flex-wrap items-center gap-3 pl-9 text-xs text-muted-foreground">
                       <label className="flex items-center gap-2">
-                        Count
+                        {t("dealDetail.label_count")}
                         <Input
                           type="number"
                           min={1}
@@ -1622,7 +1622,7 @@ function DealDetail() {
                       </label>
                       {x.pricing_type === "per_hour" && (
                         <label className="flex items-center gap-2">
-                          Hours
+                          {t("dealDetail.label_hours")}
                           <Input
                             type="number"
                             min={0}
@@ -1647,7 +1647,7 @@ function DealDetail() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Options for the client to choose from</CardTitle>
+              <CardTitle>{t("dealDetail.section_options_for_client")}</CardTitle>
               <Button
                 type="button"
                 size="sm"
@@ -1655,18 +1655,17 @@ function DealDetail() {
                 onClick={() =>
                   setAltGroups((cur) => [
                     ...cur,
-                    { id: newGroupId(), name: "New choice", category: "food", item_ids: [], default_id: "" },
+                    { id: newGroupId(), name: t("dealDetail.new_choice_name"), category: "food", item_ids: [], default_id: "" },
                   ])
                 }
               >
-                <Plus className="mr-1 h-4 w-4" /> Add option group
+                <Plus className="mr-1 h-4 w-4" /> {t("dealDetail.btn_add_option_group")}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {altGroups.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Give the client a choice, e.g. "Dinner: 3-course menu OR buffet". Add a group and pick two or more
-                  items — the client picks exactly one.
+                  {t("dealDetail.hint_options_empty")}
                 </p>
               )}
               {altGroups.map((g, idx) => {
@@ -1680,7 +1679,7 @@ function DealDetail() {
                         onChange={(e) =>
                           setAltGroups((cur) => cur.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))
                         }
-                        placeholder="Group name"
+                        placeholder={t("dealDetail.placeholder_group_name")}
                       />
                       <Select
                         value={g.category}
@@ -1696,11 +1695,11 @@ function DealDetail() {
                       >
                         <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="space">Space</SelectItem>
-                          <SelectItem value="food">Food</SelectItem>
-                          <SelectItem value="beverage">Beverage</SelectItem>
-                          <SelectItem value="extra">Extra</SelectItem>
-                          <SelectItem value="staff">Staff</SelectItem>
+                          <SelectItem value="space">{t("dealDetail.category_space")}</SelectItem>
+                          <SelectItem value="food">{t("dealDetail.category_food")}</SelectItem>
+                          <SelectItem value="beverage">{t("dealDetail.category_beverage")}</SelectItem>
+                          <SelectItem value="extra">{t("dealDetail.category_extra")}</SelectItem>
+                          <SelectItem value="staff">{t("dealDetail.category_staff")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex-1" />
@@ -1714,9 +1713,9 @@ function DealDetail() {
                       </Button>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Items in this group (client picks one)</Label>
+                      <Label className="text-xs">{t("dealDetail.label_items_in_group")}</Label>
                       {items.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No items in this category yet.</p>
+                        <p className="text-xs text-muted-foreground">{t("dealDetail.hint_no_items_in_category")}</p>
                       ) : (
                         <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                           {items.map((it) => {
@@ -1757,7 +1756,7 @@ function DealDetail() {
                                       )
                                     }
                                   >
-                                    {g.default_id === it.id ? "Default" : "Set default"}
+                                    {g.default_id === it.id ? t("dealDetail.btn_default") : t("dealDetail.btn_set_default")}
                                   </button>
                                 )}
                               </label>
@@ -1775,28 +1774,28 @@ function DealDetail() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader><CardTitle>Pricing rules</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("dealDetail.section_pricing_rules")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-md border bg-muted/30 p-3 text-xs">
                 <div className="font-medium text-foreground">
-                  Minimum revenue {matchedRule ? "(auto-matched)" : "(no rule matched)"}
+                  {matchedRule ? t("dealDetail.label_min_revenue_auto") : t("dealDetail.label_min_revenue_none")}
                 </div>
                 {matchedRule ? (
                   <div className="mt-1 space-y-1 text-muted-foreground">
                     <div>
-                      {matchedRule.notes || "Rule"} · {money(Number(matchedRule.min_revenue), currency)} {matchedRule.basis}
+                      {matchedRule.notes || t("dealDetail.rule_label")} · {money(Number(matchedRule.min_revenue), currency)} {matchedRule.basis}
                     </div>
                     {deal.event_date && (
-                      <div>Applied for {formatEventDate(deal.event_date)}.</div>
+                      <div>{t("dealDetail.applied_for_date", { date: formatEventDate(deal.event_date) })}</div>
                     )}
                   </div>
                 ) : (
                   <div className="mt-1 text-muted-foreground">
-                    No minimum revenue rule matches this weekday/month. Set one in Catalog → Rules.
+                    {t("dealDetail.hint_no_min_revenue_rule")}
                   </div>
                 )}
                 <div className="mt-2 flex items-center gap-2">
-                  <Label className="text-[11px] text-muted-foreground">Override</Label>
+                  <Label className="text-[11px] text-muted-foreground">{t("dealDetail.label_override")}</Label>
                   <Input
                     type="number"
                     className="h-7 w-32"
@@ -1808,11 +1807,11 @@ function DealDetail() {
 
               {seasons.length > 0 && (
                 <div className="space-y-1.5">
-                  <Label>Season multiplier</Label>
+                  <Label>{t("dealDetail.label_season_multiplier")}</Label>
                   <Select value={seasonId} onValueChange={setSeasonId}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No season adjustment</SelectItem>
+                      <SelectItem value="none">{t("dealDetail.option_no_season_adjustment")}</SelectItem>
                       {seasons.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
                           {s.name} (×{s.multiplier})
@@ -1829,7 +1828,7 @@ function DealDetail() {
                 const gMin = Number((fees as any)?.gratuity_min_pct ?? 0);
                 const gMax = Number((fees as any)?.gratuity_max_pct ?? 20);
                 const gFixed = Number((fees as any)?.gratuity_fixed_pct ?? 0);
-                const label = gType === "tip" ? "Tip" : "Service charge";
+                const label = gType === "tip" ? t("dealDetail.label_tip") : t("dealDetail.label_service_charge");
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1840,7 +1839,7 @@ function DealDetail() {
                     </div>
                     {gMode === "fixed" ? (
                       <div className="text-xs text-muted-foreground">
-                        Fixed rate configured in Catalog → Pricing rules.
+                        {t("dealDetail.hint_fixed_rate_configured")}
                       </div>
                     ) : (
                       <Slider
@@ -1866,29 +1865,29 @@ function DealDetail() {
                         />
                         {servicePct !== serviceDefaultPct ? (
                           <span className="text-xs text-muted-foreground">
-                            Overridden for this deal (default {serviceDefaultPct}%) ·{" "}
+                            {t("dealDetail.hint_overridden_for_deal", { pct: serviceDefaultPct })}{" "}
                             <button
                               type="button"
                               className="underline underline-offset-2 hover:text-foreground"
                               onClick={() => setServicePct(serviceDefaultPct)}
                             >
-                              Reset to default
+                              {t("dealDetail.btn_reset_to_default")}
                             </button>
                           </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Using company default</span>
+                          <span className="text-xs text-muted-foreground">{t("dealDetail.hint_using_company_default")}</span>
                         )}
                       </div>
                     )}
 
                     <div className="rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
-                      Calculated {label.toLowerCase()}:{" "}
+                      {t("dealDetail.hint_calculated_gratuity", { label: label.toLowerCase() })}{" "}
                       <span className="tabular-nums font-medium text-foreground">
                         {money(totals.gratuity_gross, currency)}
                       </span>
                       {gType === "service_charge" && totals.gratuity_tax > 0 && (
                         <>
-                          {" "}· incl. tax{" "}
+                          {" "}{t("dealDetail.hint_incl_tax")}{" "}
                           <span className="tabular-nums font-medium text-foreground">
                             {money(totals.gratuity_tax, currency)}
                           </span>
