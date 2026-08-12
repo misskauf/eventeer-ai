@@ -866,30 +866,49 @@ function ClientProposal() {
                         />
                       </div>
                     )}
-                    <Button
-                      className="w-full"
-                      style={{ backgroundColor: brand }}
-                      onClick={() => {
-                        if (pendingAction === "changes_requested" || pendingAction === "declined") {
-                          onSubmit(pendingAction);
-                        } else {
-                          setPendingAction("confirmed");
-                          onSubmit("confirmed");
-                        }
-                      }}
-                    >
-                      {state.preview
-                        ? pendingAction === "changes_requested"
-                          ? t(lang, "send_change_request_preview")
-                          : pendingAction === "declined"
-                          ? t(lang, "send_decline_preview")
-                          : t(lang, "confirm_preview")
-                        : pendingAction === "changes_requested"
-                        ? t(lang, "send_change_request")
-                        : pendingAction === "declined"
-                        ? t(lang, "send_decline")
-                        : t(lang, "confirm_selection")}
-                    </Button>
+                    {(() => {
+                      const isConfirmAction =
+                        pendingAction !== "changes_requested" && pendingAction !== "declined";
+                      const confirmBlocked = isConfirmAction && totals.min_shortfall > 0;
+                      return (
+                        <>
+                          <Button
+                            className="w-full"
+                            style={{ backgroundColor: brand }}
+                            disabled={confirmBlocked}
+                            onClick={() => {
+                              if (pendingAction === "changes_requested" || pendingAction === "declined") {
+                                onSubmit(pendingAction);
+                              } else {
+                                if (totals.min_shortfall > 0) return;
+                                setPendingAction("confirmed");
+                                onSubmit("confirmed");
+                              }
+                            }}
+                          >
+                            {state.preview
+                              ? pendingAction === "changes_requested"
+                                ? t(lang, "send_change_request_preview")
+                                : pendingAction === "declined"
+                                ? t(lang, "send_decline_preview")
+                                : t(lang, "confirm_preview")
+                              : pendingAction === "changes_requested"
+                              ? t(lang, "send_change_request")
+                              : pendingAction === "declined"
+                              ? t(lang, "send_decline")
+                              : t(lang, "confirm_selection")}
+                          </Button>
+                          {confirmBlocked && (
+                            <p className="text-xs text-muted-foreground">
+                              {lang === "de"
+                                ? `Bitte fügen Sie noch ${money(totals.min_shortfall, currency)} hinzu, um das Minimum von ${money(minRev, currency)} zu erreichen, bevor Sie bestätigen können.`
+                                : `Please add ${money(totals.min_shortfall, currency)} more to reach the ${money(minRev, currency)} minimum before you can confirm.`}
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
+
                     <Button
                       variant="outline"
                       className="w-full"
