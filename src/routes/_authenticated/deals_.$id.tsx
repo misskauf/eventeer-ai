@@ -1901,14 +1901,14 @@ function DealDetail() {
               {discountTargets.length > 0 && (
                 <div className="space-y-2 rounded-md border p-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs">Item discounts</Label>
+                    <Label className="text-xs">{t("dealDetail.label_item_discounts")}</Label>
                     {Object.keys(itemDiscounts).length > 0 && (
                       <button
                         type="button"
                         className="text-xs text-muted-foreground underline underline-offset-2"
                         onClick={() => setItemDiscounts({})}
                       >
-                        Clear all
+                        {t("dealDetail.btn_clear_all")}
                       </button>
                     )}
                   </div>
@@ -1916,8 +1916,8 @@ function DealDetail() {
                     <Select value={discType} onValueChange={(v) => setDiscType(v as "pct" | "amount")}>
                       <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pct">Percent %</SelectItem>
-                        <SelectItem value="amount">Amount</SelectItem>
+                        <SelectItem value="pct">{t("dealDetail.option_percent")}</SelectItem>
+                        <SelectItem value="amount">{t("dealDetail.option_amount")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Input
@@ -1941,25 +1941,25 @@ function DealDetail() {
                         setDiscSel([]);
                       }}
                     >
-                      Apply to selected ({discSel.length})
+                      {t("dealDetail.btn_apply_to_selected", { count: discSel.length })}
                     </Button>
                   </div>
                   <div className="space-y-1">
-                    {discountTargets.map((t) => {
-                      const d = itemDiscounts[t.id];
+                    {discountTargets.map((dt) => {
+                      const d = itemDiscounts[dt.id];
                       return (
-                        <div key={`${t.kind}:${t.id}`} className="flex items-center gap-2 text-xs">
+                        <div key={`${dt.kind}:${dt.id}`} className="flex items-center gap-2 text-xs">
                           <input
                             type="checkbox"
-                            checked={discSel.includes(t.id)}
+                            checked={discSel.includes(dt.id)}
                             onChange={(e) =>
                               setDiscSel((prev) =>
-                                e.target.checked ? [...prev, t.id] : prev.filter((x) => x !== t.id),
+                                e.target.checked ? [...prev, dt.id] : prev.filter((x) => x !== dt.id),
                               )
                             }
                           />
-                          <span className="flex-1 truncate">{t.label}</span>
-                          <span className="tabular-nums text-muted-foreground">{money(t.gross, currency)}</span>
+                          <span className="flex-1 truncate">{dt.label}</span>
+                          <span className="tabular-nums text-muted-foreground">{money(dt.gross, currency)}</span>
                           {d && (
                             <>
                               <span className="rounded bg-muted px-1 py-0.5 tabular-nums">
@@ -1967,12 +1967,12 @@ function DealDetail() {
                               </span>
                               <button
                                 type="button"
-                                aria-label="Remove discount"
+                                aria-label={t("dealDetail.aria_remove_discount")}
                                 className="text-muted-foreground hover:text-foreground"
                                 onClick={() =>
                                   setItemDiscounts((prev) => {
                                     const next = { ...prev };
-                                    delete next[t.id];
+                                    delete next[dt.id];
                                     return next;
                                   })
                                 }
@@ -1997,7 +1997,7 @@ function DealDetail() {
             <CardHeader className="border-b bg-primary/5">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Receipt className="h-5 w-5 text-primary" />
-                Event quote
+                {t("dealDetail.section_event_quote")}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 overflow-y-auto space-y-3 text-sm pt-4">
@@ -2016,14 +2016,14 @@ function DealDetail() {
                   </div>
                   <div className="flex justify-between text-[11px] text-muted-foreground">
                     <span>
-                      {l.qty} · {l.basis} · tax {l.tax_rate_pct}%
+                      {t("dealDetail.label_qty_basis_tax", { qty: l.qty, basis: l.basis, tax: l.tax_rate_pct })}
                       {l.discount_applied != null && l.discount_applied > 0 && (
-                        <> · discount {l.discount_pct ? `${l.discount_pct}% ` : ""}-{money(l.discount_applied, currency)}</>
+                        <> {t("dealDetail.label_discount_suffix", { pct: l.discount_pct ? `${l.discount_pct}%` : "", amount: money(l.discount_applied, currency) })}</>
                       )}
 
                     </span>
                     <span className="tabular-nums">
-                      net {money(l.net, currency)} · tax {money(l.tax, currency)}
+                      {t("dealDetail.label_net_tax", { net: money(l.net, currency), tax: money(l.tax, currency) })}
                     </span>
                   </div>
                 </div>
@@ -2031,14 +2031,14 @@ function DealDetail() {
 
               {CATEGORY_KEYS.some((c) => (alternativesByCategory[c]?.length ?? 0) > 0) && (
                 <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
-                  <span className="font-medium text-foreground">Shown, not charged</span>
+                  <span className="font-medium text-foreground">{t("dealDetail.label_shown_not_charged")}</span>
                   {CATEGORY_KEYS.map((c) => {
                     const ids = alternativesByCategory[c] ?? [];
                     if (!ids.length) return null;
                     return (
                       <div key={c}>
-                        {CATEGORY_LABELS[c]} alternatives: {ids.map((id) => itemName(id)).join(", ")}
-                        {!offerAlternatives[c] && " (hidden from client)"}
+                        {t("dealDetail.label_alternatives", { category: CATEGORY_LABELS[c], items: ids.map((id) => itemName(id)).join(", ") })}
+                        {!offerAlternatives[c] && ` ${t("dealDetail.label_hidden_from_client")}`}
                       </div>
                     );
                   })}
@@ -2047,40 +2047,40 @@ function DealDetail() {
 
 
               <div className="space-y-1 text-xs text-muted-foreground">
-                <div className="flex justify-between"><span>Net subtotal</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
+                <div className="flex justify-between"><span>{t("dealDetail.label_net_subtotal")}</span><span className="tabular-nums">{money(totals.net_subtotal, currency)}</span></div>
                 {totals.item_discount_net > 0 && (
                   <div className="flex justify-between text-foreground">
-                    <span>Item discounts (net)</span>
+                    <span>{t("dealDetail.label_item_discounts_net")}</span>
                     <span className="tabular-nums">-{money(totals.item_discount_net, currency)}</span>
                   </div>
                 )}
 
                 {totals.discount_targeted && totals.discount_net > 0 && (
                   <div className="flex justify-between text-foreground">
-                    <span>Discount (net)</span>
+                    <span>{t("dealDetail.label_discount_net")}</span>
                     <span className="tabular-nums">-{money(totals.discount_net, currency)}</span>
                   </div>
                 )}
-                <div className="flex justify-between"><span>Total tax</span><span className="tabular-nums">{money(totals.tax_subtotal, currency)}</span></div>
-                <div className="flex justify-between"><span>Gross subtotal</span><span className="tabular-nums">{money(totals.gross_subtotal, currency)}</span></div>
+                <div className="flex justify-between"><span>{t("dealDetail.label_total_tax")}</span><span className="tabular-nums">{money(totals.tax_subtotal, currency)}</span></div>
+                <div className="flex justify-between"><span>{t("dealDetail.label_gross_subtotal")}</span><span className="tabular-nums">{money(totals.gross_subtotal, currency)}</span></div>
               </div>
 
               <Separator />
 
               <div className="space-y-1 text-sm">
                 {totals.item_discount_total > 0 && (
-                  <div className="flex justify-between"><span>Item discounts</span><span className="tabular-nums">-{money(totals.item_discount_total, currency)}</span></div>
+                  <div className="flex justify-between"><span>{t("dealDetail.label_item_discounts")}</span><span className="tabular-nums">-{money(totals.item_discount_total, currency)}</span></div>
                 )}
 
                 {!totals.discount_targeted && effectiveDiscount > 0 && (
-                  <div className="flex justify-between"><span>Discount</span><span className="tabular-nums">-{money(effectiveDiscount, currency)}</span></div>
+                  <div className="flex justify-between"><span>{t("dealDetail.label_discount")}</span><span className="tabular-nums">-{money(effectiveDiscount, currency)}</span></div>
                 )}
                 <div className="flex justify-between"><span>{totals.gratuity_label}</span><span className="tabular-nums">{money(totals.gratuity_gross, currency)}</span></div>
               </div>
 
 
               <div className="mt-3 rounded-lg bg-primary/10 text-foreground border border-primary/20 p-3 flex items-baseline justify-between">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">Grand total</span>
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("dealDetail.label_grand_total")}</span>
                 <span className="text-lg font-semibold tabular-nums tracking-tight text-primary">{money(totals.grand_total, currency)}</span>
               </div>
 
@@ -2088,14 +2088,14 @@ function DealDetail() {
                 <div className="flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-2.5 text-xs text-yellow-900">
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-semibold">Net minimum not met</div>
-                    <div>Shortfall of {money(totals.min_shortfall, currency)}.</div>
+                    <div className="font-semibold">{t("dealDetail.title_min_not_met")}</div>
+                    <div>{t("dealDetail.label_shortfall", { amount: money(totals.min_shortfall, currency) })}</div>
                   </div>
                 </div>
               ) : minRevenue > 0 ? (
                 <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-900">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span className="font-medium">Minimum revenue met</span>
+                  <span className="font-medium">{t("dealDetail.label_minimum_revenue_met")}</span>
                 </div>
               ) : null}
             </CardContent>
@@ -2111,40 +2111,40 @@ function DealDetail() {
                     <>
                       {status === "changes_requested" && deal.approval_note && (
                         <div className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-900">
-                          <div className="font-semibold">Changes requested</div>
+                          <div className="font-semibold">{t("dealDetail.title_changes_requested")}</div>
                           <div className="mt-0.5 whitespace-pre-wrap">{deal.approval_note}</div>
                         </div>
                       )}
                       {isApproved && (
                         <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-900">
                           <ShieldCheck className="h-4 w-4 shrink-0" />
-                          <span className="font-medium">Approved — ready to send.</span>
+                          <span className="font-medium">{t("dealDetail.label_approved_ready")}</span>
                         </div>
                       )}
                       <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">
-                        Save draft
+                        {t("dealDetail.btn_save_draft")}
                       </Button>
                       {(status === "not_required" || status === "changes_requested") && (
                         <Button onClick={sendForApproval} className="w-full">
-                          <ShieldCheck className="mr-1 h-4 w-4" /> Send for approval
+                          <ShieldCheck className="mr-1 h-4 w-4" /> {t("dealDetail.btn_send_for_approval")}
                         </Button>
                       )}
                       {waitingOnOthers && (
                         <Button disabled className="w-full">
-                          <Clock className="mr-1 h-4 w-4" /> Waiting for approval
+                          <Clock className="mr-1 h-4 w-4" /> {t("dealDetail.btn_waiting_for_approval")}
                         </Button>
                       )}
                       {canApprove && (
                         <div className="grid grid-cols-2 gap-2">
                           <Button onClick={approveDeal} className="w-full">
-                            <ShieldCheck className="mr-1 h-4 w-4" /> Approve
+                            <ShieldCheck className="mr-1 h-4 w-4" /> {t("dealDetail.btn_approve")}
                           </Button>
                           <Button
                             variant="outline"
                             onClick={() => { setApprovalNoteDraft(""); setApprovalNoteOpen(true); }}
                             className="w-full"
                           >
-                            Request changes
+                            {t("dealDetail.btn_request_changes")}
                           </Button>
                         </div>
                       )}
@@ -2152,18 +2152,18 @@ function DealDetail() {
                         onClick={() => saveProposal(true)}
                         className="w-full"
                         disabled={!isApproved}
-                        title={!isApproved ? "Needs internal approval first" : undefined}
+                        title={!isApproved ? t("dealDetail.title_needs_approval_first") : undefined}
                       >
-                        <Send className="mr-1 h-4 w-4" /> Send to client
+                        <Send className="mr-1 h-4 w-4" /> {t("dealDetail.btn_send_to_client")}
                       </Button>
                     </>
                   );
                 })()
               ) : (
                 <>
-                  <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">Save draft</Button>
+                  <Button onClick={() => saveProposal(false)} variant="outline" className="w-full">{t("dealDetail.btn_save_draft")}</Button>
                   <Button onClick={() => saveProposal(true)} className="w-full">
-                    <Send className="mr-1 h-4 w-4" /> Send to client
+                    <Send className="mr-1 h-4 w-4" /> {t("dealDetail.btn_send_to_client")}
                   </Button>
                 </>
               )}
@@ -2253,9 +2253,9 @@ function DealDetail() {
 
 
           <Card>
-            <CardHeader><CardTitle>Activity</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("dealDetail.section_activity")}</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {activities.length === 0 && <div className="text-muted-foreground">No activity yet.</div>}
+              {activities.length === 0 && <div className="text-muted-foreground">{t("dealDetail.empty_no_activity")}</div>}
               {activities.map((a) => (
                 <div key={a.id} className="flex justify-between">
                   <span>{a.kind.replace(/_/g, " ")}</span>
