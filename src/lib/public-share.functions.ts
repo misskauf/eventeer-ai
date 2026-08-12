@@ -124,6 +124,19 @@ export const submitClientSelection = createServerFn({ method: "POST" })
 
     const action = data.action;
 
+    if (action === "confirmed") {
+      const { data: propOffer } = await supabaseAdmin
+        .from("proposals")
+        .select("offer")
+        .eq("id", tok.proposal_id)
+        .maybeSingle();
+      const minRequired = Number((propOffer?.offer as any)?.min_revenue_required ?? 0);
+      if (minRequired > 0 && data.computed_total + 0.005 < minRequired) {
+        throw new Error("Selection is below the required minimum for this event.");
+      }
+    }
+
+
     await supabaseAdmin.from("proposal_selections").insert({
       proposal_id: tok.proposal_id,
       company_id: tok.company_id,
