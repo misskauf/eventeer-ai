@@ -143,7 +143,13 @@
     "brand": "Brand",
     "interface_language": "Interface language",
     "interface_language_hint": "Applies to your account on this device only. Client-facing documents keep the language set on each deal.",
-    "language_saved": "Interface language updated"
+    "language_saved": "Interface language updated",
+    "export_title": "Export data",
+    "export_hint": "Complete export of all data in this workspace as a ZIP (CSV and JSON). Please export your data before ending your workspace or contract — after deletion, recovery is not possible.",
+    "export_button": "Export data",
+    "export_running": "Preparing export…",
+    "export_done": "Export downloaded",
+    "export_failed": "Export failed"
   },
   "leadForm": {
     "loading": "Loading…",

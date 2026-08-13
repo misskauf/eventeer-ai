@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,11 @@ import { toast } from "sonner";
 import { Field, useCompanySettings } from "@/components/settings-shared";
 import { Label } from "@/components/ui/label";
 import { CurrencySelect } from "@/components/currency-select";
+import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n";
+import { usePermissions } from "@/lib/use-permissions";
+import { exportCompanyData } from "@/lib/data-export.functions";
+import { downloadExportZip } from "@/lib/data-export";
 
 
 export const Route = createFileRoute("/_authenticated/settings/company")({
@@ -37,6 +43,7 @@ function CompanySettings() {
   if (loading || !company) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <CardTitle>Company</CardTitle>
@@ -61,6 +68,44 @@ function CompanySettings() {
 
           <Button className="w-full">Save company</Button>
         </form>
+      </CardContent>
+    </Card>
+    <DataExportCard />
+    </div>
+  );
+}
+
+function DataExportCard() {
+  const { t } = useTranslation();
+  const { isOwner, loading } = usePermissions();
+  const [busy, setBusy] = useState(false);
+
+  if (loading || !isOwner) return null;
+
+  async function run() {
+    setBusy(true);
+    try {
+      const payload = await exportCompanyData();
+      await downloadExportZip(payload as any);
+      toast.success(t("settings.export_done"));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("settings.export_failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("settings.export_title")}</CardTitle>
+        <p className="text-sm text-muted-foreground">{t("settings.export_hint")}</p>
+      </CardHeader>
+      <CardContent>
+        <Button type="button" onClick={run} disabled={busy}>
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {busy ? t("settings.export_running") : t("settings.export_button")}
+        </Button>
       </CardContent>
     </Card>
   );

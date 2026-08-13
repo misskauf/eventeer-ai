@@ -68,6 +68,7 @@
     "i18next": "^26.3.6",
     "input-otp": "^1.4.2",
     "isomorphic-dompurify": "^3.18.0",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.575.0",
     "mammoth": "^1.12.0",
     "marked": "^18.0.6",
