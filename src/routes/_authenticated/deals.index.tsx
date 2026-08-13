@@ -117,6 +117,10 @@ function DealsPage() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [awaitingMine, setAwaitingMine] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [minValue, setMinValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "board">("list");
@@ -328,8 +332,18 @@ function DealsPage() {
     [deals, userId],
   );
 
+  const ownerOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const d of deals) if (d.owner_id) ids.add(d.owner_id);
+    return Array.from(ids).map((id) => ({
+      id,
+      label: id === userId ? t("deals.owner_me", { defaultValue: "Me" }) : actorNames[id] ?? `${id.slice(0, 8)}…`,
+    }));
+  }, [deals, actorNames, userId, t]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const min = minValue.trim() === "" ? null : Number(minValue);
     return deals.filter((d) => {
       if (stageFilter.startsWith("group:")) {
         const group = STAGE_GROUPS[stageFilter.slice(6)] ?? [];
@@ -339,6 +353,15 @@ function DealsPage() {
         if (d.approval_status !== "pending") return false;
         if (d.approval_requested_by === userId) return false;
       }
+      if (ownerFilter === "unassigned") {
+        if (d.owner_id) return false;
+      } else if (ownerFilter !== "all" && d.owner_id !== ownerFilter) return false;
+      if (dateFrom || dateTo) {
+        if (!d.event_date) return false;
+        if (dateFrom && d.event_date < dateFrom) return false;
+        if (dateTo && d.event_date > dateTo) return false;
+      }
+      if (min !== null && Number.isFinite(min) && Number(d.estimated_value ?? 0) < min) return false;
       if (!q) return true;
       return (
         d.client_name.toLowerCase().includes(q) ||
@@ -346,7 +369,11 @@ function DealsPage() {
         (d.client_company ?? "").toLowerCase().includes(q)
       );
     });
-  }, [deals, search, stageFilter, awaitingMine, userId]);
+  }, [deals, search, stageFilter, awaitingMine, userId, ownerFilter, dateFrom, dateTo, minValue]);
+
+  const hasExtraFilters =
+    ownerFilter !== "all" || dateFrom !== "" || dateTo !== "" || minValue.trim() !== "";
+
 
 
   const openDeal = (dealId: string, edit = false) => {
@@ -463,6 +490,85 @@ function DealsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/30 p-2">
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_owner", { defaultValue: "Owner" })}
+              </Label>
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("deals.filter_owner_all", { defaultValue: "All owners" })}
+                  </SelectItem>
+                  {ownerOptions.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="unassigned">
+                    {t("deals.filter_owner_none", { defaultValue: "Unassigned" })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_date_from", { defaultValue: "Event from" })}
+              </Label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8 w-[150px] text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_date_to", { defaultValue: "Event to" })}
+              </Label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-8 w-[150px] text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_min_value", { defaultValue: "Min. value" })}
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={minValue}
+                onChange={(e) => setMinValue(e.target.value)}
+                placeholder="0"
+                className="h-8 w-[120px] text-xs"
+              />
+            </div>
+            {hasExtraFilters && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs"
+                onClick={() => {
+                  setOwnerFilter("all");
+                  setDateFrom("");
+                  setDateTo("");
+                  setMinValue("");
+                }}
+              >
+                {t("deals.filter_reset", { defaultValue: "Reset filters" })}
+              </Button>
+            )}
+          </div>
+
 
           {view === "board" ? (
             <DealsBoard
