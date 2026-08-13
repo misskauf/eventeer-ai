@@ -70,5 +70,43 @@ function CompanySettings() {
         </form>
       </CardContent>
     </Card>
+    <DataExportCard />
+    </div>
+  );
+}
+
+function DataExportCard() {
+  const { t } = useTranslation();
+  const { isOwner, loading } = usePermissions();
+  const [busy, setBusy] = useState(false);
+
+  if (loading || !isOwner) return null;
+
+  async function run() {
+    setBusy(true);
+    try {
+      const payload = await exportCompanyData();
+      await downloadExportZip(payload as any);
+      toast.success(t("settings.export_done"));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("settings.export_failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("settings.export_title")}</CardTitle>
+        <p className="text-sm text-muted-foreground">{t("settings.export_hint")}</p>
+      </CardHeader>
+      <CardContent>
+        <Button type="button" onClick={run} disabled={busy}>
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {busy ? t("settings.export_running") : t("settings.export_button")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
