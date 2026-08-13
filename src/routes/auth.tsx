@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { acceptInvites } from "@/lib/team.functions";
 import { LegalLinks } from "@/components/legal-content";
+import { Checkbox } from "@/components/ui/checkbox";
+import { recordTermsAcceptance } from "@/lib/terms.functions";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { next?: string } =>
@@ -32,6 +34,9 @@ function AuthPage() {
   const { next } = Route.useSearch();
   const [busy, setBusy] = useState(false);
   const acceptPendingInvites = useServerFn(acceptInvites);
+  const acceptTerms = useServerFn(recordTermsAcceptance);
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [termsError, setTermsError] = useState(false);
 
   async function goNext(fallback: "/deals" | "/onboarding") {
     const target = safeNext(next);
@@ -63,6 +68,12 @@ function AuthPage() {
 
   async function onSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!termsChecked) {
+      setTermsError(true);
+      toast.error("Bitte akzeptieren Sie die AGB und die AVV, um ein Konto zu erstellen.");
+      return;
+    }
+    setTermsError(false);
     setBusy(true);
     const fd = new FormData(e.currentTarget);
     const target = safeNext(next);
@@ -74,6 +85,12 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
+    // Store the acceptance for the freshly created account (best effort: needs a session).
+    try {
+      await acceptTerms({});
+    } catch {
+      /* no session yet (email confirmation pending) — captured again before onboarding */
+    }
     toast.success("Account created. Check your email if confirmation is required.");
     await goNext("/onboarding");
   }
@@ -128,6 +145,33 @@ function AuthPage() {
               <form className="mt-4 space-y-3" onSubmit={onSignUp}>
                 <Field name="email" label="Work email" type="email" />
                 <Field name="password" label="Password" type="password" />
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    checked={termsChecked}
+                    onCheckedChange={(v) => {
+                      setTermsChecked(v === true);
+                      if (v === true) setTermsError(false);
+                    }}
+                    className="mt-0.5"
+                    aria-invalid={termsError}
+                  />
+                  <span>
+                    Ich akzeptiere die{" "}
+                    <a href="/agb" target="_blank" rel="noreferrer" className="underline">
+                      AGB
+                    </a>{" "}
+                    und die{" "}
+                    <a href="/avv" target="_blank" rel="noreferrer" className="underline">
+                      Vereinbarung zur Auftragsverarbeitung (AVV)
+                    </a>
+                    .
+                  </span>
+                </label>
+                {termsError ? (
+                  <p className="text-sm text-destructive">
+                    Bitte akzeptieren Sie die AGB und die AVV, um fortzufahren.
+                  </p>
+                ) : null}
                 <Button className="w-full" disabled={busy}>
                   Create account
                 </Button>
