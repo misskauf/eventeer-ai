@@ -174,6 +174,33 @@ function DealsPage() {
     setLastActivity(map);
   }
 
+  // Resolve teammate names for activity authors (best effort — needs team view).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await loadTeam({ data: undefined } as never);
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const m of (res as any)?.members ?? []) {
+          if (m.user_id && m.email) map[m.user_id] = String(m.email).split("@")[0];
+        }
+        setActorNames(map);
+      } catch {
+        /* no team access — fall back to short ids */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function personLabel(id: string | null) {
+    if (!id) return t("deals.board_unassigned", { defaultValue: "Unassigned" });
+    if (id === userId) return t("deals.board_owner_me", { defaultValue: "Me" });
+    return actorNames[id] ?? `${id.slice(0, 8)}…`;
+  }
 
 
   useEffect(() => {
