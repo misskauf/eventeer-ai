@@ -490,7 +490,9 @@ export function LegalPage({
         <h1 className="text-3xl font-semibold tracking-tight">
           {lang === "de" ? titleDe : titleEn}
         </h1>
-        <p className="mt-2 text-xs text-muted-foreground">{LAST_UPDATED[lang]}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {versionLabel ?? LAST_UPDATED[lang]}
+        </p>
         <div className="mt-2">{children(lang)}</div>
         <Link to="/" className="mt-12 inline-block">
           <Button variant="outline" size="sm">
@@ -511,6 +513,12 @@ export function LegalPage({
             <Link to="/datenschutz" className="hover:text-foreground">
               {t("landing.footer.datenschutz")}
             </Link>
+            <Link to="/agb" className="hover:text-foreground">
+              AGB
+            </Link>
+            <Link to="/avv" className="hover:text-foreground">
+              AVV
+            </Link>
             <a href={`mailto:${LEGAL_EMAIL}`} className="hover:text-foreground">
               {t("landing.footer.contact")}
             </a>
@@ -530,6 +538,14 @@ export function LegalLinks({ className = "" }: { className?: string }) {
       <span aria-hidden>·</span>
       <Link to="/datenschutz" className="hover:text-foreground">
         Datenschutz
+      </Link>
+      <span aria-hidden>·</span>
+      <Link to="/agb" className="hover:text-foreground">
+        AGB
+      </Link>
+      <span aria-hidden>·</span>
+      <Link to="/avv" className="hover:text-foreground">
+        AVV
       </Link>
     </div>
   );
