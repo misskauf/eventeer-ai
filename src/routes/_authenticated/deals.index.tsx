@@ -118,6 +118,9 @@ function DealsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "board">("list");
+  const [lastActivity, setLastActivity] = useState<Record<string, ActivityRow>>({});
+  const [actorNames, setActorNames] = useState<Record<string, string>>({});
+
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
   const { scope, can, loading: permLoading } = usePermissions();
