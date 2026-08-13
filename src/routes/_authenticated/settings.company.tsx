@@ -43,6 +43,7 @@ function CompanySettings() {
   if (loading || !company) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <CardTitle>Company</CardTitle>
