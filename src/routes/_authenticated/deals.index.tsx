@@ -299,6 +299,16 @@ function DealsPage() {
         kind: "stage_changed",
         meta: { from: prev, to: next },
       });
+      setLastActivity((cur) => ({
+        ...cur,
+        [dealId]: {
+          deal_id: dealId,
+          actor_id: userData.user!.id,
+          kind: "stage_changed",
+          meta: { from: prev, to: next },
+          created_at: new Date().toISOString(),
+        },
+      }));
     }
     toast.success(t("deals.moved_toast", { stage: stageLabel(next) }));
   }
