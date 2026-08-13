@@ -11,7 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { CalendarDays, User } from "lucide-react";
+import { CalendarDays, History as HistoryIcon, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,9 +23,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { money } from "@/lib/pricing";
 import { formatEventDate } from "@/lib/date-format";
-import { stageLabel, stageToneClass, STAGE_ORDER } from "@/lib/deal-stages";
+import { stageLabel, stageToneClass, formatRelative, STAGE_ORDER } from "@/lib/deal-stages";
 import { PIPELINE_COLUMNS, columnById, columnForStage } from "@/lib/pipeline-columns";
 import { useTranslation } from "@/i18n";
+
+export type BoardActivity = {
+  label: string;
+  actor: string;
+  at: string;
+};
 
 export type BoardDeal = {
   id: string;
@@ -35,7 +41,9 @@ export type BoardDeal = {
   estimated_value: number;
   stage: string;
   owner_id: string | null;
+  last_activity?: BoardActivity | null;
 };
+
 
 type Props = {
   deals: BoardDeal[];
@@ -198,7 +206,19 @@ function CardBody({
         <User className="h-3.5 w-3.5" />
         <span className="truncate">{ownerLabel(deal.owner_id)}</span>
       </div>
+      {deal.last_activity && (
+        <div className="mt-2 border-t pt-2 pr-16 text-[11px] leading-tight text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <HistoryIcon className="h-3 w-3 shrink-0" />
+            <span className="truncate font-medium text-foreground">{deal.last_activity.label}</span>
+          </div>
+          <div className="mt-0.5 truncate">
+            {deal.last_activity.actor} · {formatRelative(deal.last_activity.at)}
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 

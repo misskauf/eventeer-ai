@@ -53,6 +53,8 @@ import { archiveDeal, restoreDeal } from "@/lib/deal-lifecycle";
 import { DeleteDealDialog } from "@/components/delete-deal-dialog";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DealsBoard } from "@/components/deals-board";
+import { useServerFn } from "@tanstack/react-start";
+import { listTeam } from "@/lib/team.functions";
 import { LayoutGrid, List as ListIcon } from "lucide-react";
 
 
@@ -80,7 +82,30 @@ type Deal = {
   owner_id: string | null;
 };
 
+type ActivityRow = {
+  deal_id: string;
+  actor_id: string | null;
+  kind: string;
+  meta: any;
+  created_at: string;
+};
+
+/** Human-readable one-liner for a history entry. */
+function activityLabel(a: ActivityRow): string {
+  const base = a.kind.replace(/_/g, " ");
+  const note =
+    typeof a.meta?.note === "string" && a.meta.note.trim() ? a.meta.note.trim() : null;
+  if (note) return `${base}: ${note}`;
+  if (a.kind === "stage_changed" && a.meta?.to) {
+    return a.meta?.from
+      ? `${stageLabel(String(a.meta.from))} → ${stageLabel(String(a.meta.to))}`
+      : stageLabel(String(a.meta.to));
+  }
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
 const VIEW_KEY = "eventeer.deals.view";
+
 
 
 function DealsPage() {
@@ -95,8 +120,12 @@ function DealsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "board">("list");
+  const [lastActivity, setLastActivity] = useState<Record<string, ActivityRow>>({});
+  const [actorNames, setActorNames] = useState<Record<string, string>>({});
+
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
+  const loadTeam = useServerFn(listTeam);
   const { scope, can, loading: permLoading } = usePermissions();
   const dealScope = scope("deals");
   const canEditDeals = can("deals", "edit");
@@ -123,8 +152,57 @@ function DealsPage() {
     if (showArchived) query = query.not("archived_at", "is", null);
     else query = query.is("archived_at", null);
     const { data } = await query;
-    setDeals((data as Deal[]) ?? []);
+    const rows = (data as Deal[]) ?? [];
+    setDeals(rows);
     setLoading(false);
+    loadActivity(rows.map((d) => d.id));
+  }
+
+  // Latest history entry per deal, shown on the Kanban cards.
+  async function loadActivity(dealIds: string[]) {
+    if (dealIds.length === 0) {
+      setLastActivity({});
+      return;
+    }
+    const { data } = await supabase
+      .from("deal_activities")
+      .select("deal_id, actor_id, kind, meta, created_at")
+      .in("deal_id", dealIds.slice(0, 200))
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    const map: Record<string, ActivityRow> = {};
+    for (const a of (data as ActivityRow[]) ?? []) {
+      if (!map[a.deal_id]) map[a.deal_id] = a;
+    }
+    setLastActivity(map);
+  }
+
+  // Resolve teammate names for activity authors (best effort — needs team view).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await loadTeam({ data: undefined } as never);
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const m of (res as any)?.members ?? []) {
+          if (m.user_id && m.email) map[m.user_id] = String(m.email).split("@")[0];
+        }
+        setActorNames(map);
+      } catch {
+        /* no team access — fall back to short ids */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function personLabel(id: string | null) {
+    if (!id) return t("deals.board_unassigned", { defaultValue: "Unassigned" });
+    if (id === userId) return t("deals.board_owner_me", { defaultValue: "Me" });
+    return actorNames[id] ?? `${id.slice(0, 8)}…`;
   }
 
 
@@ -221,6 +299,16 @@ function DealsPage() {
         kind: "stage_changed",
         meta: { from: prev, to: next },
       });
+      setLastActivity((cur) => ({
+        ...cur,
+        [dealId]: {
+          deal_id: dealId,
+          actor_id: userData.user!.id,
+          kind: "stage_changed",
+          meta: { from: prev, to: next },
+          created_at: new Date().toISOString(),
+        },
+      }));
     }
     toast.success(t("deals.moved_toast", { stage: stageLabel(next) }));
   }
@@ -378,27 +466,32 @@ function DealsPage() {
 
           {view === "board" ? (
             <DealsBoard
-              deals={filtered.map((d) => ({
-                id: d.id,
-                client_name: d.client_name,
-                client_company: d.client_company,
-                event_date: d.event_date,
-                estimated_value: Number(d.estimated_value),
-                stage: d.stage,
-                owner_id: d.owner_id,
-              }))}
+              deals={filtered.map((d) => {
+                const a = lastActivity[d.id];
+                return {
+                  id: d.id,
+                  client_name: d.client_name,
+                  client_company: d.client_company,
+                  event_date: d.event_date,
+                  estimated_value: Number(d.estimated_value),
+                  stage: d.stage,
+                  owner_id: d.owner_id,
+                  last_activity: a
+                    ? {
+                        label: activityLabel(a),
+                        actor: personLabel(a.actor_id),
+                        at: a.created_at,
+                      }
+                    : null,
+                };
+              })}
               currency={currency}
               canEdit={canEditDeals}
-              ownerLabel={(id) =>
-                !id
-                  ? t("deals.board_unassigned", { defaultValue: "Unassigned" })
-                  : id === userId
-                    ? t("deals.board_owner_me", { defaultValue: "Me" })
-                    : `${id.slice(0, 8)}…`
-              }
+              ownerLabel={personLabel}
               onOpen={(id) => openDeal(id)}
               onMove={(id, stage) => updateStage(id, stage)}
             />
+
           ) : (
           <Card>
             <CardContent className="p-0">
