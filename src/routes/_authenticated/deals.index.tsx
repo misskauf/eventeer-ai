@@ -491,6 +491,85 @@ function DealsPage() {
             </Select>
           </div>
 
+          <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/30 p-2">
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_owner", { defaultValue: "Owner" })}
+              </Label>
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("deals.filter_owner_all", { defaultValue: "All owners" })}
+                  </SelectItem>
+                  {ownerOptions.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="unassigned">
+                    {t("deals.filter_owner_none", { defaultValue: "Unassigned" })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_date_from", { defaultValue: "Event from" })}
+              </Label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8 w-[150px] text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_date_to", { defaultValue: "Event to" })}
+              </Label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-8 w-[150px] text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px] text-muted-foreground">
+                {t("deals.filter_min_value", { defaultValue: "Min. value" })}
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={minValue}
+                onChange={(e) => setMinValue(e.target.value)}
+                placeholder="0"
+                className="h-8 w-[120px] text-xs"
+              />
+            </div>
+            {hasExtraFilters && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs"
+                onClick={() => {
+                  setOwnerFilter("all");
+                  setDateFrom("");
+                  setDateTo("");
+                  setMinValue("");
+                }}
+              >
+                {t("deals.filter_reset", { defaultValue: "Reset filters" })}
+              </Button>
+            )}
+          </div>
+
+
           {view === "board" ? (
             <DealsBoard
               deals={filtered.map((d) => {
