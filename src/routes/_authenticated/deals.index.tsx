@@ -123,9 +123,31 @@ function DealsPage() {
     if (showArchived) query = query.not("archived_at", "is", null);
     else query = query.is("archived_at", null);
     const { data } = await query;
-    setDeals((data as Deal[]) ?? []);
+    const rows = (data as Deal[]) ?? [];
+    setDeals(rows);
     setLoading(false);
+    loadActivity(rows.map((d) => d.id));
   }
+
+  // Latest history entry per deal, shown on the Kanban cards.
+  async function loadActivity(dealIds: string[]) {
+    if (dealIds.length === 0) {
+      setLastActivity({});
+      return;
+    }
+    const { data } = await supabase
+      .from("deal_activities")
+      .select("deal_id, actor_id, kind, meta, created_at")
+      .in("deal_id", dealIds.slice(0, 200))
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    const map: Record<string, ActivityRow> = {};
+    for (const a of (data as ActivityRow[]) ?? []) {
+      if (!map[a.deal_id]) map[a.deal_id] = a;
+    }
+    setLastActivity(map);
+  }
+
 
 
   useEffect(() => {
