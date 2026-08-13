@@ -53,6 +53,8 @@ import { archiveDeal, restoreDeal } from "@/lib/deal-lifecycle";
 import { DeleteDealDialog } from "@/components/delete-deal-dialog";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DealsBoard } from "@/components/deals-board";
+import { useServerFn } from "@tanstack/react-start";
+import { listTeam } from "@/lib/team.functions";
 import { LayoutGrid, List as ListIcon } from "lucide-react";
 
 
@@ -123,6 +125,7 @@ function DealsPage() {
 
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
+  const loadTeam = useServerFn(listTeam);
   const { scope, can, loading: permLoading } = usePermissions();
   const dealScope = scope("deals");
   const canEditDeals = can("deals", "edit");
