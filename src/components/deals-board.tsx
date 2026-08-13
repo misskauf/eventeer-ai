@@ -27,6 +27,12 @@ import { stageLabel, stageToneClass, STAGE_ORDER } from "@/lib/deal-stages";
 import { PIPELINE_COLUMNS, columnById, columnForStage } from "@/lib/pipeline-columns";
 import { useTranslation } from "@/i18n";
 
+export type BoardActivity = {
+  label: string;
+  actor: string;
+  at: string;
+};
+
 export type BoardDeal = {
   id: string;
   client_name: string;
@@ -35,7 +41,9 @@ export type BoardDeal = {
   estimated_value: number;
   stage: string;
   owner_id: string | null;
+  last_activity?: BoardActivity | null;
 };
+
 
 type Props = {
   deals: BoardDeal[];
