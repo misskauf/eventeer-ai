@@ -1,13 +1,47 @@
+import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Lock, LogOut } from "lucide-react";
+import { AlertTriangle, Clock, CreditCard, Loader2, Lock, LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { usePermissions } from "@/lib/use-permissions";
 import { useSubscription } from "@/lib/use-subscription";
 import { BILLING_CONTACT_EMAIL, TRIAL_DAYS } from "@/lib/billing";
 import { usePlatformAdmin } from "@/lib/use-platform-admin";
+import { startSubscriptionCheckout } from "@/lib/billing.functions";
+
+/** Sends the owner to hosted Stripe Checkout for the subscription. */
+export function SubscribeButton({
+  label = "Subscribe",
+  variant = "default",
+}: {
+  label?: string;
+  variant?: "default" | "outline" | "ghost";
+}) {
+  const checkout = useServerFn(startSubscriptionCheckout);
+  const [busy, setBusy] = useState(false);
+
+  async function go() {
+    setBusy(true);
+    try {
+      const { url } = await checkout({ data: { origin: window.location.origin } });
+      window.location.href = url;
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not start checkout.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Button variant={variant} onClick={go} disabled={busy}>
+      {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+      {label}
+    </Button>
+  );
+}
 
 /**
  * Gates the authenticated app on the company's subscription:
@@ -15,7 +49,7 @@ import { usePlatformAdmin } from "@/lib/use-platform-admin";
  * Never deletes or hides data server-side; this is access gating only.
  */
 export function PaywallGate({ children }: { children: React.ReactNode }) {
-  const { locked, isTrialing, daysLeft, loading } = useSubscription();
+  const { locked, isTrialing, isPastDue, daysLeft, loading } = useSubscription();
   const { isOwner } = usePermissions();
   const { isPlatformAdmin } = usePlatformAdmin();
   const navigate = useNavigate();
@@ -43,18 +77,19 @@ export function PaywallGate({ children }: { children: React.ReactNode }) {
             </CardTitle>
             <CardDescription>
               {isOwner
-                ? `To keep using EventFlow, please subscribe — contact ${BILLING_CONTACT_EMAIL}.`
+                ? "Subscribe to keep using EventFlow — you can pay by card and manage everything yourself."
                 : "Your team’s trial has ended — ask your account owner to subscribe."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>All your data is safe and untouched. Access resumes as soon as the account is activated.</p>
+            <p>All your data is safe and untouched. Access resumes as soon as the payment goes through.</p>
             <div className="flex flex-wrap gap-2">
               {isOwner && (
                 <>
-                  <Button asChild>
+                  <SubscribeButton label="Subscribe now" />
+                  <Button variant="outline" asChild>
                     <a href={`mailto:${BILLING_CONTACT_EMAIL}?subject=EventFlow subscription`}>
-                      Contact us to subscribe
+                      Contact us
                     </a>
                   </Button>
                   <Button variant="outline" asChild>
@@ -74,19 +109,27 @@ export function PaywallGate({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {isPastDue && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <span>Your last payment failed. Please update your payment details to keep your account active.</span>
+          {isOwner && (
+            <Link className="ml-auto font-medium underline underline-offset-4" to="/settings/company">
+              Fix billing
+            </Link>
+          )}
+        </div>
+      )}
       {isTrialing && (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm">
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm">
           <Clock className="h-4 w-4 text-primary" />
           <span>
             {daysLeft} {daysLeft === 1 ? "day" : "days"} left in your free trial.
           </span>
           {isOwner && (
-            <a
-              className="ml-auto font-medium underline underline-offset-4"
-              href={`mailto:${BILLING_CONTACT_EMAIL}?subject=EventFlow subscription`}
-            >
+            <Link className="ml-auto font-medium underline underline-offset-4" to="/settings/company">
               Subscribe
-            </a>
+            </Link>
           )}
         </div>
       )}

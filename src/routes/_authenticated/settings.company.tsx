@@ -12,6 +12,7 @@ import { useTranslation } from "@/i18n";
 import { usePermissions } from "@/lib/use-permissions";
 import { exportCompanyData } from "@/lib/data-export.functions";
 import { downloadExportZip } from "@/lib/data-export";
+import { SubscriptionCard } from "@/components/subscription-card";
 
 
 export const Route = createFileRoute("/_authenticated/settings/company")({
@@ -70,6 +71,7 @@ function CompanySettings() {
         </form>
       </CardContent>
     </Card>
+    <SubscriptionCard />
     <DataExportCard />
     </div>
   );
