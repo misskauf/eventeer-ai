@@ -6,6 +6,7 @@ import {
   getCompanyAuditLog,
   listPlatformPrices,
   setCompanyBilling,
+  savePlatformPrice,
   setCompanyPlan,
   type PlatformCompany,
 } from "@/lib/platform.functions";
@@ -400,6 +401,89 @@ function AuditLog({ companyId, note }: { companyId: string; note: string | null 
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+/** The platform's subscription price list — used when assigning a plan to a company. */
+function PriceList() {
+  const qc = useQueryClient();
+  const fetchPrices = useServerFn(listPlatformPrices);
+  const savePrice = useServerFn(savePlatformPrice);
+  const [open, setOpen] = useState(false);
+  const [priceId, setPriceId] = useState("");
+  const [label, setLabel] = useState("");
+
+  const { data } = useQuery({ queryKey: ["platform-prices"], queryFn: () => fetchPrices() });
+  const mutation = useMutation({
+    mutationFn: (vars: { stripePriceId: string; label: string }) => savePrice({ data: vars }),
+    onSuccess: () => {
+      toast.success("Plan saved");
+      setOpen(false);
+      setPriceId("");
+      setLabel("");
+      void qc.invalidateQueries({ queryKey: ["platform-prices"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+      <span className="font-medium">Plans:</span>
+      {(data?.prices ?? []).length === 0 ? (
+        <span className="text-muted-foreground">none yet</span>
+      ) : (
+        (data?.prices ?? []).map((p) => (
+          <Badge key={p.stripe_price_id} variant={p.active ? "default" : "secondary"}>
+            {p.label} · {(p.amount_cents / 100).toFixed(2)} {p.currency}/{p.interval}
+          </Badge>
+        ))
+      )}
+      <Button size="sm" variant="outline" className="ml-auto" onClick={() => setOpen(true)}>
+        Add plan
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a plan</DialogTitle>
+            <DialogDescription>
+              The price is read from Stripe, so the id must already exist there.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-price">Stripe price id</Label>
+              <Input
+                id="new-price"
+                placeholder="price_…"
+                value={priceId}
+                onChange={(e) => setPriceId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-label">Label</Label>
+              <Input
+                id="new-label"
+                placeholder="Standard monthly"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={mutation.isPending || !priceId.trim() || !label.trim()}
+              onClick={() => mutation.mutate({ stripePriceId: priceId.trim(), label: label.trim() })}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
