@@ -141,6 +141,10 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
         <span className="ml-auto text-sm text-muted-foreground">{rows.length} companies</span>
       </div>
 
+      <PriceList />
+
+
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
