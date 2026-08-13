@@ -328,8 +328,18 @@ function DealsPage() {
     [deals, userId],
   );
 
+  const ownerOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const d of deals) if (d.owner_id) ids.add(d.owner_id);
+    return Array.from(ids).map((id) => ({
+      id,
+      label: id === userId ? t("deals.owner_me", { defaultValue: "Me" }) : actorNames[id] ?? `${id.slice(0, 8)}…`,
+    }));
+  }, [deals, actorNames, userId, t]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const min = minValue.trim() === "" ? null : Number(minValue);
     return deals.filter((d) => {
       if (stageFilter.startsWith("group:")) {
         const group = STAGE_GROUPS[stageFilter.slice(6)] ?? [];
@@ -339,6 +349,15 @@ function DealsPage() {
         if (d.approval_status !== "pending") return false;
         if (d.approval_requested_by === userId) return false;
       }
+      if (ownerFilter === "unassigned") {
+        if (d.owner_id) return false;
+      } else if (ownerFilter !== "all" && d.owner_id !== ownerFilter) return false;
+      if (dateFrom || dateTo) {
+        if (!d.event_date) return false;
+        if (dateFrom && d.event_date < dateFrom) return false;
+        if (dateTo && d.event_date > dateTo) return false;
+      }
+      if (min !== null && Number.isFinite(min) && Number(d.estimated_value ?? 0) < min) return false;
       if (!q) return true;
       return (
         d.client_name.toLowerCase().includes(q) ||
@@ -346,7 +365,11 @@ function DealsPage() {
         (d.client_company ?? "").toLowerCase().includes(q)
       );
     });
-  }, [deals, search, stageFilter, awaitingMine, userId]);
+  }, [deals, search, stageFilter, awaitingMine, userId, ownerFilter, dateFrom, dateTo, minValue]);
+
+  const hasExtraFilters =
+    ownerFilter !== "all" || dateFrom !== "" || dateTo !== "" || minValue.trim() !== "";
+
 
 
   const openDeal = (dealId: string, edit = false) => {
