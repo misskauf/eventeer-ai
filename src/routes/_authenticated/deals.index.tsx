@@ -117,6 +117,10 @@ function DealsPage() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [awaitingMine, setAwaitingMine] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [minValue, setMinValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "board">("list");
