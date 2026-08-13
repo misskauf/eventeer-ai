@@ -11,7 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { CalendarDays, User } from "lucide-react";
+import { CalendarDays, History as HistoryIcon, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
