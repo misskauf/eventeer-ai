@@ -80,7 +80,30 @@ type Deal = {
   owner_id: string | null;
 };
 
+type ActivityRow = {
+  deal_id: string;
+  actor_id: string | null;
+  kind: string;
+  meta: any;
+  created_at: string;
+};
+
+/** Human-readable one-liner for a history entry. */
+function activityLabel(a: ActivityRow): string {
+  const base = a.kind.replace(/_/g, " ");
+  const note =
+    typeof a.meta?.note === "string" && a.meta.note.trim() ? a.meta.note.trim() : null;
+  if (note) return `${base}: ${note}`;
+  if (a.kind === "stage_changed" && a.meta?.to) {
+    return a.meta?.from
+      ? `${stageLabel(String(a.meta.from))} → ${stageLabel(String(a.meta.to))}`
+      : stageLabel(String(a.meta.to));
+  }
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
 const VIEW_KEY = "eventeer.deals.view";
+
 
 
 function DealsPage() {
