@@ -422,14 +422,17 @@ export function DatenschutzEN() {
 export function LegalPage({
   titleDe,
   titleEn,
+  versionLabel,
   children,
 }: {
   titleDe: string;
   titleEn: string;
+  versionLabel?: string;
   children: (lang: AppLang) => ReactNode;
 }) {
   const { t } = useTranslation();
   const [lang, setLang] = useState<AppLang>("en");
+
 
   useEffect(() => {
     applyStoredLanguage();
