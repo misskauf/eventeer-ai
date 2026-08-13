@@ -206,7 +206,19 @@ function CardBody({
         <User className="h-3.5 w-3.5" />
         <span className="truncate">{ownerLabel(deal.owner_id)}</span>
       </div>
+      {deal.last_activity && (
+        <div className="mt-2 border-t pt-2 pr-16 text-[11px] leading-tight text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <History className="h-3 w-3 shrink-0" />
+            <span className="truncate font-medium text-foreground">{deal.last_activity.label}</span>
+          </div>
+          <div className="mt-0.5 truncate">
+            {deal.last_activity.actor} · {formatRelative(deal.last_activity.at)}
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
