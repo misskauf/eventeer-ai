@@ -143,7 +143,13 @@
     "brand": "Branding",
     "interface_language": "Sprache der Oberfläche",
     "interface_language_hint": "Gilt nur für Ihr Konto auf diesem Gerät. Kundendokumente behalten die im jeweiligen Deal eingestellte Sprache.",
-    "language_saved": "Sprache der Oberfläche aktualisiert"
+    "language_saved": "Sprache der Oberfläche aktualisiert",
+    "export_title": "Daten exportieren",
+    "export_hint": "Vollständiger Export aller Daten dieses Workspace als ZIP (CSV und JSON). Bitte exportieren Sie Ihre Daten, bevor Sie den Workspace oder Ihren Vertrag beenden — nach der Löschung ist keine Wiederherstellung möglich.",
+    "export_button": "Daten exportieren",
+    "export_running": "Export wird vorbereitet…",
+    "export_done": "Export heruntergeladen",
+    "export_failed": "Export fehlgeschlagen"
   },
   "leadForm": {
     "loading": "Wird geladen…",
