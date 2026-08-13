@@ -32,6 +32,7 @@ export type Database = {
           created_at: string
           created_by: string
           currency: string
+          current_period_end: string | null
           default_deal_language: string
           id: string
           invoice_mode: string
@@ -47,8 +48,12 @@ export type Database = {
           quote_seq_padding: number
           quote_seq_year: number | null
           require_deal_approval: boolean
+          stripe_coupon_id: string | null
+          stripe_customer_id: string | null
           stripe_enabled: boolean
+          stripe_price_id: string | null
           stripe_publishable_key: string | null
+          stripe_subscription_id: string | null
           subscription_status: string
           timezone: string
           trial_ends_at: string | null
@@ -73,6 +78,7 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: string
+          current_period_end?: string | null
           default_deal_language?: string
           id?: string
           invoice_mode?: string
@@ -88,8 +94,12 @@ export type Database = {
           quote_seq_padding?: number
           quote_seq_year?: number | null
           require_deal_approval?: boolean
+          stripe_coupon_id?: string | null
+          stripe_customer_id?: string | null
           stripe_enabled?: boolean
+          stripe_price_id?: string | null
           stripe_publishable_key?: string | null
+          stripe_subscription_id?: string | null
           subscription_status?: string
           timezone?: string
           trial_ends_at?: string | null
@@ -114,6 +124,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: string
+          current_period_end?: string | null
           default_deal_language?: string
           id?: string
           invoice_mode?: string
@@ -129,8 +140,12 @@ export type Database = {
           quote_seq_padding?: number
           quote_seq_year?: number | null
           require_deal_approval?: boolean
+          stripe_coupon_id?: string | null
+          stripe_customer_id?: string | null
           stripe_enabled?: boolean
+          stripe_price_id?: string | null
           stripe_publishable_key?: string | null
+          stripe_subscription_id?: string | null
           subscription_status?: string
           timezone?: string
           trial_ends_at?: string | null
@@ -1465,6 +1480,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_prices: {
+        Row: {
+          active: boolean
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          interval: string
+          label: string
+          stripe_price_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string
+          label: string
+          stripe_price_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string
+          label?: string
+          stripe_price_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       pricing_rules: {
         Row: {
