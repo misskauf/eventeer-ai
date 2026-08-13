@@ -344,7 +344,19 @@
     "weekday_thu": "Do",
     "weekday_fri": "Fr",
     "weekday_sat": "Sa",
-    "weekday_sun": "So"
+    "weekday_sun": "So",
+    "view_kanban": "Kanban",
+    "view_list": "Liste",
+    "board_new": "Neu & Kontakt",
+    "board_proposal": "Angebot gesendet",
+    "board_changes": "Änderungen gewünscht",
+    "board_approved": "Kunde bestätigt",
+    "board_signed": "Unterschrieben",
+    "board_payment": "Zahlung",
+    "board_lost": "Verloren",
+    "board_empty_column": "Keine Deals",
+    "board_unassigned": "Nicht zugewiesen",
+    "board_owner_me": "Ich"
   },
   "dealDetail": {
     "back_to_deals": "Zurück zu Deals",

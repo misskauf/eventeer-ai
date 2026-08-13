@@ -52,6 +52,8 @@ import { normalizeFields, PRESET_FIELDS, type CustomFieldDef } from "@/lib/lead-
 import { archiveDeal, restoreDeal } from "@/lib/deal-lifecycle";
 import { DeleteDealDialog } from "@/components/delete-deal-dialog";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DealsBoard } from "@/components/deals-board";
+import { LayoutGrid, List as ListIcon } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/deals/")({
@@ -75,7 +77,10 @@ type Deal = {
   approval_status: string;
   approval_requested_by: string | null;
   archived_at: string | null;
+  owner_id: string | null;
 };
+
+const VIEW_KEY = "eventeer.deals.view";
 
 
 function DealsPage() {
@@ -89,6 +94,7 @@ function DealsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "board">("list");
   const navigate = useNavigate();
   const currency = useCompanyCurrency();
   const { scope, can, loading: permLoading } = usePermissions();
@@ -108,7 +114,7 @@ function DealsPage() {
     let query = supabase
       .from("deals")
       .select(
-        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by, archived_at",
+        "id, client_name, client_email, client_company, event_date, guest_count, stage, estimated_value, updated_at, approval_status, approval_requested_by, archived_at, owner_id",
       )
       .order("updated_at", { ascending: false });
     // Roles scoped to "own records" only see the deals they own.
@@ -124,6 +130,43 @@ function DealsPage() {
 
   useEffect(() => {
     if (!permLoading) refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permLoading, dealScope, showArchived]);
+
+  // Remember the last used view per user (this device).
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(VIEW_KEY) : null;
+    if (saved === "board" || saved === "list") setView(saved);
+  }, []);
+
+  function changeView(next: "list" | "board") {
+    setView(next);
+    try {
+      window.localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  }
+
+  // Live board: stage changes made elsewhere land in the right column without a reload.
+  useEffect(() => {
+    if (permLoading) return;
+    const channel = supabase
+      .channel("deals-board")
+      .on("postgres_changes", { event: "*", schema: "public", table: "deals" }, () => {
+        refresh();
+      })
+      .subscribe();
+    const onFocus = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permLoading, dealScope, showArchived]);
 
@@ -254,8 +297,32 @@ function DealsPage() {
                 className="pl-8"
               />
             </div>
-            <div className="text-xs text-muted-foreground">
-              {t("deals.count", { shown: filtered.length, total: deals.length })}
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-muted-foreground">
+                {t("deals.count", { shown: filtered.length, total: deals.length })}
+              </div>
+              <div className="inline-flex rounded-md border p-0.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={view === "board" ? "secondary" : "ghost"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => changeView("board")}
+                >
+                  <LayoutGrid className="mr-1 h-3.5 w-3.5" />
+                  {t("deals.view_kanban", { defaultValue: "Kanban" })}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={view === "list" ? "secondary" : "ghost"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => changeView("list")}
+                >
+                  <ListIcon className="mr-1 h-3.5 w-3.5" />
+                  {t("deals.view_list", { defaultValue: "List" })}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -309,6 +376,30 @@ function DealsPage() {
             </Select>
           </div>
 
+          {view === "board" ? (
+            <DealsBoard
+              deals={filtered.map((d) => ({
+                id: d.id,
+                client_name: d.client_name,
+                client_company: d.client_company,
+                event_date: d.event_date,
+                estimated_value: Number(d.estimated_value),
+                stage: d.stage,
+                owner_id: d.owner_id,
+              }))}
+              currency={currency}
+              canEdit={canEditDeals}
+              ownerLabel={(id) =>
+                !id
+                  ? t("deals.board_unassigned", { defaultValue: "Unassigned" })
+                  : id === userId
+                    ? t("deals.board_owner_me", { defaultValue: "Me" })
+                    : `${id.slice(0, 8)}…`
+              }
+              onOpen={(id) => openDeal(id)}
+              onMove={(id, stage) => updateStage(id, stage)}
+            />
+          ) : (
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -474,6 +565,7 @@ function DealsPage() {
               </div>
             </CardContent>
           </Card>
+          )}
         </div>
       )}
       {deleteTarget && (

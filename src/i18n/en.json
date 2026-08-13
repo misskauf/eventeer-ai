@@ -344,7 +344,19 @@
     "weekday_thu": "Thu",
     "weekday_fri": "Fri",
     "weekday_sat": "Sat",
-    "weekday_sun": "Sun"
+    "weekday_sun": "Sun",
+    "view_kanban": "Kanban",
+    "view_list": "List",
+    "board_new": "New & contact",
+    "board_proposal": "Proposal sent",
+    "board_changes": "Changes requested",
+    "board_approved": "Client approved",
+    "board_signed": "Signed",
+    "board_payment": "Payment",
+    "board_lost": "Lost",
+    "board_empty_column": "No deals",
+    "board_unassigned": "Unassigned",
+    "board_owner_me": "Me"
   },
   "dealDetail": {
     "back_to_deals": "Back to deals",
