@@ -32,7 +32,6 @@ function AuthPage() {
   const { next } = Route.useSearch();
   const [busy, setBusy] = useState(false);
   const acceptPendingInvites = useServerFn(acceptInvites);
-  const inviteMode = (safeNext(next) ?? "").startsWith("/invite/");
 
   async function goNext(fallback: "/deals" | "/onboarding") {
     const target = safeNext(next);
@@ -108,61 +107,33 @@ function AuthPage() {
             height={96}
           />
           <CardTitle>Welcome to {APP_NAME}</CardTitle>
-          <CardDescription>Sign in to your workspace.</CardDescription>
+          <CardDescription>Sign in or create your workspace.</CardDescription>
         </CardHeader>
         <CardContent>
-          {inviteMode ? (
-            <Tabs defaultValue="signup">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign in</TabsTrigger>
-                <TabsTrigger value="signup">Create account</TabsTrigger>
-              </TabsList>
-              <TabsContent value="signin">
-                <form className="mt-4 space-y-3" onSubmit={onSignIn}>
-                  <Field name="email" label="Email" type="email" />
-                  <Field name="password" label="Password" type="password" />
-                  <Button className="w-full" disabled={busy}>
-                    Sign in
-                  </Button>
-                </form>
-              </TabsContent>
-              <TabsContent value="signup">
-                <form className="mt-4 space-y-3" onSubmit={onSignUp}>
-                  <Field name="email" label="Work email" type="email" />
-                  <Field name="password" label="Password" type="password" />
-                  <Button className="w-full" disabled={busy}>
-                    Create account
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <>
-              <form className="space-y-3" onSubmit={onSignIn}>
+          <Tabs defaultValue="signin">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="signup">Create account</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin">
+              <form className="mt-4 space-y-3" onSubmit={onSignIn}>
                 <Field name="email" label="Email" type="email" />
                 <Field name="password" label="Password" type="password" />
                 <Button className="w-full" disabled={busy}>
                   Sign in
                 </Button>
               </form>
-              <div className="mt-6 rounded-lg border bg-muted/40 p-4">
-                <p className="text-sm font-semibold">Eventeer is invite-only</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  We're onboarding a small group of founding venues personally. Book a demo and
-                  we'll set up your workspace with you.
-                </p>
-                <Button asChild size="sm" className="mt-3">
-                  <a href="/#demo">Book a demo</a>
+            </TabsContent>
+            <TabsContent value="signup">
+              <form className="mt-4 space-y-3" onSubmit={onSignUp}>
+                <Field name="email" label="Work email" type="email" />
+                <Field name="password" label="Password" type="password" />
+                <Button className="w-full" disabled={busy}>
+                  Create account
                 </Button>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Already have an invitation? Use the link in your email.{" "}
-                  <a className="underline" href="mailto:keren@dressedforpeace.com">
-                    Get in touch
-                  </a>
-                </p>
-              </div>
-            </>
-          )}
+              </form>
+            </TabsContent>
+          </Tabs>
           <div className="my-4 flex items-center gap-2 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
           </div>
