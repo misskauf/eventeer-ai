@@ -4,7 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   getCompanyAuditLog,
+  listPlatformPrices,
   setCompanyBilling,
+  savePlatformPrice,
+  setCompanyPlan,
   type PlatformCompany,
 } from "@/lib/platform.functions";
 import { Button } from "@/components/ui/button";
@@ -32,7 +35,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 
 type Action = "activate" | "extend_trial" | "comp" | "lock";
 
-const STATUSES = ["all", "trialing", "active", "expired", "comped"] as const;
+const STATUSES = ["all", "trialing", "active", "past_due", "expired", "comped"] as const;
 
 function statusVariant(status: string) {
   if (status === "active" || status === "comped") return "default" as const;
@@ -53,6 +56,24 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
   const [pending, setPending] = useState<{ company: PlatformCompany; action: Action } | null>(null);
   const [note, setNote] = useState("");
   const [days, setDays] = useState("30");
+  const [planFor, setPlanFor] = useState<PlatformCompany | null>(null);
+  const [planPrice, setPlanPrice] = useState("");
+  const [planCoupon, setPlanCoupon] = useState("");
+
+  const fetchPrices = useServerFn(listPlatformPrices);
+  const pricesQuery = useQuery({ queryKey: ["platform-prices"], queryFn: () => fetchPrices() });
+
+  const savePlan = useServerFn(setCompanyPlan);
+  const planMutation = useMutation({
+    mutationFn: (vars: { companyId: string; priceId: string | null; couponId: string | null }) =>
+      savePlan({ data: vars }),
+    onSuccess: () => {
+      toast.success("Plan updated");
+      setPlanFor(null);
+      void qc.invalidateQueries({ queryKey: ["platform-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const apply = useServerFn(setCompanyBilling);
   const mutation = useMutation({
@@ -67,6 +88,19 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function openPlan(c: PlatformCompany) {
+    setPlanFor(c);
+    setPlanPrice(c.stripe_price_id ?? "");
+    setPlanCoupon(c.stripe_coupon_id ?? "");
+  }
+
+  function planLabel(c: PlatformCompany) {
+    const p = pricesQuery.data?.prices.find((x) => x.stripe_price_id === c.stripe_price_id);
+    if (p) return p.label;
+    return c.stripe_price_id ? "Custom" : "Default";
+  }
+
 
   const rows = useMemo(
     () =>
@@ -108,6 +142,10 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
         <span className="ml-auto text-sm text-muted-foreground">{rows.length} companies</span>
       </div>
 
+      <PriceList />
+
+
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -117,6 +155,8 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
               <TableHead>Signed up</TableHead>
               <TableHead>Trial ends</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Plan</TableHead>
+              <TableHead>Renews</TableHead>
               <TableHead className="text-right">Users</TableHead>
               <TableHead>Last activity</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -148,9 +188,18 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
                       {c.subscription_status}
                     </Badge>
                   </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">
+                    {planLabel(c)}
+                    {c.stripe_coupon_id ? " · coupon" : ""}
+                    {c.stripe_subscription_id ? " · Stripe" : ""}
+                  </TableCell>
+                  <TableCell>{fmt(c.current_period_end)}</TableCell>
                   <TableCell className="text-right">{c.user_count}</TableCell>
                   <TableCell>{fmt(c.last_activity)}</TableCell>
                   <TableCell className="space-x-1 text-right whitespace-nowrap">
+                    <Button size="sm" variant="outline" onClick={() => openPlan(c)}>
+                      Plan
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => open(c, "activate")}>
                       Activate
                     </Button>
@@ -167,11 +216,12 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
                 </TableRow>
                 {expanded === c.id && (
                   <TableRow key={`${c.id}-log`}>
-                    <TableCell colSpan={8} className="bg-muted/30">
+                    <TableCell colSpan={10} className="bg-muted/30">
                       <AuditLog companyId={c.id} note={c.billing_note} />
                     </TableCell>
                   </TableRow>
                 )}
+
               </>
             ))}
           </TableBody>
@@ -239,7 +289,78 @@ export function PlatformCompanyTable({ companies }: { companies: PlatformCompany
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!planFor} onOpenChange={(o) => !o && setPlanFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign plan</DialogTitle>
+            <DialogDescription>
+              {planFor?.name} — applies to their next checkout. Leave empty for the default plan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="price">Stripe price</Label>
+              <select
+                id="price"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                value={planPrice}
+                onChange={(e) => setPlanPrice(e.target.value)}
+              >
+                <option value="">
+                  Default{pricesQuery.data?.defaultPriceId ? ` (${pricesQuery.data.defaultPriceId})` : ""}
+                </option>
+                {(pricesQuery.data?.prices ?? []).map((p) => (
+                  <option key={p.stripe_price_id} value={p.stripe_price_id}>
+                    {p.label} — {(p.amount_cents / 100).toFixed(2)} {p.currency}/{p.interval}
+                  </option>
+                ))}
+                {planPrice &&
+                  !(pricesQuery.data?.prices ?? []).some((p) => p.stripe_price_id === planPrice) && (
+                    <option value={planPrice}>{planPrice}</option>
+                  )}
+              </select>
+              <Input
+                placeholder="…or paste a custom price id (price_…)"
+                value={planPrice}
+                onChange={(e) => setPlanPrice(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="coupon">Coupon id (optional)</Label>
+              <Input
+                id="coupon"
+                placeholder="coupon_…"
+                value={planCoupon}
+                onChange={(e) => setPlanCoupon(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                With a coupon set, promotion-code entry is disabled at checkout.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPlanFor(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={planMutation.isPending}
+              onClick={() =>
+                planFor &&
+                planMutation.mutate({
+                  companyId: planFor.id,
+                  priceId: planPrice.trim() || null,
+                  couponId: planCoupon.trim() || null,
+                })
+              }
+            >
+              Save plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
@@ -280,6 +401,89 @@ function AuditLog({ companyId, note }: { companyId: string; note: string | null 
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+/** The platform's subscription price list — used when assigning a plan to a company. */
+function PriceList() {
+  const qc = useQueryClient();
+  const fetchPrices = useServerFn(listPlatformPrices);
+  const savePrice = useServerFn(savePlatformPrice);
+  const [open, setOpen] = useState(false);
+  const [priceId, setPriceId] = useState("");
+  const [label, setLabel] = useState("");
+
+  const { data } = useQuery({ queryKey: ["platform-prices"], queryFn: () => fetchPrices() });
+  const mutation = useMutation({
+    mutationFn: (vars: { stripePriceId: string; label: string }) => savePrice({ data: vars }),
+    onSuccess: () => {
+      toast.success("Plan saved");
+      setOpen(false);
+      setPriceId("");
+      setLabel("");
+      void qc.invalidateQueries({ queryKey: ["platform-prices"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+      <span className="font-medium">Plans:</span>
+      {(data?.prices ?? []).length === 0 ? (
+        <span className="text-muted-foreground">none yet</span>
+      ) : (
+        (data?.prices ?? []).map((p) => (
+          <Badge key={p.stripe_price_id} variant={p.active ? "default" : "secondary"}>
+            {p.label} · {(p.amount_cents / 100).toFixed(2)} {p.currency}/{p.interval}
+          </Badge>
+        ))
+      )}
+      <Button size="sm" variant="outline" className="ml-auto" onClick={() => setOpen(true)}>
+        Add plan
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a plan</DialogTitle>
+            <DialogDescription>
+              The price is read from Stripe, so the id must already exist there.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-price">Stripe price id</Label>
+              <Input
+                id="new-price"
+                placeholder="price_…"
+                value={priceId}
+                onChange={(e) => setPriceId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-label">Label</Label>
+              <Input
+                id="new-label"
+                placeholder="Standard monthly"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={mutation.isPending || !priceId.trim() || !label.trim()}
+              onClick={() => mutation.mutate({ stripePriceId: priceId.trim(), label: label.trim() })}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
