@@ -246,7 +246,7 @@ function DealCard({
         <CardBody deal={deal} currency={currency} ownerLabel={ownerLabel} />
       </div>
       {canEdit && (
-        <div className="absolute right-1.5 top-1.5" data-card-menu>
+        <div className="absolute bottom-1.5 right-1.5" data-card-menu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
