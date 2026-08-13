@@ -251,6 +251,13 @@ export function LandingPage() {
             <Link to="/datenschutz" className="hover:text-foreground">
               {t("landing.footer.datenschutz")}
             </Link>
+            <Link to="/agb" className="hover:text-foreground">
+              AGB
+            </Link>
+            <Link to="/avv" className="hover:text-foreground">
+              AVV
+            </Link>
+            
             
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground">
               {t("landing.footer.contact")}

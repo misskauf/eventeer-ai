@@ -422,14 +422,17 @@ export function DatenschutzEN() {
 export function LegalPage({
   titleDe,
   titleEn,
+  versionLabel,
   children,
 }: {
   titleDe: string;
   titleEn: string;
+  versionLabel?: string;
   children: (lang: AppLang) => ReactNode;
 }) {
   const { t } = useTranslation();
   const [lang, setLang] = useState<AppLang>("en");
+
 
   useEffect(() => {
     applyStoredLanguage();
@@ -487,7 +490,9 @@ export function LegalPage({
         <h1 className="text-3xl font-semibold tracking-tight">
           {lang === "de" ? titleDe : titleEn}
         </h1>
-        <p className="mt-2 text-xs text-muted-foreground">{LAST_UPDATED[lang]}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {versionLabel ?? LAST_UPDATED[lang]}
+        </p>
         <div className="mt-2">{children(lang)}</div>
         <Link to="/" className="mt-12 inline-block">
           <Button variant="outline" size="sm">
@@ -507,6 +512,12 @@ export function LegalPage({
             </Link>
             <Link to="/datenschutz" className="hover:text-foreground">
               {t("landing.footer.datenschutz")}
+            </Link>
+            <Link to="/agb" className="hover:text-foreground">
+              AGB
+            </Link>
+            <Link to="/avv" className="hover:text-foreground">
+              AVV
             </Link>
             <a href={`mailto:${LEGAL_EMAIL}`} className="hover:text-foreground">
               {t("landing.footer.contact")}
@@ -528,6 +539,519 @@ export function LegalLinks({ className = "" }: { className?: string }) {
       <Link to="/datenschutz" className="hover:text-foreground">
         Datenschutz
       </Link>
+      <span aria-hidden>·</span>
+      <Link to="/agb" className="hover:text-foreground">
+        AGB
+      </Link>
+      <span aria-hidden>·</span>
+      <Link to="/avv" className="hover:text-foreground">
+        AVV
+      </Link>
     </div>
+  );
+}
+
+/* ------------------------------------ AGB ------------------------------------ */
+
+export const LEGAL_VERSION_LABEL = "Stand: 12. August 2026 · Version 1.0";
+
+export function GermanOnlyNote() {
+  return (
+    <p className="mt-4 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+      Die englische Fassung folgt. Es gilt die deutsche Fassung.
+    </p>
+  );
+}
+
+export function AgbDE() {
+  return (
+    <>
+      <H2>§ 1 Geltungsbereich</H2>
+      <P>
+        (1) Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge über die Nutzung der
+        Software „Eventeer“ zwischen Keren Kaufman, Urbanstraße 71, 10967 Berlin (nachfolgend
+        „Anbieterin“) und dem Kunden.
+      </P>
+      <P>
+        (2) Das Angebot richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB, juristische
+        Personen des öffentlichen Rechts und öffentlich-rechtliche Sondervermögen. Verbraucher im
+        Sinne des § 13 BGB sind von der Nutzung ausgeschlossen.
+      </P>
+      <P>
+        (3) Abweichende, entgegenstehende oder ergänzende Allgemeine Geschäftsbedingungen des Kunden
+        werden nicht Vertragsbestandteil, es sei denn, die Anbieterin stimmt ihrer Geltung
+        ausdrücklich in Textform zu. Dies gilt auch dann, wenn die Anbieterin in Kenntnis solcher
+        Bedingungen die Leistung vorbehaltlos erbringt.
+      </P>
+
+      <H2>§ 2 Vertragsgegenstand</H2>
+      <P>
+        (1) Die Anbieterin stellt dem Kunden die Software „Eventeer“ als webbasierte Anwendung
+        (Software as a Service) für die Dauer des Vertrages zur Nutzung über das Internet bereit.
+        Eventeer unterstützt die Bearbeitung von Veranstaltungsanfragen, die Erstellung von
+        Angeboten, den Vertragsabschluss, die Zahlungsabwicklung sowie die Organisation von
+        Veranstaltungen.
+      </P>
+      <P>
+        (2) Der Leistungsumfang ergibt sich aus der jeweils gültigen Leistungsbeschreibung auf der
+        Website der Anbieterin sowie dem gewählten Tarif. Eine darüber hinausgehende Beschaffenheit
+        schuldet die Anbieterin nicht; insbesondere besteht kein Anspruch auf individuelle
+        Anpassungen, bestimmte Funktionen oder die Kompatibilität mit Systemen Dritter.
+      </P>
+      <P>
+        (3) Die Anbieterin ist berechtigt, die Software fortzuentwickeln und anzupassen, insbesondere
+        zur Verbesserung, aus Sicherheitsgründen oder aufgrund geänderter rechtlicher Anforderungen.
+        Wesentliche Funktionen, die den vertragsgemäßen Gebrauch prägen, bleiben dabei erhalten. Wird
+        der vertragsgemäße Gebrauch durch eine Änderung nicht nur unerheblich eingeschränkt, kann der
+        Kunde den Vertrag innerhalb von 30 Tagen ab Kenntnis außerordentlich kündigen.
+      </P>
+      <P>
+        (4) Die Anbieterin schuldet keine Beratung in rechtlichen, steuerlichen oder
+        betriebswirtschaftlichen Fragen. Von der Software erzeugte Dokumente — insbesondere Angebote,
+        Verträge und Rechnungen — sind Arbeitsergebnisse des Kunden. Der Kunde prüft sie
+        eigenverantwortlich auf inhaltliche und rechtliche Richtigkeit, bevor er sie gegenüber
+        Dritten verwendet.
+      </P>
+
+      <H2>§ 3 Vertragsschluss, Testphase</H2>
+      <P>
+        (1) Die Darstellung der Software stellt kein bindendes Angebot dar. Der Vertrag kommt
+        zustande, wenn die Anbieterin die Registrierung des Kunden bestätigt oder den Zugang
+        freischaltet.
+      </P>
+      <P>
+        (2) Der Kunde sichert zu, dass die bei der Registrierung angegebenen Daten zutreffend und
+        vollständig sind und dass die handelnde Person zur Vertretung des Kunden berechtigt ist.
+      </P>
+      <P>
+        (3) Die Anbieterin kann eine kostenfreie Testphase anbieten. Während der Testphase besteht
+        kein Anspruch auf Verfügbarkeit, Support oder Datenerhalt. Die Testphase endet automatisch;
+        sie geht nur dann in ein kostenpflichtiges Vertragsverhältnis über, wenn der Kunde dies
+        ausdrücklich beauftragt. Nach Ablauf einer nicht fortgeführten Testphase gilt § 11
+        entsprechend.
+      </P>
+
+      <H2>§ 4 Nutzungsrechte</H2>
+      <P>
+        (1) Der Kunde erhält für die Vertragslaufzeit ein einfaches, nicht übertragbares, nicht
+        unterlizenzierbares Recht, die Software bestimmungsgemäß über das Internet zu nutzen. Ein
+        Anspruch auf Herausgabe des Quellcodes oder auf Überlassung der Software besteht nicht.
+      </P>
+      <P>
+        (2) Der Kunde darf die Software nicht vervielfältigen, bearbeiten, zurückentwickeln, an
+        Dritte vermieten, weiterverkaufen oder Dritten zugänglich machen. Zugänge sind
+        personenbezogen und dürfen nicht von mehreren Personen gemeinsam genutzt werden.
+      </P>
+      <P>
+        (3) Alle Rechte an der Software, ihrer Struktur, ihrem Quellcode, ihrer Gestaltung sowie an
+        Marken und Kennzeichen verbleiben bei der Anbieterin.
+      </P>
+      <P>
+        (4) An den vom Kunden eingestellten Inhalten und Daten („Kundendaten“) erwirbt die Anbieterin
+        keine Rechte. Der Kunde räumt der Anbieterin das zur Vertragserfüllung erforderliche einfache
+        Nutzungsrecht ein, insbesondere zur Speicherung, Verarbeitung und Anzeige der Kundendaten im
+        Rahmen der Software.
+      </P>
+      <P>
+        (5) Die Anbieterin darf anonymisierte und aggregierte Nutzungsdaten, die keinen Rückschluss
+        auf den Kunden, seine Kunden oder einzelne Personen zulassen, zur Verbesserung und
+        Weiterentwicklung der Software auswerten.
+      </P>
+
+      <H2>§ 5 Vergütung, Zahlung, Verzug</H2>
+      <P>
+        (1) Die Vergütung richtet sich nach der bei Vertragsschluss gültigen Preisliste. Alle Preise
+        verstehen sich zuzüglich der gesetzlichen Umsatzsteuer.
+      </P>
+      <P>
+        (2) Die Vergütung ist im Voraus für den jeweiligen Abrechnungszeitraum fällig, sofern nichts
+        anderes vereinbart ist. Die Rechnungsstellung erfolgt elektronisch.
+      </P>
+      <P>
+        (3) Gerät der Kunde mit der Zahlung in Verzug, ist die Anbieterin berechtigt, nach
+        erfolgloser Mahnung mit Fristsetzung von zehn Werktagen den Zugang zur Software zu sperren.
+        Die Zahlungspflicht für den vereinbarten Zeitraum bleibt hiervon unberührt. Weitergehende
+        gesetzliche Rechte, insbesondere Verzugszinsen nach § 288 Abs. 2 BGB, bleiben vorbehalten.
+      </P>
+      <P>
+        (4) Die Anbieterin kann die Preise mit einer Frist von acht Wochen zum Beginn eines neuen
+        Abrechnungszeitraums in Textform anpassen. Erhöht sich der Preis um mehr als 10 %, kann der
+        Kunde den Vertrag zum Wirksamwerden der Erhöhung außerordentlich kündigen; hierauf weist die
+        Anbieterin in der Mitteilung hin.
+      </P>
+      <P>
+        (5) Der Kunde kann nur mit unbestrittenen oder rechtskräftig festgestellten Forderungen
+        aufrechnen. Ein Zurückbehaltungsrecht steht ihm nur wegen Ansprüchen aus demselben
+        Vertragsverhältnis zu.
+      </P>
+
+      <H2>§ 6 Verfügbarkeit</H2>
+      <P>
+        (1) Die Anbieterin stellt die Software mit einer Verfügbarkeit von 98 % im Monatsmittel,
+        gemessen am Übergabepunkt des Rechenzentrums, bereit.
+      </P>
+      <P>
+        (2) Nicht als Ausfallzeit gelten: angekündigte Wartungsarbeiten, Störungen außerhalb des
+        Einflussbereichs der Anbieterin (insbesondere bei Vorleistungsanbietern, Netzbetreibern oder
+        durch höhere Gewalt), Störungen aufgrund unsachgemäßer Nutzung durch den Kunden sowie
+        Ausfälle der Internetverbindung des Kunden.
+      </P>
+      <P>
+        (3) Wartungsarbeiten werden nach Möglichkeit außerhalb der Zeiten von 9:00 bis 18:00 Uhr
+        (MEZ/MESZ) an Werktagen durchgeführt und mit angemessenem Vorlauf angekündigt.
+        Sicherheitsrelevante Eingriffe darf die Anbieterin jederzeit und ohne Vorankündigung
+        vornehmen.
+      </P>
+      <P>
+        (4) Die Anbieterin unterstützt den Kunden per E-Mail an Werktagen. Ein Anspruch auf bestimmte
+        Reaktions- oder Wiederherstellungszeiten besteht nur, soweit ausdrücklich vereinbart.
+      </P>
+
+      <H2>§ 7 Pflichten des Kunden</H2>
+      <P>
+        (1) Der Kunde ist für die von ihm und seinen Nutzern eingestellten Inhalte und Daten allein
+        verantwortlich. Er stellt sicher, dass er zur Verarbeitung dieser Daten berechtigt ist und
+        die erforderlichen Rechtsgrundlagen und Einwilligungen vorliegen — insbesondere für Daten
+        seiner eigenen Kunden und Gäste.
+      </P>
+      <P>
+        (2) Der Kunde darf keine Inhalte einstellen, die gegen geltendes Recht, Rechte Dritter oder
+        die guten Sitten verstoßen.
+      </P>
+      <P>
+        (3) Der Kunde stellt keine besonderen Kategorien personenbezogener Daten im Sinne des Art. 9
+        DSGVO in die Software ein (insbesondere Gesundheitsdaten, religiöse oder politische
+        Überzeugungen, Gewerkschaftszugehörigkeit, biometrische Daten) sowie keine
+        Zahlungskartendaten. Die Software ist hierfür nicht ausgelegt.
+      </P>
+      <P>
+        (4) Der Kunde schützt seine Zugangsdaten vor dem Zugriff Dritter, gibt sie nicht weiter und
+        informiert die Anbieterin unverzüglich bei Verdacht auf Missbrauch.
+      </P>
+      <P>
+        (5) Der Kunde ist für die Verwaltung der Zugänge seiner Nutzer und die Vergabe von
+        Berechtigungen selbst verantwortlich. Handlungen seiner Nutzer sind ihm zuzurechnen.
+      </P>
+      <P>
+        (6) Der Kunde stellt die Anbieterin von Ansprüchen Dritter frei, die auf einer schuldhaften
+        Verletzung der Pflichten aus diesem Paragraphen beruhen, einschließlich angemessener Kosten
+        der Rechtsverteidigung. Die Anbieterin informiert den Kunden unverzüglich über solche
+        Ansprüche und stimmt sich mit ihm über die Verteidigung ab.
+      </P>
+      <P>
+        (7) Der Kunde ist verpflichtet, seine Daten in regelmäßigen Abständen über die von der
+        Software bereitgestellten Exportfunktionen zu sichern.
+      </P>
+
+      <H2>§ 8 Mängel</H2>
+      <P>(1) Es gilt das Mietrecht (§§ 535 ff. BGB), soweit nachfolgend nichts anderes bestimmt ist.</P>
+      <P>
+        (2) Die verschuldensunabhängige Haftung für anfängliche Mängel nach § 536a Abs. 1 Alt. 1 BGB
+        ist ausgeschlossen.
+      </P>
+      <P>
+        (3) Der Kunde zeigt Mängel unverzüglich in Textform an und beschreibt sie so genau, dass eine
+        Nachvollziehbarkeit möglich ist. Er unterstützt die Anbieterin in zumutbarem Umfang bei der
+        Eingrenzung.
+      </P>
+      <P>(4) Unerhebliche Beeinträchtigungen der Gebrauchstauglichkeit berechtigen nicht zur Minderung.</P>
+
+      <H2>§ 9 Haftung</H2>
+      <P>
+        (1) Die Anbieterin haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung
+        des Lebens, des Körpers oder der Gesundheit, bei arglistigem Verschweigen eines Mangels, im
+        Umfang einer übernommenen Garantie sowie nach dem Produkthaftungsgesetz.
+      </P>
+      <P>
+        (2) Bei leicht fahrlässiger Verletzung einer wesentlichen Vertragspflicht (Kardinalpflicht)
+        haftet die Anbieterin der Höhe nach begrenzt auf den bei Vertragsschluss vorhersehbaren,
+        vertragstypischen Schaden. Wesentliche Vertragspflichten sind solche, deren Erfüllung die
+        ordnungsgemäße Durchführung des Vertrages überhaupt erst ermöglicht und auf deren Einhaltung
+        der Kunde regelmäßig vertrauen darf.
+      </P>
+      <P>
+        (3) Die Haftung nach Absatz 2 ist insgesamt begrenzt auf die Höhe der vom Kunden in den zwölf
+        Monaten vor dem schädigenden Ereignis gezahlten Vergütung, mindestens jedoch 1.000 EUR.
+      </P>
+      <P>
+        (4) Im Übrigen ist die Haftung ausgeschlossen. Dies gilt insbesondere für entgangenen Gewinn,
+        ausgebliebene Einsparungen, Ansprüche Dritter und mittelbare Schäden.
+      </P>
+      <P>
+        (5) Für den Verlust von Daten haftet die Anbieterin nur bis zu dem Aufwand, der bei
+        ordnungsgemäßer und regelmäßiger Datensicherung durch den Kunden (§ 7 Abs. 7) zur
+        Wiederherstellung erforderlich gewesen wäre.
+      </P>
+      <P>
+        (6) Die vorstehenden Haftungsbeschränkungen gelten auch zugunsten der gesetzlichen Vertreter,
+        Mitarbeiter und Erfüllungsgehilfen der Anbieterin.
+      </P>
+      <P>
+        (7) Eine Änderung der Beweislast zum Nachteil des Kunden ist mit den vorstehenden Regelungen
+        nicht verbunden.
+      </P>
+
+      <H2>§ 10 Laufzeit und Kündigung</H2>
+      <P>
+        (1) Der Vertrag wird auf unbestimmte Zeit geschlossen und läuft, sofern nichts anderes
+        vereinbart ist, monatlich. Er kann von beiden Seiten mit einer Frist von 14 Tagen zum Ende
+        des jeweiligen Abrechnungszeitraums in Textform gekündigt werden.
+      </P>
+      <P>
+        (2) Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt. Ein
+        wichtiger Grund für die Anbieterin liegt insbesondere vor bei erheblichem Verstoß gegen § 7,
+        bei Zahlungsverzug über zwei Abrechnungszeiträume oder bei Eröffnung eines
+        Insolvenzverfahrens über das Vermögen des Kunden.
+      </P>
+      <P>
+        (3) Die Kündigung kann in Textform, insbesondere per E-Mail, oder über die
+        Kündigungsfunktion in der Software erklärt werden.
+      </P>
+
+      <H2>§ 11 Datenlöschung nach Vertragsende</H2>
+      <P>
+        (1) Mit Beendigung des Vertrages werden sämtliche Kundendaten unverzüglich und endgültig
+        gelöscht. Eine Wiederherstellung ist nicht möglich. Dasselbe gilt, wenn der Kunde seinen
+        Workspace über die Software selbst löscht, sowie nach Ablauf einer nicht fortgeführten
+        Testphase.
+      </P>
+      <P>
+        (2) Die Löschung erfolgt sofort im Produktivsystem. Etwaige Kopien in technischen
+        Sicherungsbeständen (Backups) werden im Rahmen der regulären Backup-Zyklen, spätestens
+        innerhalb von 30 Tagen, entfernt. Auf diese Kopien besteht kein Zugriff und kein
+        Herausgabeanspruch.
+      </P>
+      <P>
+        (3) Der Kunde ist verpflichtet, seine Daten vor Wirksamwerden der Kündigung bzw. vor Löschung
+        des Workspace selbst zu exportieren. Die Anbieterin stellt hierfür Exportfunktionen bereit.
+        Ein Anspruch auf Rückgabe, nachträglichen Export oder Wiederherstellung nach Vertragsende
+        besteht nicht.
+      </P>
+      <P>
+        (4) Die Anbieterin weist vor der endgültigen Löschung eines Workspace innerhalb der Software
+        deutlich auf die Unwiderruflichkeit hin und verlangt eine ausdrückliche Bestätigung.
+      </P>
+      <P>
+        (5) Unberührt bleiben gesetzliche Aufbewahrungspflichten, insbesondere für Rechnungs- und
+        Buchhaltungsunterlagen der Anbieterin (§ 147 AO, § 257 HGB). Diese betreffen nicht die
+        Inhalte der vom Kunden verarbeiteten Veranstaltungs- und Kundendaten.
+      </P>
+
+      <H2>§ 12 Datenschutz</H2>
+      <P>
+        (1) Verarbeitet die Anbieterin im Rahmen der Leistungserbringung personenbezogene Daten im
+        Auftrag des Kunden, gilt ergänzend die Vereinbarung zur Auftragsverarbeitung (abrufbar unter{" "}
+        <Link to="/avv" className="underline">/avv</Link>), die Bestandteil dieses Vertrages ist.
+      </P>
+      <P>(2) Der Kunde ist datenschutzrechtlich Verantwortlicher für die von ihm eingestellten Daten.</P>
+
+      <H2>§ 13 Vertraulichkeit</H2>
+      <P>
+        (1) Beide Parteien behandeln vertrauliche Informationen der jeweils anderen Partei
+        vertraulich und verwenden sie ausschließlich zu Vertragszwecken. Diese Pflicht besteht für
+        drei Jahre nach Vertragsende fort.
+      </P>
+      <P>
+        (2) Ausgenommen sind Informationen, die öffentlich bekannt sind, unabhängig entwickelt wurden
+        oder aufgrund gesetzlicher Verpflichtung offenzulegen sind.
+      </P>
+
+      <H2>§ 14 Referenznennung</H2>
+      <P>
+        Die Anbieterin darf Namen und Logo des Kunden zu Referenzzwecken nennen. Der Kunde kann dem
+        jederzeit in Textform widersprechen.
+      </P>
+
+      <H2>§ 15 Änderungen dieser AGB</H2>
+      <P>
+        (1) Die Anbieterin kann diese AGB mit Wirkung für die Zukunft ändern, soweit dies zur
+        Anpassung an geänderte Rechtslage, Rechtsprechung oder technische Gegebenheiten erforderlich
+        ist und der Kunde dadurch nicht unangemessen benachteiligt wird.
+      </P>
+      <P>
+        (2) Änderungen werden dem Kunden mindestens sechs Wochen vor Inkrafttreten in Textform
+        mitgeteilt. Widerspricht der Kunde nicht innerhalb von vier Wochen nach Zugang, gelten die
+        Änderungen als angenommen. Auf diese Wirkung wird in der Mitteilung gesondert hingewiesen.
+        Widerspricht der Kunde, kann jede Partei den Vertrag zum Zeitpunkt des Inkrafttretens
+        kündigen.
+      </P>
+
+      <H2>§ 16 Schlussbestimmungen</H2>
+      <P>(1) Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts.</P>
+      <P>
+        (2) Ausschließlicher Gerichtsstand für alle Streitigkeiten ist Berlin, sofern der Kunde
+        Kaufmann, juristische Person des öffentlichen Rechts oder öffentlich-rechtliches
+        Sondervermögen ist.
+      </P>
+      <P>
+        (3) Änderungen und Ergänzungen dieses Vertrages bedürfen der Textform. Dies gilt auch für die
+        Änderung dieser Klausel.
+      </P>
+      <P>
+        (4) Sollte eine Bestimmung unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen
+        Bestimmungen unberührt.
+      </P>
+    </>
+  );
+}
+
+/* ------------------------------------ AVV ------------------------------------ */
+
+export function AvvDE() {
+  return (
+    <>
+      <P>
+        Diese Vereinbarung gilt zwischen dem Kunden („Verantwortlicher“) und Keren Kaufman,
+        Urbanstraße 71, 10967 Berlin („Auftragsverarbeiterin“). Sie ist Bestandteil der Allgemeinen
+        Geschäftsbedingungen.
+      </P>
+
+      <H2>1. Gegenstand und Dauer</H2>
+      <P>
+        Gegenstand ist die Verarbeitung personenbezogener Daten durch die Auftragsverarbeiterin im
+        Auftrag des Verantwortlichen im Rahmen der Bereitstellung der Software „Eventeer“. Die Dauer
+        entspricht der Laufzeit des Hauptvertrages.
+      </P>
+
+      <H2>2. Art, Zweck und Umfang der Verarbeitung</H2>
+      <P>
+        Zweck: Bereitstellung und Betrieb einer Software zur Bearbeitung von Veranstaltungsanfragen,
+        Erstellung und Versand von Angeboten und Verträgen, Zahlungsverfolgung,
+        Veranstaltungsorganisation und Kommunikation mit den Kunden des Verantwortlichen.
+      </P>
+      <P>
+        Art der Verarbeitung: Erheben, Erfassen, Organisieren, Speichern, Anpassen, Auslesen,
+        Abfragen, Verwenden, Übermitteln, Einschränken und Löschen.
+      </P>
+      <P>
+        Kategorien betroffener Personen: Beschäftigte und Nutzer des Verantwortlichen; Kunden,
+        Auftraggeber und Ansprechpartner des Verantwortlichen; Gäste und Teilnehmende von
+        Veranstaltungen, soweit vom Verantwortlichen erfasst; Dienstleister und Lieferanten des
+        Verantwortlichen.
+      </P>
+      <P>
+        Kategorien personenbezogener Daten: Stammdaten (Name, Firma, Funktion); Kontaktdaten
+        (E-Mail, Telefon, Anschrift); Vertrags- und Angebotsdaten; Zahlungs- und Rechnungsdaten
+        (ohne Zahlungskartendaten); Kommunikationsdaten und Notizen; Nutzungs- und Protokolldaten.
+      </P>
+      <P>Ausgeschlossen: Besondere Kategorien personenbezogener Daten nach Art. 9 DSGVO.</P>
+
+      <H2>3. Rechte und Pflichten des Verantwortlichen</H2>
+      <P>
+        Der Verantwortliche ist für die Rechtmäßigkeit der Verarbeitung sowie für die Wahrung der
+        Rechte betroffener Personen allein verantwortlich. Weisungen erfolgen grundsätzlich in
+        Textform; mündliche Weisungen sind unverzüglich in Textform zu bestätigen. Der
+        Verantwortliche informiert die Auftragsverarbeiterin unverzüglich, wenn er Fehler oder
+        Unregelmäßigkeiten feststellt.
+      </P>
+
+      <H2>4. Pflichten der Auftragsverarbeiterin</H2>
+      <P>
+        Die Auftragsverarbeiterin verarbeitet personenbezogene Daten ausschließlich nach
+        dokumentierten Weisungen des Verantwortlichen; informiert unverzüglich, wenn sie eine
+        Weisung für rechtswidrig hält, und darf deren Ausführung aussetzen; verpflichtet die zur
+        Verarbeitung befugten Personen zur Vertraulichkeit; ergreift die technischen und
+        organisatorischen Maßnahmen gemäß Anlage 1; unterstützt den Verantwortlichen bei der
+        Erfüllung der Rechte betroffener Personen (Art. 12–23 DSGVO) und der Pflichten aus Art.
+        32–36 DSGVO; leitet Anfragen betroffener Personen unverzüglich an den Verantwortlichen weiter
+        und beantwortet sie nicht selbst; informiert den Verantwortlichen unverzüglich, spätestens
+        innerhalb von 48 Stunden nach Kenntnis, über Verletzungen des Schutzes personenbezogener
+        Daten in ihrem Verantwortungsbereich; stellt auf Anfrage die zum Nachweis erforderlichen
+        Informationen bereit.
+      </P>
+
+      <H2>5. Unterauftragsverarbeiter</H2>
+      <P>
+        Der Verantwortliche erteilt die allgemeine Genehmigung zur Beauftragung von
+        Unterauftragsverarbeitern. Bei Vertragsschluss sind dies: Lovable Labs Incorporated, 1
+        Lincoln St, Boston, MA 02111, USA (Bereitstellung, Betrieb und Hosting der Anwendung) sowie
+        Supabase (von Lovable eingesetzt, Datenbank, Authentifizierung und Dateispeicher). Die
+        Auftragsverarbeiterin informiert mindestens vier Wochen vor Beauftragung eines neuen oder dem
+        Wechsel eines bestehenden Unterauftragsverarbeiters in Textform. Der Verantwortliche kann
+        innerhalb von zwei Wochen aus wichtigem datenschutzrechtlichem Grund widersprechen; kann dem
+        Widerspruch nicht abgeholfen werden, steht beiden Parteien ein Sonderkündigungsrecht zu.
+        Unterauftragsverarbeiter werden auf ein entsprechendes Datenschutzniveau verpflichtet.
+      </P>
+
+      <H2>6. Drittlandtransfer</H2>
+      <P>
+        Der unter Ziffer 5 genannte Anbieter hat seinen Sitz in den Vereinigten Staaten von Amerika;
+        damit findet eine Verarbeitung außerhalb der EU bzw. des EWR statt. Grundlage sind die
+        Standardvertragsklauseln der EU-Kommission gemäß Durchführungsbeschluss (EU) 2021/914 (Art.
+        46 Abs. 2 lit. c DSGVO) beziehungsweise ein Angemessenheitsbeschluss nach Art. 45 DSGVO.
+        Ergänzend bestehen die in Anlage 1 beschriebenen technischen Schutzmaßnahmen.
+      </P>
+
+      <H2>7. Kontrollrechte</H2>
+      <P>
+        Der Verantwortliche kann sich von der Einhaltung dieser Vereinbarung überzeugen. Der Nachweis
+        erfolgt vorrangig durch Selbstauskunft, vorhandene Zertifizierungen oder Prüfberichte oder
+        durch Beantwortung eines schriftlichen Fragenkatalogs. Reicht dies nachweislich nicht aus,
+        kann der Verantwortliche nach Ankündigung mit einer Frist von mindestens vier Wochen während
+        der üblichen Geschäftszeiten eine Prüfung durchführen, höchstens einmal je Kalenderjahr, ohne
+        Störung des Betriebsablaufs und unter Wahrung der Geheimhaltung. Aufwand für darüber
+        hinausgehende Prüfungen kann nach vorheriger Ankündigung berechnet werden. Prüfer, die
+        Wettbewerber sind, können zurückgewiesen werden.
+      </P>
+
+      <H2>8. Vertraulichkeit und Beschäftigte</H2>
+      <P>
+        Es werden nur Personen eingesetzt, die auf die Vertraulichkeit verpflichtet und mit den
+        relevanten Datenschutzvorschriften vertraut gemacht wurden.
+      </P>
+
+      <H2>9. Löschung und Rückgabe nach Vertragsende</H2>
+      <P>
+        Nach Beendigung des Hauptvertrages löscht die Auftragsverarbeiterin sämtliche im Auftrag
+        verarbeiteten personenbezogenen Daten unverzüglich und endgültig; eine Wiederherstellung ist
+        nicht möglich. Die Löschung erfolgt sofort im Produktivsystem; Kopien in technischen
+        Sicherungsbeständen werden im Rahmen der regulären Backup-Zyklen, spätestens innerhalb von 30
+        Tagen, entfernt und bis dahin nicht verarbeitet. Der Verantwortliche ist verpflichtet,
+        benötigte Daten vor Vertragsende über die Exportfunktionen selbst zu sichern; ein Anspruch
+        auf Rückgabe oder nachträglichen Export nach Vertragsende besteht nicht. Eine darüber
+        hinausgehende Aufbewahrung erfolgt nur, soweit gesetzliche Aufbewahrungspflichten
+        entgegenstehen; die Daten werden dann gesperrt. Die Löschung wird auf Anfrage in Textform
+        bestätigt.
+      </P>
+
+      <H2>10. Haftung</H2>
+      <P>
+        Für die Haftung im Verhältnis der Parteien gelten die Regelungen des Hauptvertrages (§ 9
+        AGB), soweit gesetzlich zulässig. Art. 82 DSGVO bleibt unberührt. Im Innenverhältnis trägt
+        jede Partei den Anteil an einem Schaden oder Bußgeld, der ihrem Anteil an der
+        Verantwortlichkeit entspricht.
+      </P>
+
+      <H2>11. Schlussbestimmungen</H2>
+      <P>
+        Bei Widersprüchen zwischen dieser Vereinbarung und dem Hauptvertrag geht diese Vereinbarung
+        in datenschutzrechtlichen Fragen vor. Im Übrigen gelten die Schlussbestimmungen des
+        Hauptvertrages.
+      </P>
+
+      <H2>Anlage 1 — Technische und organisatorische Maßnahmen (Art. 32 DSGVO)</H2>
+      <P>
+        Vertraulichkeit: Betrieb in zertifizierten Rechenzentren der eingesetzten Anbieter, kein
+        eigener Serverbetrieb; individuelle Benutzerkonten mit Passwortauthentifizierung oder
+        Google-Anmeldung, keine Sammelkonten, Sperrung von Zugängen bei Ausscheiden; rollenbasiertes
+        Berechtigungskonzept (Inhaber, Sales Manager, Event Manager, Buchhaltung) und Durchsetzung
+        der Mandantentrennung auf Datenbankebene (Row Level Security); logische Trennung der Daten je
+        Kundenunternehmen sowie Trennung von Produktiv- und Entwicklungsumgebung.
+      </P>
+      <P>
+        Integrität: Transportverschlüsselung (TLS) für sämtliche Verbindungen und Verschlüsselung der
+        gespeicherten Daten; Protokollierung sicherheits- und berechtigungsrelevanter Vorgänge.
+      </P>
+      <P>
+        Verfügbarkeit und Belastbarkeit: regelmäßige Sicherung durch den Hosting-Anbieter;
+        Wiederherstellbarkeit im Rahmen der Sicherungszyklen des Anbieters, mit Ausnahme der nach
+        Ziffer 9 endgültig gelöschten Daten.
+      </P>
+      <P>
+        Verfahren zur Überprüfung und Bewertung: schriftliche Vereinbarungen mit
+        Unterauftragsverarbeitern; datenschutzfreundliche Voreinstellungen; Überprüfung der Maßnahmen
+        anlassbezogen sowie bei wesentlichen Änderungen der Verarbeitung.
+      </P>
+    </>
   );
 }

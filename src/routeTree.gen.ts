@@ -14,7 +14,9 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
+import { Route as AvvRouteImport } from './routes/avv'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AgbRouteImport } from './routes/agb'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PayTokenRouteImport } from './routes/pay.$token'
@@ -80,9 +82,19 @@ const DatenschutzRoute = DatenschutzRouteImport.update({
   path: '/datenschutz',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AvvRoute = AvvRouteImport.update({
+  id: '/avv',
+  path: '/avv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgbRoute = AgbRouteImport.update({
+  id: '/agb',
+  path: '/agb',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -305,7 +317,9 @@ const ApiPublicWebhooksStripeCompanyIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agb': typeof AgbRoute
   '/auth': typeof AuthRoute
+  '/avv': typeof AvvRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
   '/landing': typeof LandingRoute
@@ -351,7 +365,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agb': typeof AgbRoute
   '/auth': typeof AuthRoute
+  '/avv': typeof AvvRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
   '/landing': typeof LandingRoute
@@ -397,7 +413,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/agb': typeof AgbRoute
   '/auth': typeof AuthRoute
+  '/avv': typeof AvvRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
   '/landing': typeof LandingRoute
@@ -445,7 +463,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agb'
     | '/auth'
+    | '/avv'
     | '/datenschutz'
     | '/impressum'
     | '/landing'
@@ -491,7 +511,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agb'
     | '/auth'
+    | '/avv'
     | '/datenschutz'
     | '/impressum'
     | '/landing'
@@ -536,7 +558,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/agb'
     | '/auth'
+    | '/avv'
     | '/datenschutz'
     | '/impressum'
     | '/landing'
@@ -584,7 +608,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AgbRoute: typeof AgbRoute
   AuthRoute: typeof AuthRoute
+  AvvRoute: typeof AvvRoute
   DatenschutzRoute: typeof DatenschutzRoute
   ImpressumRoute: typeof ImpressumRoute
   LandingRoute: typeof LandingRoute
@@ -640,11 +666,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatenschutzRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/avv': {
+      id: '/avv'
+      path: '/avv'
+      fullPath: '/avv'
+      preLoaderRoute: typeof AvvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agb': {
+      id: '/agb'
+      path: '/agb'
+      fullPath: '/agb'
+      preLoaderRoute: typeof AgbRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1017,7 +1057,9 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AgbRoute: AgbRoute,
   AuthRoute: AuthRoute,
+  AvvRoute: AvvRoute,
   DatenschutzRoute: DatenschutzRoute,
   ImpressumRoute: ImpressumRoute,
   LandingRoute: LandingRoute,
