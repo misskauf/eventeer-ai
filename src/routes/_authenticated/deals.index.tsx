@@ -456,27 +456,32 @@ function DealsPage() {
 
           {view === "board" ? (
             <DealsBoard
-              deals={filtered.map((d) => ({
-                id: d.id,
-                client_name: d.client_name,
-                client_company: d.client_company,
-                event_date: d.event_date,
-                estimated_value: Number(d.estimated_value),
-                stage: d.stage,
-                owner_id: d.owner_id,
-              }))}
+              deals={filtered.map((d) => {
+                const a = lastActivity[d.id];
+                return {
+                  id: d.id,
+                  client_name: d.client_name,
+                  client_company: d.client_company,
+                  event_date: d.event_date,
+                  estimated_value: Number(d.estimated_value),
+                  stage: d.stage,
+                  owner_id: d.owner_id,
+                  last_activity: a
+                    ? {
+                        label: activityLabel(a),
+                        actor: personLabel(a.actor_id),
+                        at: a.created_at,
+                      }
+                    : null,
+                };
+              })}
               currency={currency}
               canEdit={canEditDeals}
-              ownerLabel={(id) =>
-                !id
-                  ? t("deals.board_unassigned", { defaultValue: "Unassigned" })
-                  : id === userId
-                    ? t("deals.board_owner_me", { defaultValue: "Me" })
-                    : `${id.slice(0, 8)}…`
-              }
+              ownerLabel={personLabel}
               onOpen={(id) => openDeal(id)}
               onMove={(id, stage) => updateStage(id, stage)}
             />
+
           ) : (
           <Card>
             <CardContent className="p-0">
