@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,11 @@ import { toast } from "sonner";
 import { Field, useCompanySettings } from "@/components/settings-shared";
 import { Label } from "@/components/ui/label";
 import { CurrencySelect } from "@/components/currency-select";
+import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n";
+import { usePermissions } from "@/lib/use-permissions";
+import { exportCompanyData } from "@/lib/data-export.functions";
+import { downloadExportZip } from "@/lib/data-export";
 
 
 export const Route = createFileRoute("/_authenticated/settings/company")({
