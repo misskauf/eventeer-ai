@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { money } from "@/lib/pricing";
 import { formatEventDate } from "@/lib/date-format";
-import { stageLabel, stageToneClass, STAGE_ORDER } from "@/lib/deal-stages";
+import { stageLabel, stageToneClass, formatRelative, STAGE_ORDER } from "@/lib/deal-stages";
 import { PIPELINE_COLUMNS, columnById, columnForStage } from "@/lib/pipeline-columns";
 import { useTranslation } from "@/i18n";
 
@@ -209,7 +209,7 @@ function CardBody({
       {deal.last_activity && (
         <div className="mt-2 border-t pt-2 pr-16 text-[11px] leading-tight text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <History className="h-3 w-3 shrink-0" />
+            <HistoryIcon className="h-3 w-3 shrink-0" />
             <span className="truncate font-medium text-foreground">{deal.last_activity.label}</span>
           </div>
           <div className="mt-0.5 truncate">
