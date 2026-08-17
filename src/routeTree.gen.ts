@@ -55,6 +55,7 @@ import { Route as AuthenticatedCatalogExtrasRouteImport } from './routes/_authen
 import { Route as AuthenticatedCatalogBeveragesRouteImport } from './routes/_authenticated/catalog.beverages'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicHooksFollowupsRouteImport } from './routes/api/public/hooks/followups'
 import { Route as ApiPublicWebhooksStripePlatformRouteImport } from './routes/api/public/webhooks/stripe.platform'
 import { Route as ApiPublicWebhooksStripeCompanyIdRouteImport } from './routes/api/public/webhooks/stripe.$companyId'
 
@@ -309,6 +310,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksFollowupsRoute = ApiPublicHooksFollowupsRouteImport.update({
+  id: '/api/public/hooks/followups',
+  path: '/api/public/hooks/followups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksStripePlatformRoute =
   ApiPublicWebhooksStripePlatformRouteImport.update({
     id: '/api/public/webhooks/stripe/platform',
@@ -368,6 +374,7 @@ export interface FileRoutesByFullPath {
   '/settings/workflow': typeof AuthenticatedSettingsWorkflowRoute
   '/deals/': typeof AuthenticatedDealsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/api/public/hooks/followups': typeof ApiPublicHooksFollowupsRoute
   '/api/public/webhooks/stripe/$companyId': typeof ApiPublicWebhooksStripeCompanyIdRoute
   '/api/public/webhooks/stripe/platform': typeof ApiPublicWebhooksStripePlatformRoute
 }
@@ -415,6 +422,7 @@ export interface FileRoutesByTo {
   '/settings/workflow': typeof AuthenticatedSettingsWorkflowRoute
   '/deals': typeof AuthenticatedDealsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/api/public/hooks/followups': typeof ApiPublicHooksFollowupsRoute
   '/api/public/webhooks/stripe/$companyId': typeof ApiPublicWebhooksStripeCompanyIdRoute
   '/api/public/webhooks/stripe/platform': typeof ApiPublicWebhooksStripePlatformRoute
 }
@@ -466,6 +474,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/workflow': typeof AuthenticatedSettingsWorkflowRoute
   '/_authenticated/deals/': typeof AuthenticatedDealsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/api/public/hooks/followups': typeof ApiPublicHooksFollowupsRoute
   '/api/public/webhooks/stripe/$companyId': typeof ApiPublicWebhooksStripeCompanyIdRoute
   '/api/public/webhooks/stripe/platform': typeof ApiPublicWebhooksStripePlatformRoute
 }
@@ -517,6 +526,7 @@ export interface FileRouteTypes {
     | '/settings/workflow'
     | '/deals/'
     | '/settings/'
+    | '/api/public/hooks/followups'
     | '/api/public/webhooks/stripe/$companyId'
     | '/api/public/webhooks/stripe/platform'
   fileRoutesByTo: FileRoutesByTo
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/settings/workflow'
     | '/deals'
     | '/settings'
+    | '/api/public/hooks/followups'
     | '/api/public/webhooks/stripe/$companyId'
     | '/api/public/webhooks/stripe/platform'
   id:
@@ -614,6 +625,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/workflow'
     | '/_authenticated/deals/'
     | '/_authenticated/settings/'
+    | '/api/public/hooks/followups'
     | '/api/public/webhooks/stripe/$companyId'
     | '/api/public/webhooks/stripe/platform'
   fileRoutesById: FileRoutesById
@@ -639,6 +651,7 @@ export interface RootRouteChildren {
   PayTokenRoute: typeof PayTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicHooksFollowupsRoute: typeof ApiPublicHooksFollowupsRoute
   ApiPublicWebhooksStripeCompanyIdRoute: typeof ApiPublicWebhooksStripeCompanyIdRoute
   ApiPublicWebhooksStripePlatformRoute: typeof ApiPublicWebhooksStripePlatformRoute
 }
@@ -967,6 +980,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/followups': {
+      id: '/api/public/hooks/followups'
+      path: '/api/public/hooks/followups'
+      fullPath: '/api/public/hooks/followups'
+      preLoaderRoute: typeof ApiPublicHooksFollowupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/stripe/platform': {
       id: '/api/public/webhooks/stripe/platform'
       path: '/api/public/webhooks/stripe/platform'
@@ -1097,6 +1117,7 @@ const rootRouteChildren: RootRouteChildren = {
   PayTokenRoute: PayTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicHooksFollowupsRoute: ApiPublicHooksFollowupsRoute,
   ApiPublicWebhooksStripeCompanyIdRoute: ApiPublicWebhooksStripeCompanyIdRoute,
   ApiPublicWebhooksStripePlatformRoute: ApiPublicWebhooksStripePlatformRoute,
 }

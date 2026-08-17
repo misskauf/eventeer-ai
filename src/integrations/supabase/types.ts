@@ -992,6 +992,53 @@ export type Database = {
           },
         ]
       }
+      followup_configs: {
+        Row: {
+          channel: string
+          company_id: string
+          created_at: string
+          doc_type: string
+          enabled: boolean
+          id: string
+          interval_days: number
+          max_reminders: number | null
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          company_id: string
+          created_at?: string
+          doc_type: string
+          enabled?: boolean
+          id?: string
+          interval_days?: number
+          max_reminders?: number | null
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          company_id?: string
+          created_at?: string
+          doc_type?: string
+          enabled?: boolean
+          id?: string
+          interval_days?: number
+          max_reminders?: number | null
+          mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followup_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           company_id: string
@@ -1156,6 +1203,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      job_leases: {
+        Row: {
+          created_at: string
+          job_name: string
+          last_run_at: string | null
+          locked_until: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          job_name: string
+          last_run_at?: string | null
+          locked_until: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          job_name?: string
+          last_run_at?: string | null
+          locked_until?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       lead_forms: {
         Row: {
