@@ -106,6 +106,68 @@ function activityLabel(a: ActivityRow): string {
 
 const VIEW_KEY = "eventeer.deals.view";
 
+const DATE_PRESETS = [
+  "any",
+  "this_week",
+  "last_week",
+  "this_month",
+  "last_month",
+  "this_year",
+  "last_year",
+  "future",
+  "exact",
+] as const;
+type DatePreset = (typeof DATE_PRESETS)[number];
+
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** From/to (inclusive, YYYY-MM-DD) for a date preset. Weeks start Monday. */
+function presetRange(preset: DatePreset): { from: string | null; to: string | null } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const startOfWeek = (ref: Date) => {
+    const d = new Date(ref);
+    const dow = (d.getDay() + 6) % 7; // Monday = 0
+    d.setDate(d.getDate() - dow);
+    return d;
+  };
+  switch (preset) {
+    case "this_week": {
+      const s = startOfWeek(now);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 6);
+      return { from: isoDate(s), to: isoDate(e) };
+    }
+    case "last_week": {
+      const s = startOfWeek(now);
+      s.setDate(s.getDate() - 7);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 6);
+      return { from: isoDate(s), to: isoDate(e) };
+    }
+    case "this_month":
+      return {
+        from: isoDate(new Date(y, now.getMonth(), 1)),
+        to: isoDate(new Date(y, now.getMonth() + 1, 0)),
+      };
+    case "last_month":
+      return {
+        from: isoDate(new Date(y, now.getMonth() - 1, 1)),
+        to: isoDate(new Date(y, now.getMonth(), 0)),
+      };
+    case "this_year":
+      return { from: isoDate(new Date(y, 0, 1)), to: isoDate(new Date(y, 11, 31)) };
+    case "last_year":
+      return { from: isoDate(new Date(y - 1, 0, 1)), to: isoDate(new Date(y - 1, 11, 31)) };
+    case "future":
+      return { from: isoDate(now), to: null };
+    default:
+      return { from: null, to: null };
+  }
+}
+
 
 
 function DealsPage() {
@@ -118,9 +180,13 @@ function DealsPage() {
   const [awaitingMine, setAwaitingMine] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [datePreset, setDatePreset] = useState<DatePreset>("any");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [minValue, setMinValue] = useState("");
+  const [spaceFilter, setSpaceFilter] = useState<string>("all");
+  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
+  const [dealSpaces, setDealSpaces] = useState<Record<string, string[]>>({});
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "board">("list");
@@ -160,7 +226,28 @@ function DealsPage() {
     setDeals(rows);
     setLoading(false);
     loadActivity(rows.map((d) => d.id));
+    loadDealSpaces(rows.map((d) => d.id));
   }
+
+  // Space references per deal, used by the Space filter.
+  async function loadDealSpaces(dealIds: string[]) {
+    if (dealIds.length === 0) {
+      setDealSpaces({});
+      return;
+    }
+    const { data } = await supabase
+      .from("deal_items")
+      .select("deal_id, space_id")
+      .in("deal_id", dealIds.slice(0, 500))
+      .not("space_id", "is", null);
+    const map: Record<string, string[]> = {};
+    for (const r of (data as { deal_id: string; space_id: string }[]) ?? []) {
+      const cur = map[r.deal_id] ?? (map[r.deal_id] = []);
+      if (!cur.includes(r.space_id)) cur.push(r.space_id);
+    }
+    setDealSpaces(map);
+  }
+
 
   // Latest history entry per deal, shown on the Kanban cards.
   async function loadActivity(dealIds: string[]) {
@@ -180,6 +267,22 @@ function DealsPage() {
     }
     setLastActivity(map);
   }
+
+  // Space options for the filter dropdown.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("spaces")
+        .select("id, name")
+        .eq("active", true)
+        .order("name");
+      if (!cancelled) setSpaces((data as { id: string; name: string }[]) ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Resolve teammate names for activity authors (best effort — needs team view).
   useEffect(() => {
@@ -344,6 +447,7 @@ function DealsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const min = minValue.trim() === "" ? null : Number(minValue);
+    const range = datePreset === "exact" ? { from: dateFrom || null, to: dateTo || null } : presetRange(datePreset);
     return deals.filter((d) => {
       if (stageFilter.startsWith("group:")) {
         const group = STAGE_GROUPS[stageFilter.slice(6)] ?? [];
@@ -356,11 +460,12 @@ function DealsPage() {
       if (ownerFilter === "unassigned") {
         if (d.owner_id) return false;
       } else if (ownerFilter !== "all" && d.owner_id !== ownerFilter) return false;
-      if (dateFrom || dateTo) {
+      if (range.from || range.to) {
         if (!d.event_date) return false;
-        if (dateFrom && d.event_date < dateFrom) return false;
-        if (dateTo && d.event_date > dateTo) return false;
+        if (range.from && d.event_date < range.from) return false;
+        if (range.to && d.event_date > range.to) return false;
       }
+      if (spaceFilter !== "all" && !(dealSpaces[d.id] ?? []).includes(spaceFilter)) return false;
       if (min !== null && Number.isFinite(min) && Number(d.estimated_value ?? 0) < min) return false;
       if (!q) return true;
       return (
@@ -369,10 +474,26 @@ function DealsPage() {
         (d.client_company ?? "").toLowerCase().includes(q)
       );
     });
-  }, [deals, search, stageFilter, awaitingMine, userId, ownerFilter, dateFrom, dateTo, minValue]);
+  }, [
+    deals,
+    search,
+    stageFilter,
+    awaitingMine,
+    userId,
+    ownerFilter,
+    datePreset,
+    dateFrom,
+    dateTo,
+    minValue,
+    spaceFilter,
+    dealSpaces,
+  ]);
 
   const hasExtraFilters =
-    ownerFilter !== "all" || dateFrom !== "" || dateTo !== "" || minValue.trim() !== "";
+    ownerFilter !== "all" ||
+    datePreset !== "any" ||
+    spaceFilter !== "all" ||
+    minValue.trim() !== "";
 
 
 
@@ -517,26 +638,87 @@ function DealsPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">
-                {t("deals.filter_date_from", { defaultValue: "Event from" })}
+                {t("deals.filter_space", { defaultValue: "Space" })}
               </Label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="h-8 w-[150px] text-xs"
-              />
+              <Select value={spaceFilter} onValueChange={setSpaceFilter}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("deals.filter_space_all", { defaultValue: "All spaces" })}
+                  </SelectItem>
+                  {spaces.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">
-                {t("deals.filter_date_to", { defaultValue: "Event to" })}
+                {t("deals.filter_date_range", { defaultValue: "Event date" })}
               </Label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="h-8 w-[150px] text-xs"
-              />
+              <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
+                <SelectTrigger className="h-8 w-[170px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">{t("deals.date_any", { defaultValue: "Any date" })}</SelectItem>
+                  <SelectItem value="this_week">
+                    {t("deals.date_this_week", { defaultValue: "This week" })}
+                  </SelectItem>
+                  <SelectItem value="last_week">
+                    {t("deals.date_last_week", { defaultValue: "Last week" })}
+                  </SelectItem>
+                  <SelectItem value="this_month">
+                    {t("deals.date_this_month", { defaultValue: "This month" })}
+                  </SelectItem>
+                  <SelectItem value="last_month">
+                    {t("deals.date_last_month", { defaultValue: "Last month" })}
+                  </SelectItem>
+                  <SelectItem value="this_year">
+                    {t("deals.date_this_year", { defaultValue: "This year" })}
+                  </SelectItem>
+                  <SelectItem value="last_year">
+                    {t("deals.date_last_year", { defaultValue: "Last year" })}
+                  </SelectItem>
+                  <SelectItem value="future">
+                    {t("deals.date_future", { defaultValue: "Future events" })}
+                  </SelectItem>
+                  <SelectItem value="exact">
+                    {t("deals.date_exact", { defaultValue: "Exact dates" })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {datePreset === "exact" && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    {t("deals.filter_date_from", { defaultValue: "Event from" })}
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="h-8 w-[150px] text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    {t("deals.filter_date_to", { defaultValue: "Event to" })}
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="h-8 w-[150px] text-xs"
+                  />
+                </div>
+              </>
+            )}
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">
                 {t("deals.filter_min_value", { defaultValue: "Min. value" })}
@@ -559,8 +741,10 @@ function DealsPage() {
                 className="h-8 text-xs"
                 onClick={() => {
                   setOwnerFilter("all");
+                  setDatePreset("any");
                   setDateFrom("");
                   setDateTo("");
+                  setSpaceFilter("all");
                   setMinValue("");
                 }}
               >
