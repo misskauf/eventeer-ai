@@ -226,7 +226,28 @@ function DealsPage() {
     setDeals(rows);
     setLoading(false);
     loadActivity(rows.map((d) => d.id));
+    loadDealSpaces(rows.map((d) => d.id));
   }
+
+  // Space references per deal, used by the Space filter.
+  async function loadDealSpaces(dealIds: string[]) {
+    if (dealIds.length === 0) {
+      setDealSpaces({});
+      return;
+    }
+    const { data } = await supabase
+      .from("deal_items")
+      .select("deal_id, space_id")
+      .in("deal_id", dealIds.slice(0, 500))
+      .not("space_id", "is", null);
+    const map: Record<string, string[]> = {};
+    for (const r of (data as { deal_id: string; space_id: string }[]) ?? []) {
+      const cur = map[r.deal_id] ?? (map[r.deal_id] = []);
+      if (!cur.includes(r.space_id)) cur.push(r.space_id);
+    }
+    setDealSpaces(map);
+  }
+
 
   // Latest history entry per deal, shown on the Kanban cards.
   async function loadActivity(dealIds: string[]) {
