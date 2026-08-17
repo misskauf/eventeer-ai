@@ -638,26 +638,87 @@ function DealsPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">
-                {t("deals.filter_date_from", { defaultValue: "Event from" })}
+                {t("deals.filter_space", { defaultValue: "Space" })}
               </Label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="h-8 w-[150px] text-xs"
-              />
+              <Select value={spaceFilter} onValueChange={setSpaceFilter}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("deals.filter_space_all", { defaultValue: "All spaces" })}
+                  </SelectItem>
+                  {spaces.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">
-                {t("deals.filter_date_to", { defaultValue: "Event to" })}
+                {t("deals.filter_date_range", { defaultValue: "Event date" })}
               </Label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="h-8 w-[150px] text-xs"
-              />
+              <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
+                <SelectTrigger className="h-8 w-[170px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">{t("deals.date_any", { defaultValue: "Any date" })}</SelectItem>
+                  <SelectItem value="this_week">
+                    {t("deals.date_this_week", { defaultValue: "This week" })}
+                  </SelectItem>
+                  <SelectItem value="last_week">
+                    {t("deals.date_last_week", { defaultValue: "Last week" })}
+                  </SelectItem>
+                  <SelectItem value="this_month">
+                    {t("deals.date_this_month", { defaultValue: "This month" })}
+                  </SelectItem>
+                  <SelectItem value="last_month">
+                    {t("deals.date_last_month", { defaultValue: "Last month" })}
+                  </SelectItem>
+                  <SelectItem value="this_year">
+                    {t("deals.date_this_year", { defaultValue: "This year" })}
+                  </SelectItem>
+                  <SelectItem value="last_year">
+                    {t("deals.date_last_year", { defaultValue: "Last year" })}
+                  </SelectItem>
+                  <SelectItem value="future">
+                    {t("deals.date_future", { defaultValue: "Future events" })}
+                  </SelectItem>
+                  <SelectItem value="exact">
+                    {t("deals.date_exact", { defaultValue: "Exact dates" })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {datePreset === "exact" && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    {t("deals.filter_date_from", { defaultValue: "Event from" })}
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="h-8 w-[150px] text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    {t("deals.filter_date_to", { defaultValue: "Event to" })}
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="h-8 w-[150px] text-xs"
+                  />
+                </div>
+              </>
+            )}
             <div className="space-y-1">
               <Label className="text-[11px] text-muted-foreground">
                 {t("deals.filter_min_value", { defaultValue: "Min. value" })}
