@@ -447,6 +447,7 @@ function DealsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const min = minValue.trim() === "" ? null : Number(minValue);
+    const range = datePreset === "exact" ? { from: dateFrom || null, to: dateTo || null } : presetRange(datePreset);
     return deals.filter((d) => {
       if (stageFilter.startsWith("group:")) {
         const group = STAGE_GROUPS[stageFilter.slice(6)] ?? [];
