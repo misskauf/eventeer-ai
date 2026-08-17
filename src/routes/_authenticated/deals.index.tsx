@@ -474,10 +474,26 @@ function DealsPage() {
         (d.client_company ?? "").toLowerCase().includes(q)
       );
     });
-  }, [deals, search, stageFilter, awaitingMine, userId, ownerFilter, dateFrom, dateTo, minValue]);
+  }, [
+    deals,
+    search,
+    stageFilter,
+    awaitingMine,
+    userId,
+    ownerFilter,
+    datePreset,
+    dateFrom,
+    dateTo,
+    minValue,
+    spaceFilter,
+    dealSpaces,
+  ]);
 
   const hasExtraFilters =
-    ownerFilter !== "all" || dateFrom !== "" || dateTo !== "" || minValue.trim() !== "";
+    ownerFilter !== "all" ||
+    datePreset !== "any" ||
+    spaceFilter !== "all" ||
+    minValue.trim() !== "";
 
 
 
