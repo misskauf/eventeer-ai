@@ -106,6 +106,68 @@ function activityLabel(a: ActivityRow): string {
 
 const VIEW_KEY = "eventeer.deals.view";
 
+const DATE_PRESETS = [
+  "any",
+  "this_week",
+  "last_week",
+  "this_month",
+  "last_month",
+  "this_year",
+  "last_year",
+  "future",
+  "exact",
+] as const;
+type DatePreset = (typeof DATE_PRESETS)[number];
+
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** From/to (inclusive, YYYY-MM-DD) for a date preset. Weeks start Monday. */
+function presetRange(preset: DatePreset): { from: string | null; to: string | null } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const startOfWeek = (ref: Date) => {
+    const d = new Date(ref);
+    const dow = (d.getDay() + 6) % 7; // Monday = 0
+    d.setDate(d.getDate() - dow);
+    return d;
+  };
+  switch (preset) {
+    case "this_week": {
+      const s = startOfWeek(now);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 6);
+      return { from: isoDate(s), to: isoDate(e) };
+    }
+    case "last_week": {
+      const s = startOfWeek(now);
+      s.setDate(s.getDate() - 7);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 6);
+      return { from: isoDate(s), to: isoDate(e) };
+    }
+    case "this_month":
+      return {
+        from: isoDate(new Date(y, now.getMonth(), 1)),
+        to: isoDate(new Date(y, now.getMonth() + 1, 0)),
+      };
+    case "last_month":
+      return {
+        from: isoDate(new Date(y, now.getMonth() - 1, 1)),
+        to: isoDate(new Date(y, now.getMonth(), 0)),
+      };
+    case "this_year":
+      return { from: isoDate(new Date(y, 0, 1)), to: isoDate(new Date(y, 11, 31)) };
+    case "last_year":
+      return { from: isoDate(new Date(y - 1, 0, 1)), to: isoDate(new Date(y - 1, 11, 31)) };
+    case "future":
+      return { from: isoDate(now), to: null };
+    default:
+      return { from: null, to: null };
+  }
+}
+
 
 
 function DealsPage() {
