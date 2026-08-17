@@ -741,8 +741,10 @@ function DealsPage() {
                 className="h-8 text-xs"
                 onClick={() => {
                   setOwnerFilter("all");
+                  setDatePreset("any");
                   setDateFrom("");
                   setDateTo("");
+                  setSpaceFilter("all");
                   setMinValue("");
                 }}
               >
