@@ -180,9 +180,13 @@ function DealsPage() {
   const [awaitingMine, setAwaitingMine] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [datePreset, setDatePreset] = useState<DatePreset>("any");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [minValue, setMinValue] = useState("");
+  const [spaceFilter, setSpaceFilter] = useState<string>("all");
+  const [spaces, setSpaces] = useState<{ id: string; name: string }[]>([]);
+  const [dealSpaces, setDealSpaces] = useState<Record<string, string[]>>({});
   const [deleteTarget, setDeleteTarget] = useState<Deal | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "board">("list");
