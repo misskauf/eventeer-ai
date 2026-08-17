@@ -268,6 +268,22 @@ function DealsPage() {
     setLastActivity(map);
   }
 
+  // Space options for the filter dropdown.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("spaces")
+        .select("id, name")
+        .eq("active", true)
+        .order("name");
+      if (!cancelled) setSpaces((data as { id: string; name: string }[]) ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Resolve teammate names for activity authors (best effort — needs team view).
   useEffect(() => {
     let cancelled = false;
