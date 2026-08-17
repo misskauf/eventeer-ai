@@ -460,11 +460,12 @@ function DealsPage() {
       if (ownerFilter === "unassigned") {
         if (d.owner_id) return false;
       } else if (ownerFilter !== "all" && d.owner_id !== ownerFilter) return false;
-      if (dateFrom || dateTo) {
+      if (range.from || range.to) {
         if (!d.event_date) return false;
-        if (dateFrom && d.event_date < dateFrom) return false;
-        if (dateTo && d.event_date > dateTo) return false;
+        if (range.from && d.event_date < range.from) return false;
+        if (range.to && d.event_date > range.to) return false;
       }
+      if (spaceFilter !== "all" && !(dealSpaces[d.id] ?? []).includes(spaceFilter)) return false;
       if (min !== null && Number.isFinite(min) && Number(d.estimated_value ?? 0) < min) return false;
       if (!q) return true;
       return (
